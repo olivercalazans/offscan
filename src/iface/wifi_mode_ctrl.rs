@@ -7,7 +7,8 @@ use neli::socket::NlSocketHandle;
 use neli::types::GenlBuffer;
 use std::ffi::CString;
 use std::os::unix::io::AsRawFd;
-use crate::utils::{abort, get_iface_index};
+use crate::iface::IfaceInfo;
+use crate::utils::abort;
 
 
 
@@ -22,7 +23,7 @@ pub struct WifiModeController {
 impl WifiModeController {
 
     pub fn new(iface_name: &str) -> Self {
-        let if_index = get_iface_index(iface_name);
+        let if_index = IfaceInfo::get_iface_index(iface_name);
 
         let mut sock = NlSocketHandle::connect(Nlmsg::Noop, None, &[])
             .unwrap_or_else(|e| abort(&format!("Unable to connect to nl80211 socket: {:?}", e)));
