@@ -1,8 +1,9 @@
 use std::{net::Ipv4Addr, thread, time::Duration};
 use crate::arg_parser::{TunnelArgs, parse_mac};
 use crate::generators::RandValues;
+use crate::iface::IfaceInfo;
 use crate::pkt_kit::{PacketBuilder, Layer2RawSocket, Layer3RawSocket, PacketSniffer, PacketDissector};
-use crate::utils::{iface_ip, abort};
+use crate::utils::abort;
 
 
 
@@ -45,7 +46,7 @@ impl ProtocolTunneler {
 
 
     fn set_pkt_info(&mut self) -> PacketInfo {
-        let src_ip  = self.args.src_ip.unwrap_or_else(|| iface_ip(&self.args.iface));
+        let src_ip  = self.args.src_ip.unwrap_or_else(|| IfaceInfo::iface_ip(&self.args.iface));
         let src_mac = self.args.src_mac.unwrap_or_else(|| self.resolve_mac(src_ip));
         let dst_ip  = Ipv4Addr::new(8, 8, 8, 8);
         let dst_mac = self.resolve_mac(dst_ip);
@@ -55,7 +56,7 @@ impl ProtocolTunneler {
 
 
     fn resolve_mac(&mut self, target_ip: Ipv4Addr) -> [u8; 6] {
-        let my_ip = iface_ip(&self.args.iface);
+        let my_ip = IfaceInfo::iface_ip(&self.args.iface);
         let (mut sniffer, socket) = self.setup_tools(my_ip, target_ip);
         
         sniffer.start();

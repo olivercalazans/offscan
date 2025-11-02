@@ -1,8 +1,9 @@
 use std::{thread, time::Duration, mem, net::Ipv4Addr};
 use crate::arg_parser::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandValues};
+use crate::iface::IfaceInfo;
 use crate::pkt_kit::{PacketBuilder, PacketDissector, Layer3RawSocket, PacketSniffer};
-use crate::utils::{inline_display, get_host_name, iface_name_from_ip, iface_ip};
+use crate::utils::{inline_display, get_host_name};
 
 
 
@@ -36,9 +37,9 @@ pub struct PortScanner {
 impl PortScanner {
 
     pub fn new(args: PortScanArgs) -> Self {
-        let iface = iface_name_from_ip(args.target_ip.clone());
+        let iface = IfaceInfo::iface_name_from_ip(args.target_ip.clone());
         Self {
-            my_ip:       iface_ip(&iface),
+            my_ip:       IfaceInfo::iface_ip(&iface),
             rand:        RandValues::new(),
             raw_packets: Vec::new(),
             open_ports:  Vec::new(),

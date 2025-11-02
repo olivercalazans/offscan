@@ -1,8 +1,9 @@
 use std::{thread, time::Duration, collections::HashMap, mem, net::Ipv4Addr};
 use crate::arg_parser::NetMapArgs;
 use crate::generators::{Ipv4Iter, DelayIter, RandValues};
+use crate::iface::IfaceInfo;
 use crate::pkt_kit::{PacketBuilder, PacketDissector, Layer3RawSocket, PacketSniffer};
-use crate::utils::{abort, iface_network_cidr, inline_display, get_host_name, iface_ip};
+use crate::utils::{abort, inline_display, get_host_name};
 
 
 
@@ -37,7 +38,7 @@ impl NetworkMapper {
     pub fn new(args:NetMapArgs) -> Self {
         Self {
             active_ips:  HashMap::new(),
-            my_ip:       iface_ip(&args.iface),
+            my_ip:       IfaceInfo::iface_ip(&args.iface),
             raw_packets: Vec::new(),
             rand:        RandValues::new(),
             args,
@@ -82,14 +83,14 @@ impl NetworkMapper {
 
     fn get_bpf_filter(&self) -> String {
         format!("(dst host {} and src net {}) and (tcp or (icmp and icmp[0] = 0))",
-                self.my_ip, iface_network_cidr(&self.args.iface)
+                self.my_ip, IfaceInfo::iface_network_cidr(&self.args.iface)
         )
     }
 
 
 
     fn setup_iterators(&self) -> Iterators {
-        let cidr   = iface_network_cidr(&self.args.iface);
+        let cidr   = IfaceInfo::iface_network_cidr(&self.args.iface);
         let ips    = Ipv4Iter::new(&cidr, None);
         let len    = ips.total as usize;
         let delays = DelayIter::new(&self.args.delay, len);

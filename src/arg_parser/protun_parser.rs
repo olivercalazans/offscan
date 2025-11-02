@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 use clap::Parser;
 use crate::arg_parser::parse_mac;
-use crate::utils::default_iface_name;
+use crate::iface::IfaceInfo;
 
 
 #[derive(Parser)]
@@ -9,7 +9,7 @@ use crate::utils::default_iface_name;
 pub struct TunnelArgs {
 
     /// Define a network interface to send the probes
-    #[arg(short, long, default_value_t = default_iface_name())]
+    #[arg(short, long, default_value_t = IfaceInfo::default_iface_name())]
     pub iface: String,
 
 
