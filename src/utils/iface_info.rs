@@ -139,3 +139,20 @@ pub fn iface_network_cidr(iface_name: &str) -> String {
         abort(format!("Interface {} not found or missing IPv4/netmask", iface_name));
     }
 }
+
+
+
+pub fn get_iface_index(iface_name: &str) -> i32 {
+    unsafe {
+        let c_name = CString::new(iface_name).unwrap_or_else(|_| {
+            abort(&format!("Invalid interface name: {}", iface_name));
+        });
+
+        let ifindex = if_nametoindex(c_name.as_ptr()) as i32;
+        if ifindex == 0 {
+            abort(&format!("Interface not found: {}", iface_name));
+        }
+        
+        ifindex
+    }
+}
