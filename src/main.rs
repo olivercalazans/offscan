@@ -1,6 +1,7 @@
 pub mod arg_parser;
 pub mod engines;
 pub mod generators;
+pub mod iface;
 pub mod pkt_kit;
 pub mod utils;
 

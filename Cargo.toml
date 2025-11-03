@@ -14,7 +14,7 @@ strip = "symbols"
 
 [dependencies]
 libc = "0.2.177"
-neli = "0.7.1"
+nl80211-ng = "0.5.5"
 pcap = "2.3.0"
 rand = "0.8.5"
 clap = { version = "4.5", features = ["derive"] }

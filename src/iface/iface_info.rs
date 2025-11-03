@@ -1,10 +1,11 @@
 use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
-use std::ffi::CStr;
-use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in};
+use std::ffi::{CStr, CString};
+use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in, if_nametoindex};
 use crate::utils::abort;
 
 
-struct IfaceInfo;
+
+pub struct IfaceInfo;
 
 
 

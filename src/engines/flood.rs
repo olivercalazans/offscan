@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 use crate::arg_parser::FloodArgs;
 use crate::generators::{Ipv4Iter, RandValues};
-use crare::iface::IfaceInfo;
+use crate::iface::IfaceInfo;
 use crate::pkt_kit::{PacketBuilder, Layer2RawSocket};
 use crate::utils::inline_display;
 
