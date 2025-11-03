@@ -1,5 +1,5 @@
 use std::{thread, time::Duration};
-use crate::iface::{IfaceInfo, WifiModeController};
+use crate::iface::{IfaceInfo, InterfaceManager};
 use crate::pkt_kit::PacketSniffer;
 
 
@@ -11,15 +11,17 @@ pub struct AuthenticationFlooder;
 impl AuthenticationFlooder {
 
     pub fn execute() {
-        let mut sniffer = PacketSniffer::new(IfaceInfo::default_iface_name(), Self::get_bpf_filter(), false);
-        sniffer.start();
-        thread::sleep(Duration::from_secs(3));
-        sniffer.stop();
+        let iface = "wlp2s0".to_string();
+        InterfaceManager::enable_monitor_mode(&iface);
+        println!("iface down");
     }
 
 
+    
+
+
     fn get_bpf_filter() -> String {
-        "type mgt and subtype beacon".into()
+        "ether[0] & 1 = 1 and ether[1] = 0x50".into()
     }
 
 }

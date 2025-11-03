@@ -83,7 +83,7 @@ impl Command {
 
 
     fn execute_auth_flood(&self) {
-        let auth_flood = AuthenticationFlooder::execute();
+        AuthenticationFlooder::execute();
     }
 
 
