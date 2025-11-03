@@ -73,7 +73,7 @@ impl NetworkMapper {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            sniffer: PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter()),
+            sniffer: PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter(), false),
             builder: PacketBuilder::new(),
             socket:  Layer3RawSocket::new(&self.args.iface),
         }
@@ -82,9 +82,7 @@ impl NetworkMapper {
 
 
     fn get_bpf_filter(&self) -> String {
-        format!("(dst host {} and src net {}) and (tcp or (icmp and icmp[0] = 0))",
-                self.my_ip, IfaceInfo::iface_network_cidr(&self.args.iface)
-        )
+        format!("src net {} and (tcp or (icmp and icmp[0] = 0))", IfaceInfo::iface_network_cidr(&self.args.iface))
     }
 
 

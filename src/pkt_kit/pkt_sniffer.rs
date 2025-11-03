@@ -7,6 +7,7 @@ pub struct PacketSniffer {
     filter:      String,
     handle:      Option<thread::JoinHandle<()>>,
     iface:       String,
+    promisc:     bool,
     raw_packets: Arc<Mutex<Vec<Vec<u8>>>>,
     running:     Arc<AtomicBool>,
 }
@@ -15,10 +16,11 @@ pub struct PacketSniffer {
 
 impl PacketSniffer {
 
-    pub fn new(iface: String, filter: String) -> Self {
+    pub fn new(iface: String, filter: String, promisc: bool) -> Self {
         Self {
             filter,
             iface,
+            promisc,
             handle:      None,
             raw_packets: Arc::new(Mutex::new(Vec::with_capacity(256))),
             running:     Arc::new(AtomicBool::new(false)),
@@ -42,7 +44,7 @@ impl PacketSniffer {
 
     fn create_sniffer(&self) -> Capture<pcap::Active> {
         let dev     = self.get_default_iface();
-        let mut cap = PacketSniffer::open_capture(dev.clone());
+        let mut cap = self.open_capture(dev.clone());
         cap.filter(&self.filter, true).unwrap();
         
         let cap = cap.setnonblock().unwrap();
@@ -61,9 +63,9 @@ impl PacketSniffer {
 
 
 
-    fn open_capture(dev: Device) -> Capture<pcap::Active> {
+    fn open_capture(&self, dev: Device) -> Capture<pcap::Active> {
         Capture::from_device(dev).unwrap()
-            .promisc(true)
+            .promisc(self.promisc)
             .immediate_mode(true)
             .open()
             .unwrap()

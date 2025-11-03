@@ -75,7 +75,7 @@ impl PortScanner {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            sniffer: PacketSniffer::new(self.iface.clone(), self.get_bpf_filter()),
+            sniffer: PacketSniffer::new(self.iface.clone(), self.get_bpf_filter(), false),
             builder: PacketBuilder::new(),
             socket:  Layer3RawSocket::new(&self.iface),
         }
@@ -84,7 +84,7 @@ impl PortScanner {
 
 
     fn get_bpf_filter(&self) -> String {
-        format!("tcp[13] & 0x12 == 0x12 and dst host {} and src host {}", self.my_ip, self.args.target_ip)
+        format!("tcp[13] & 0x12 == 0x12 and src host {}", self.args.target_ip)
     }
 
 

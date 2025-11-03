@@ -56,11 +56,10 @@ impl ProtocolTunneler {
 
 
     fn resolve_mac(&mut self, target_ip: Ipv4Addr) -> [u8; 6] {
-        let my_ip = IfaceInfo::iface_ip(&self.args.iface);
-        let (mut sniffer, socket) = self.setup_tools(my_ip, target_ip);
+        let (mut sniffer, socket) = self.setup_tools(target_ip);
         
         sniffer.start();
-        self.send_icmp_probes(socket, my_ip, target_ip);
+        self.send_icmp_probes(socket, target_ip);
 
         thread::sleep(Duration::from_secs(3));
         sniffer.stop();
@@ -71,17 +70,19 @@ impl ProtocolTunneler {
 
 
 
-    fn setup_tools(&self, my_ip: Ipv4Addr, target_ip: Ipv4Addr) -> (PacketSniffer, Layer3RawSocket) {
-        let filter  = self.get_bpf_filter(my_ip, target_ip);
-        let sniffer = PacketSniffer::new(self.args.iface.clone(), filter);
+    fn setup_tools(&self, target_ip: Ipv4Addr) -> (PacketSniffer, Layer3RawSocket) {
+        let filter  = self.get_bpf_filter(target_ip);
+        let sniffer = PacketSniffer::new(self.args.iface.clone(), filter, false);
         let socket  = Layer3RawSocket::new(&self.args.iface);
         (sniffer, socket)
     }
 
 
 
-    fn send_icmp_probes(&mut self, socket: Layer3RawSocket, my_ip: Ipv4Addr, target_ip: Ipv4Addr) {
-        let pkt = self.pkt_builder.icmp_echo_req(my_ip, target_ip);
+    fn send_icmp_probes(&mut self, socket: Layer3RawSocket, target_ip: Ipv4Addr) {
+        let my_ip = IfaceInfo::iface_ip(&self.args.iface);
+        let pkt   = self.pkt_builder.icmp_echo_req(my_ip, target_ip);
+        
         socket.send_to(pkt, target_ip);
         thread::sleep(Duration::from_secs(1));
         socket.send_to(pkt, target_ip);
@@ -97,8 +98,8 @@ impl ProtocolTunneler {
 
 
 
-    fn get_bpf_filter(&self, my_ip: Ipv4Addr, target_ip: Ipv4Addr) -> String {
-        format!("dst host {} and src host {}", my_ip, target_ip)
+    fn get_bpf_filter(&self, target_ip: Ipv4Addr) -> String {
+        format!("src host {}", target_ip)
     }
 
 

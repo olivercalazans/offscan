@@ -59,6 +59,7 @@ impl Command {
         match self.command.as_str() {
             "-h"     => Self::display_commands(),
             "--help" => Self::display_commands(),
+            "auth"   => self.execute_auth_flood(),
             "flood"  => self.execute_flood(),
             "netmap" => self.execute_netmap(),
             "pscan"  => self.execute_pscan(),
@@ -71,11 +72,18 @@ impl Command {
     
     fn display_commands() {
         println!("\nAvailable commands:");
+        println!("\tauth   -> Authentication Flooding");
         println!("\tflood  -> Packet Flooding");
         println!("\tnetmap -> Network Mapping");
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
         println!("");
+    }
+
+
+
+    fn execute_auth_flood(&self) {
+        let auth_flood = AuthenticationFlooder::execute();
     }
 
 
