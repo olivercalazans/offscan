@@ -1,8 +1,11 @@
 pub mod arg_parser;
+pub mod dissectors;
 pub mod engines;
 pub mod generators;
 pub mod iface;
-pub mod pkt_kit;
+pub mod pkt_builder;
+pub mod sniffer;
+pub mod sockets;
 pub mod utils;
 
 use std::env;

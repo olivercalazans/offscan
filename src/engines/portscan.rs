@@ -2,7 +2,10 @@ use std::{thread, time::Duration, mem, net::Ipv4Addr};
 use crate::arg_parser::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandValues};
 use crate::iface::IfaceInfo;
-use crate::pkt_kit::{PacketBuilder, PacketDissector, Layer3RawSocket, PacketSniffer};
+use crate::pkt_builder::PacketBuilder;
+use crate::sniffer::PacketSniffer;
+use crate::sockets::Layer3RawSocket;
+use crate::dissectors::PacketDissector;
 use crate::utils::{inline_display, get_host_name};
 
 
@@ -75,7 +78,7 @@ impl PortScanner {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            sniffer: PacketSniffer::new(self.iface.clone(), self.get_bpf_filter(), false),
+            sniffer: PacketSniffer::new(self.iface.clone(), self.get_bpf_filter()),
             builder: PacketBuilder::new(),
             socket:  Layer3RawSocket::new(&self.iface),
         }

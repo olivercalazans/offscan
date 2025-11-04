@@ -2,7 +2,10 @@ use std::{net::Ipv4Addr, thread, time::Duration};
 use crate::arg_parser::{TunnelArgs, parse_mac};
 use crate::generators::RandValues;
 use crate::iface::IfaceInfo;
-use crate::pkt_kit::{PacketBuilder, Layer2RawSocket, Layer3RawSocket, PacketSniffer, PacketDissector};
+use crate::pkt_builder::PacketBuilder;
+use crate::sniffer::PacketSniffer;
+use crate::sockets::{Layer2RawSocket, Layer3RawSocket};
+use crate::dissectors::PacketDissector;
 use crate::utils::abort;
 
 
@@ -72,7 +75,7 @@ impl ProtocolTunneler {
 
     fn setup_tools(&self, target_ip: Ipv4Addr) -> (PacketSniffer, Layer3RawSocket) {
         let filter  = self.get_bpf_filter(target_ip);
-        let sniffer = PacketSniffer::new(self.args.iface.clone(), filter, false);
+        let sniffer = PacketSniffer::new(self.args.iface.clone(), filter);
         let socket  = Layer3RawSocket::new(&self.args.iface);
         (sniffer, socket)
     }

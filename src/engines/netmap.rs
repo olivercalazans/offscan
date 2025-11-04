@@ -2,7 +2,10 @@ use std::{thread, time::Duration, collections::HashMap, mem, net::Ipv4Addr};
 use crate::arg_parser::NetMapArgs;
 use crate::generators::{Ipv4Iter, DelayIter, RandValues};
 use crate::iface::IfaceInfo;
-use crate::pkt_kit::{PacketBuilder, PacketDissector, Layer3RawSocket, PacketSniffer};
+use crate::pkt_builder::PacketBuilder;
+use crate::sniffer::PacketSniffer;
+use crate::sockets::Layer3RawSocket;
+use crate::dissectors::PacketDissector;
 use crate::utils::{abort, inline_display, get_host_name};
 
 
@@ -73,7 +76,7 @@ impl NetworkMapper {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            sniffer: PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter(), false),
+            sniffer: PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter()),
             builder: PacketBuilder::new(),
             socket:  Layer3RawSocket::new(&self.args.iface),
         }
