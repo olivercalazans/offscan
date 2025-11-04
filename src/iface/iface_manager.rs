@@ -1,5 +1,8 @@
-use std::{ffi::CString, io, os::unix::io::RawFd, process::Command, mem, format};
-use libc;
+use std::{
+    ffi::CString, io::Error, os::unix::io::RawFd, process::Command,
+    mem, format, ptr::copy_nonoverlapping
+};
+use libc::{AF_INET, SOCK_DGRAM, socket, ifreq, ioctl, close, SIOCGIFFLAGS, SIOCSIFFLAGS, IFF_UP};
 use crate::utils::abort;
 
 
@@ -12,9 +15,9 @@ impl InterfaceManager {
 
     fn create_socket() -> RawFd {
         unsafe {
-            let sock = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, 0);
+            let sock = socket(AF_INET, SOCK_DGRAM, 0);
             if sock < 0 {
-                abort(&format!("Failed to create socket: {}", io::Error::last_os_error()));
+                abort(&format!("Failed to create socket: {}", Error::last_os_error()));
             }
             sock
         }
@@ -27,36 +30,36 @@ impl InterfaceManager {
             abort(&format!("Invalid interface name '{}': {}", iface_name, e));
         });
 
-        let mut ifr: libc::ifreq = unsafe { mem::zeroed() };
+        let mut ifr: ifreq = unsafe { mem::zeroed() };
         
         unsafe {
-            std::ptr::copy_nonoverlapping(
+            copy_nonoverlapping(
                 c_interface.as_ptr(),
                 ifr.ifr_name.as_mut_ptr(),
                 iface_name.len().min(ifr.ifr_name.len() - 1)
             );
         }
 
-        if unsafe { libc::ioctl(sock, libc::SIOCGIFFLAGS, &mut ifr) } < 0 {
-            unsafe { libc::close(sock) };
-            abort(&format!("Failed to get flags for interface '{}': {}", iface_name, io::Error::last_os_error()));
+        if unsafe { ioctl(sock, SIOCGIFFLAGS, &mut ifr) } < 0 {
+            unsafe { close(sock) };
+            abort(&format!("Failed to get flags for interface '{}': {}", iface_name, Error::last_os_error()));
         }
 
         unsafe {
             let current_flags = ifr.ifr_ifru.ifru_flags;
             if up {
-                ifr.ifr_ifru.ifru_flags = current_flags | (libc::IFF_UP as i16);
+                ifr.ifr_ifru.ifru_flags = current_flags | (IFF_UP as i16);
             } else {
-                ifr.ifr_ifru.ifru_flags = current_flags & !(libc::IFF_UP as i16);
+                ifr.ifr_ifru.ifru_flags = current_flags & !(IFF_UP as i16);
             }
         }
 
-        if unsafe { libc::ioctl(sock, libc::SIOCSIFFLAGS, &mut ifr) } < 0 {
-            unsafe { libc::close(sock) };
-            abort(&format!("Failed to set flags for interface '{}': {}", iface_name, io::Error::last_os_error()));
+        if unsafe { ioctl(sock, SIOCSIFFLAGS, &mut ifr) } < 0 {
+            unsafe { close(sock) };
+            abort(&format!("Failed to set flags for interface '{}': {}", iface_name, Error::last_os_error()));
         }
 
-        unsafe { libc::close(sock) };
+        unsafe { close(sock) };
     }
 
 
