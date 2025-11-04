@@ -1,10 +1,13 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::{PacketBuffer, HeaderBuilder};
+use crate::pkt_builder::HeaderBuilder;
 
 
 
 pub struct PacketBuilder {
-    pkt_buf: PacketBuffer,
+    packet: [u8; 69],
+    layer4: [u8; 20],
+    ip:     [u8; 20],
+    ether:  [u8; 14],
 }
 
 
@@ -12,7 +15,12 @@ pub struct PacketBuilder {
 impl PacketBuilder {
 
     pub fn new() -> Self {
-        Self { pkt_buf: PacketBuffer::default() }
+        Self {
+            packet: [0; 69],
+            layer4: [0; 20],
+            ip:     [0; 20],
+            ether:  [0; 14],
+        }
     }
 
 
@@ -32,15 +40,15 @@ impl PacketBuilder {
         let mut tcp_buffer = [0u8; 27];        
 
         HeaderBuilder::tcp(&mut tcp_buffer, src_ip, src_tcp_port, dst_ip, dst_tcp_port);
-        HeaderBuilder::udp(&mut self.pkt_buf.layer4, src_ip, src_udp_port, dst_ip, dst_udp_port, 0);
-        HeaderBuilder::ip(&mut self.pkt_buf.ip, 40, 17, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.pkt_buf.ether, src_mac, dst_mac);
+        HeaderBuilder::udp(&mut self.layer4, src_ip, src_udp_port, dst_ip, dst_udp_port, 0);
+        HeaderBuilder::ip(&mut self.ip, 40, 17, src_ip, dst_ip);
+        HeaderBuilder::ether(&mut self.ether, src_mac, dst_mac);
 
-        self.pkt_buf.packet[..14].copy_from_slice(&self.pkt_buf.ether);
-        self.pkt_buf.packet[14..34].copy_from_slice(&self.pkt_buf.ip);
-        self.pkt_buf.packet[34..42].copy_from_slice(&self.pkt_buf.layer4[..8]);
-        self.pkt_buf.packet[42..].copy_from_slice(&tcp_buffer);
-        &self.pkt_buf.packet
+        self.packet[..14].copy_from_slice(&self.ether);
+        self.packet[14..34].copy_from_slice(&self.ip);
+        self.packet[34..42].copy_from_slice(&self.layer4[..8]);
+        self.packet[42..].copy_from_slice(&tcp_buffer);
+        &self.packet
     }
 
 
@@ -55,14 +63,14 @@ impl PacketBuilder {
         dst_port: u16,
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.pkt_buf.layer4, src_ip, src_port, dst_ip, dst_port);
-        HeaderBuilder::ip(&mut self.pkt_buf.ip, 40, 6, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.pkt_buf.ether, src_mac, dst_mac);
+        HeaderBuilder::tcp(&mut self.layer4, src_ip, src_port, dst_ip, dst_port);
+        HeaderBuilder::ip(&mut self.ip, 40, 6, src_ip, dst_ip);
+        HeaderBuilder::ether(&mut self.ether, src_mac, dst_mac);
         
-        self.pkt_buf.packet[..14].copy_from_slice(&self.pkt_buf.ether);
-        self.pkt_buf.packet[14..34].copy_from_slice(&self.pkt_buf.ip);
-        self.pkt_buf.packet[34..54].copy_from_slice(&self.pkt_buf.layer4);
-        &self.pkt_buf.packet[..54]
+        self.packet[..14].copy_from_slice(&self.ether);
+        self.packet[14..34].copy_from_slice(&self.ip);
+        self.packet[34..54].copy_from_slice(&self.layer4);
+        &self.packet[..54]
     }
 
 
@@ -77,14 +85,14 @@ impl PacketBuilder {
         dst_port: u16,
         ) -> &[u8]
     {
-        HeaderBuilder::udp(&mut self.pkt_buf.layer4, src_ip, src_port, dst_ip, dst_port, 0);
-        HeaderBuilder::ip(&mut self.pkt_buf.ip, 28, 17, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.pkt_buf.ether, src_mac, dst_mac);
+        HeaderBuilder::udp(&mut self.layer4, src_ip, src_port, dst_ip, dst_port, 0);
+        HeaderBuilder::ip(&mut self.ip, 28, 17, src_ip, dst_ip);
+        HeaderBuilder::ether(&mut self.ether, src_mac, dst_mac);
 
-        self.pkt_buf.packet[..14].copy_from_slice(&self.pkt_buf.ether);
-        self.pkt_buf.packet[14..34].copy_from_slice(&self.pkt_buf.ip);
-        self.pkt_buf.packet[34..42].copy_from_slice(&self.pkt_buf.layer4[..8]);
-        &self.pkt_buf.packet[..42]
+        self.packet[..14].copy_from_slice(&self.ether);
+        self.packet[14..34].copy_from_slice(&self.ip);
+        self.packet[34..42].copy_from_slice(&self.layer4[..8]);
+        &self.packet[..42]
     }
 
 
@@ -97,12 +105,12 @@ impl PacketBuilder {
         dst_port: u16,
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.pkt_buf.layer4, src_ip, src_port, dst_ip, dst_port);
-        HeaderBuilder::ip(&mut self.pkt_buf.ip, 40, 6, src_ip, dst_ip);
+        HeaderBuilder::tcp(&mut self.layer4, src_ip, src_port, dst_ip, dst_port);
+        HeaderBuilder::ip(&mut self.ip, 40, 6, src_ip, dst_ip);
         
-        self.pkt_buf.packet[..20].copy_from_slice(&self.pkt_buf.ip);
-        self.pkt_buf.packet[20..40].copy_from_slice(&self.pkt_buf.layer4);
-        &self.pkt_buf.packet[..40]
+        self.packet[..20].copy_from_slice(&self.ip);
+        self.packet[20..40].copy_from_slice(&self.layer4);
+        &self.packet[..40]
     }
 
 
@@ -115,12 +123,12 @@ impl PacketBuilder {
         dst_port: u16,
         ) -> &[u8]
     {
-        HeaderBuilder::udp(&mut self.pkt_buf.layer4, src_ip, src_port, dst_ip, dst_port, 0);
-        HeaderBuilder::ip(&mut self.pkt_buf.ip, 28, 17, src_ip, dst_ip);
+        HeaderBuilder::udp(&mut self.layer4, src_ip, src_port, dst_ip, dst_port, 0);
+        HeaderBuilder::ip(&mut self.ip, 28, 17, src_ip, dst_ip);
 
-        self.pkt_buf.packet[..20].copy_from_slice(&self.pkt_buf.ip);
-        self.pkt_buf.packet[20..28].copy_from_slice(&self.pkt_buf.layer4[..8]);
-        &self.pkt_buf.packet[..28]
+        self.packet[..20].copy_from_slice(&self.ip);
+        self.packet[20..28].copy_from_slice(&self.layer4[..8]);
+        &self.packet[..28]
     }
 
 
@@ -131,12 +139,12 @@ impl PacketBuilder {
         dst_ip: Ipv4Addr,
         ) -> &[u8]
     {
-        HeaderBuilder::icmp(&mut self.pkt_buf.layer4);
-        HeaderBuilder::ip(&mut self.pkt_buf.ip, 28, 1, src_ip, dst_ip);
+        HeaderBuilder::icmp(&mut self.layer4);
+        HeaderBuilder::ip(&mut self.ip, 28, 1, src_ip, dst_ip);
 
-        self.pkt_buf.packet[..20].copy_from_slice(&self.pkt_buf.ip);
-        self.pkt_buf.packet[20..28].copy_from_slice(&self.pkt_buf.layer4[..8]);
-        &self.pkt_buf.packet[..28]
+        self.packet[..20].copy_from_slice(&self.ip);
+        self.packet[20..28].copy_from_slice(&self.layer4[..8]);
+        &self.packet[..28]
     }
 
 
@@ -147,12 +155,12 @@ impl PacketBuilder {
         dst_mac: [u8; 6]
         ) -> &[u8]
     {
-        HeaderBuilder::auth_802_11(&mut self.pkt_buf.packet, src_mac, dst_mac);
+        HeaderBuilder::auth_802_11(&mut self.packet, src_mac, dst_mac);
 
-        self.pkt_buf.packet[24..26].copy_from_slice(&0u16.to_le_bytes());
-        self.pkt_buf.packet[26..28].copy_from_slice(&1u16.to_le_bytes());
-        self.pkt_buf.packet[28..30].copy_from_slice(&0u16.to_le_bytes());
-        &self.pkt_buf.packet[..30]
+        self.packet[24..26].copy_from_slice(&0u16.to_le_bytes());
+        self.packet[26..28].copy_from_slice(&1u16.to_le_bytes());
+        self.packet[28..30].copy_from_slice(&0u16.to_le_bytes());
+        &self.packet[..30]
     }
 
 }

@@ -1,5 +1,6 @@
 use std::{thread, time::Duration};
-use crate::iface::{IfaceInfo, InterfaceManager};
+use crate::dissectors::BeaconDissector;
+use crate::iface::InterfaceManager;
 use crate::sniffer::PacketSniffer;
 
 
@@ -17,11 +18,18 @@ impl AuthenticationFlooder {
         let mut sniffer = PacketSniffer::new(iface.clone(), Self::get_bpf_filter());
         
         sniffer.start();
-        thread::sleep(Duration::from_secs(3));
+        println!("sniffer started");
+        thread::sleep(Duration::from_secs(5));
         sniffer.stop();
+        println!("sniffer stoped");
+        let packets = sniffer.get_packets();
+
+        for p in packets {
+            if let Some(info) = BeaconDissector::parse_beacon(&p) {
+                println!("{:?}", info);
+            }
+        }
     }
-
-
     
 
 
