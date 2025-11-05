@@ -22,7 +22,7 @@ impl BeaconDissector {
         let ssid    = Self::get_ssid(frame);
         let channel = Self::get_channel(frame);
 
-        Some(vec![bssid, ssid, channel.to_string()])
+        Some(vec![ssid, bssid, channel.to_string()])
     }
 
 
@@ -164,10 +164,13 @@ impl BeaconDissector {
                         return "<hidden>".to_string();
                     }
                     
-                    match String::from_utf8(ssid_bytes.to_vec()) {
-                        Ok(ssid) if !ssid.trim().is_empty() => return ssid,
-                        _ => return String::from_utf8_lossy(ssid_bytes).to_string(),
+                    if let Ok(ssid) = String::from_utf8(ssid_bytes.to_vec()) {
+                        if !ssid.trim().is_empty() {
+                            return ssid;
+                        }
                     }
+                    
+                    return Self::format_ssid_bytes(ssid_bytes);
                 }
             }
 
@@ -178,6 +181,29 @@ impl BeaconDissector {
         }
 
         "<hidden>".to_string()
+    }
+
+
+
+    fn format_ssid_bytes(ssid_bytes: &[u8]) -> String {
+        let is_printable = ssid_bytes.iter().all(|&b| b >= 32 && b <= 126);
+        
+        if is_printable {
+            return String::from_utf8_lossy(ssid_bytes).to_string();
+        }
+        
+        let display_len      = std::cmp::min(8, ssid_bytes.len());
+        let hex_part: String = ssid_bytes[..display_len]
+            .iter()
+            .map(|b| format!("{:02X}", b))
+            .collect::<Vec<String>>()
+            .join("");
+            
+        if ssid_bytes.len() > display_len {
+            return format!("{}...", hex_part);
+        } 
+        
+        hex_part
     }
 
 
@@ -208,5 +234,5 @@ impl BeaconDissector {
 
         0
     }
-    
+
 }

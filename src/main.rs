@@ -8,6 +8,7 @@ pub mod sniffer;
 pub mod sockets;
 pub mod utils;
 
+
 use std::env;
 use clap::Parser;
 use crate::arg_parser::*;
@@ -67,6 +68,7 @@ impl Command {
             "netmap" => self.execute_netmap(),
             "pscan"  => self.execute_pscan(),
             "protun" => self.execute_protun(),
+            "wmap"   => self.execute_wmap(),
             _        => abort(format!("No command '{}'", self.command)),
         }
     }
@@ -80,6 +82,7 @@ impl Command {
         println!("\tnetmap -> Network Mapping");
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
+        println!("\twmap   -> Wifi Mapping");
         println!("");
     }
 
@@ -119,6 +122,12 @@ impl Command {
         let cmd_args   = TunnelArgs::parse_from(self.arguments.clone());
         let mut tunnel = ProtocolTunneler::new(cmd_args);
         tunnel.execute();
+    }
+
+
+    fn execute_wmap(&self) {
+        let mut wmap = WifiMapper::new();
+        wmap.execute();
     }
 
 }

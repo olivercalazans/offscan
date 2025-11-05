@@ -12,3 +12,6 @@ pub use portscan::PortScanner;
 
 pub mod tunneling;
 pub use tunneling::ProtocolTunneler;
+
+pub mod wifi_map;
+pub use wifi_map::WifiMapper;
