@@ -16,6 +16,7 @@ pub struct UdpPayloads {
 
 
 impl UdpPayloads {
+
     pub fn new() -> Self {
         let mut payloads = HashMap::new();
         
@@ -117,6 +118,26 @@ impl UdpPayloads {
         self.payloads.get(&port).unwrap_or_else(|| {
             self.payloads.get(&0).expect("Empty payload should exist")
         })
+    }
+
+
+
+    pub fn len(&self) -> usize {
+        self.payloads.len() - 1
+    }
+
+
+
+    pub fn get(&self, port: u16) -> Option<&UdpPayload> {
+        self.payloads.get(&port)
+    }
+
+
+
+    pub fn iter(&self) -> impl Iterator<Item = (u16, &UdpPayload)> + '_ {
+        self.payloads.iter()
+            .filter(|&(&port, _)| port != 0)
+            .map(|(&port, payload)| (port, payload))
     }
 
 }

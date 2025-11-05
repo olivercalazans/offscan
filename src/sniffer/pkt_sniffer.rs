@@ -63,7 +63,7 @@ impl PacketSniffer {
 
     fn open_capture(&self, dev: Device) -> Capture<pcap::Active> {
         Capture::from_device(dev).unwrap()
-            .promisc(true)
+            .promisc(false)
             .immediate_mode(true)
             .open()
             .unwrap()
