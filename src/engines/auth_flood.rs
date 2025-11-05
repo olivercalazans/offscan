@@ -25,9 +25,8 @@ impl AuthenticationFlooder {
         let packets = sniffer.get_packets();
 
         for p in packets {
-            if let Some(info) = BeaconDissector::parse_beacon(&p) {
-                println!("{:?}", info);
-            }
+            let info = BeaconDissector::parse_beacon(&p);
+            println!("{:?}", info);
         }
     }
     
