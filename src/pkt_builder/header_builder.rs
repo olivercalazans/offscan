@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use crate::pkt_kit::checksum::*;
+use crate::pkt_builder::checksum::*;
 
 
 
@@ -100,6 +100,27 @@ impl HeaderBuilder {
         buffer[0..6].copy_from_slice(&dst_mac);
         buffer[6..12].copy_from_slice(&src_mac);
         buffer[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
+    }
+
+
+
+    pub fn auth_802_11(
+        buffer:  &mut [u8],
+        src_mac: [u8; 6],
+        dst_mac: [u8; 6],
+    ) {
+        let frame_control: u16 = (0u16)
+            | (0u16  << 2)
+            | (11u16 << 4)
+            | (1u16  << 8)
+            | (0u16  << 9);
+        
+        buffer[..2].copy_from_slice(&frame_control.to_le_bytes());        
+        buffer[2..4].copy_from_slice(&0u16.to_le_bytes());        
+        buffer[4..10].copy_from_slice(&dst_mac);
+        buffer[10..16].copy_from_slice(&src_mac);
+        buffer[16..22].copy_from_slice(&dst_mac);
+        buffer[22..24].copy_from_slice(&0u16.to_le_bytes());
     }
 
 }

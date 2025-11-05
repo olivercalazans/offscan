@@ -1,5 +1,5 @@
 use clap::Parser;
-use crate::utils::default_iface_name;
+use crate::iface::IfaceInfo;
 
 
 #[derive(Parser)]
@@ -14,7 +14,7 @@ pub struct NetMapArgs {
 
 
     /// Define a network interface to send the packets
-    #[arg(short, long, default_value_t = default_iface_name())]
+    #[arg(short, long, default_value_t = IfaceInfo::default_iface_name())]
     pub iface: String,
 
 

@@ -1,8 +1,6 @@
-use std::{ffi::CString, mem};
-use libc::{
-    socket, sendto, close, sockaddr_ll, htons,
-    AF_PACKET, SOCK_RAW, ETH_P_ALL, if_nametoindex,
-};
+use std::mem;
+use libc::{socket, sendto, close, sockaddr_ll, htons, AF_PACKET, SOCK_RAW, ETH_P_ALL};
+use crate::iface::IfaceInfo;
 use crate::utils::abort;
 
 
@@ -17,28 +15,11 @@ pub struct Layer2RawSocket {
 impl Layer2RawSocket {
 
     pub fn new(iface_name: &str) -> Self {
-        let ifindex   = Self::get_iface_index(iface_name);
+        let ifindex   = IfaceInfo::get_iface_index(iface_name);
         let file_desc = Self::create_socket();
         let addr      = Self::build_sockaddr(ifindex);
 
         Self { file_desc, addr }
-    }
-
-
-
-    fn get_iface_index(iface_name: &str) -> i32 {
-        unsafe {
-            let c_name = CString::new(iface_name).unwrap_or_else(|_| {
-                abort(&format!("Invalid interface name: {}", iface_name));
-            });
-
-            let ifindex = if_nametoindex(c_name.as_ptr()) as i32;
-            if ifindex == 0 {
-                abort(&format!("Interface not found: {}", iface_name));
-            }
-
-            ifindex
-        }
     }
 
 

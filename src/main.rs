@@ -1,8 +1,13 @@
 pub mod arg_parser;
+pub mod dissectors;
 pub mod engines;
 pub mod generators;
-pub mod pkt_kit;
+pub mod iface;
+pub mod pkt_builder;
+pub mod sniffer;
+pub mod sockets;
 pub mod utils;
+
 
 use std::env;
 use clap::Parser;
@@ -58,10 +63,12 @@ impl Command {
         match self.command.as_str() {
             "-h"     => Self::display_commands(),
             "--help" => Self::display_commands(),
+            "auth"   => self.execute_auth_flood(),
             "flood"  => self.execute_flood(),
             "netmap" => self.execute_netmap(),
             "pscan"  => self.execute_pscan(),
             "protun" => self.execute_protun(),
+            "wmap"   => self.execute_wmap(),
             _        => abort(format!("No command '{}'", self.command)),
         }
     }
@@ -70,11 +77,19 @@ impl Command {
     
     fn display_commands() {
         println!("\nAvailable commands:");
+        println!("\tauth   -> Authentication Flooding");
         println!("\tflood  -> Packet Flooding");
         println!("\tnetmap -> Network Mapping");
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
+        println!("\twmap   -> Wifi Mapping");
         println!("");
+    }
+
+
+
+    fn execute_auth_flood(&self) {
+        AuthenticationFlooder::execute();
     }
 
 
@@ -107,6 +122,12 @@ impl Command {
         let cmd_args   = TunnelArgs::parse_from(self.arguments.clone());
         let mut tunnel = ProtocolTunneler::new(cmd_args);
         tunnel.execute();
+    }
+
+
+    fn execute_wmap(&self) {
+        let mut wmap = WifiMapper::new();
+        wmap.execute();
     }
 
 }

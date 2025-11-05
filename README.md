@@ -8,6 +8,7 @@
 - **Port Scanning**
 - **Packet Flooding**
 - **Protocol Tunneling test**
+- **Wifi Mapping**
 
 <br>
 
@@ -23,7 +24,7 @@ You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/o
 > [!IMPORTANT]
 > In addition to Cargo-managed crates, this project requires some **system-level dependencies**:
 >
-> - `libpcap` — required for network packet capture  
+> - `libpcap-dev` — required for network packet capture  
 > - A C compiler and linker (e.g. `gcc` or `clang`) — required to build and link Rust binaries  
 >
 > Make sure these are installed before building.
