@@ -3,7 +3,28 @@ pub struct PacketDissector;
 
 impl PacketDissector {
 
-    pub fn get_src_tcp_port(packet: &[u8]) -> String {
+    pub fn get_udp_src_port(packet: &[u8]) -> String {
+        if packet.len() < 42 {
+            return "small packet".into();
+        }
+
+        let ethertype = u16::from_be_bytes([packet[12], packet[13]]);
+        if ethertype != 0x0800 {
+            return "not ipv4".into();
+        }
+
+        let ip_protocol = packet[23];
+        if ip_protocol != 17 {
+            return "not udp".into();
+        }
+
+        let source_port = u16::from_be_bytes([packet[34], packet[35]]);
+        source_port.to_string()
+    }
+
+
+
+    pub fn get_tcp_src_port(packet: &[u8]) -> String {
         if packet.len() < 38 {
             return "small packet".into();
         }

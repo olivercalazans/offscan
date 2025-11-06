@@ -4,8 +4,8 @@ use crate::pkt_builder::HeaderBuilder;
 
 
 pub struct PacketBuilder {
-    packet: [u8; 69],
-    layer4: [u8; 20],
+    packet: [u8; 125],
+    layer4: [u8; 64],
     ip:     [u8; 20],
     ether:  [u8; 14],
 }
@@ -16,8 +16,8 @@ impl PacketBuilder {
 
     pub fn new() -> Self {
         Self {
-            packet: [0; 69],
-            layer4: [0; 20],
+            packet: [0; 125],
+            layer4: [0; 64],
             ip:     [0; 20],
             ether:  [0; 14],
         }
@@ -47,8 +47,8 @@ impl PacketBuilder {
         self.packet[..14].copy_from_slice(&self.ether);
         self.packet[14..34].copy_from_slice(&self.ip);
         self.packet[34..42].copy_from_slice(&self.layer4[..8]);
-        self.packet[42..].copy_from_slice(&tcp_buffer);
-        &self.packet
+        self.packet[42..69].copy_from_slice(&tcp_buffer);
+        &self.packet[..69]
     }
 
 
@@ -69,7 +69,7 @@ impl PacketBuilder {
         
         self.packet[..14].copy_from_slice(&self.ether);
         self.packet[14..34].copy_from_slice(&self.ip);
-        self.packet[34..54].copy_from_slice(&self.layer4);
+        self.packet[34..54].copy_from_slice(&self.layer4[..20]);
         &self.packet[..54]
     }
 
@@ -109,7 +109,7 @@ impl PacketBuilder {
         HeaderBuilder::ip(&mut self.ip, 40, 6, src_ip, dst_ip);
         
         self.packet[..20].copy_from_slice(&self.ip);
-        self.packet[20..40].copy_from_slice(&self.layer4);
+        self.packet[20..40].copy_from_slice(&self.layer4[..20]);
         &self.packet[..40]
     }
 
@@ -121,14 +121,21 @@ impl PacketBuilder {
         src_port: u16,
         dst_ip:   Ipv4Addr,
         dst_port: u16,
+        payload:  Vec<u8>
         ) -> &[u8]
     {
-        HeaderBuilder::udp(&mut self.layer4, src_ip, src_port, dst_ip, dst_port, 0);
-        HeaderBuilder::ip(&mut self.ip, 28, 17, src_ip, dst_ip);
+        let len_payload: usize = payload.len().try_into().unwrap();
+        let len_udp: usize     = 8 + len_payload;
+        let len_pkt: usize     = 20 + len_udp;
+        
+        self.layer4[8..len_udp].copy_from_slice(&payload);
+
+        HeaderBuilder::udp(&mut self.layer4, src_ip, src_port, dst_ip, dst_port, len_payload as u16);
+        HeaderBuilder::ip(&mut self.ip, len_pkt as u16, 17, src_ip, dst_ip);
 
         self.packet[..20].copy_from_slice(&self.ip);
-        self.packet[20..28].copy_from_slice(&self.layer4[..8]);
-        &self.packet[..28]
+        self.packet[20..len_pkt].copy_from_slice(&self.layer4[..len_udp]);
+        &self.packet[..len_pkt]
     }
 
 

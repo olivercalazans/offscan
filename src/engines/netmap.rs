@@ -85,7 +85,10 @@ impl NetworkMapper {
 
 
     fn get_bpf_filter(&self) -> String {
-        format!("src net {} and (tcp or (icmp and icmp[0] = 0))", IfaceInfo::iface_network_cidr(&self.args.iface))
+        format!(
+            "(dst host {} and src net {}) and (tcp or (icmp and icmp[0] = 0))",
+            self.my_ip, IfaceInfo::iface_network_cidr(&self.args.iface)
+        )
     }
 
 

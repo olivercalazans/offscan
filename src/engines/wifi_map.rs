@@ -95,7 +95,7 @@ impl WifiMapper {
 
     fn display_results(&mut self) {
         let max_len = self.wifis.keys().map(String::len).max().unwrap_or(4);
-        let wifis = mem::take(&mut self.wifis);
+        let wifis   = mem::take(&mut self.wifis);
 
         Self::display_header(max_len);
         
@@ -107,8 +107,8 @@ impl WifiMapper {
 
 
     fn display_header(max_len: usize) {
-        println!("{:<width$}  {:<15}  {}", "SSID", "MAC", "Channel", width = max_len);
-        println!("{}", "─".repeat(max_len + 15 + 10));
+        println!("\n{:<width$}  {:<17}  {}", "SSID", "MAC", "Channel", width = max_len);
+        println!("{}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7));
     }
 
 
@@ -116,14 +116,14 @@ impl WifiMapper {
     fn display_wifi_info(name: &str, info: &Info, max_len: usize) {
         let macs: Vec<&String> = info.macs.iter().collect();
         
-        println!("{:<width$}  {:<15}  {}",
+        println!("{:<width$}  {}  {}",
                  name, 
                  macs.first().unwrap_or(&&"N/A".to_string()), 
                  info.channel,
                  width = max_len);
         
         for mac in macs.iter().skip(1) {
-            println!("{:<width$}  {:<15}",
+            println!("{:<width$}  {}",
                      "",
                      mac,
                      width = max_len);
