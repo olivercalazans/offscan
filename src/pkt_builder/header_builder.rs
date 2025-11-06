@@ -26,7 +26,7 @@ impl HeaderBuilder {
         buffer[16..18].copy_from_slice(&0u16.to_be_bytes());
         buffer[18..20].copy_from_slice(&0u16.to_be_bytes());
 
-        let cksum = tcp_udp_checksum(&buffer, &src_ip, &dst_ip, 6);
+        let cksum = tcp_udp_checksum(&buffer[..20], &src_ip, &dst_ip, 6);
         buffer[16..18].copy_from_slice(&cksum.to_be_bytes());
     }
 

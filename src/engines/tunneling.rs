@@ -59,7 +59,8 @@ impl ProtocolTunneler {
 
 
     fn resolve_mac(&mut self, target_ip: Ipv4Addr) -> [u8; 6] {
-        let (mut sniffer, socket) = self.setup_tools(target_ip);
+        let my_ip = IfaceInfo::iface_ip(&self.args.iface);
+        let (mut sniffer, socket) = self.setup_tools(my_ip, target_ip);
         
         sniffer.start();
         self.send_icmp_probes(socket, target_ip);
@@ -73,11 +74,17 @@ impl ProtocolTunneler {
 
 
 
-    fn setup_tools(&self, target_ip: Ipv4Addr) -> (PacketSniffer, Layer3RawSocket) {
-        let filter  = self.get_bpf_filter(target_ip);
+    fn setup_tools(&self, my_ip: Ipv4Addr, target_ip: Ipv4Addr) -> (PacketSniffer, Layer3RawSocket) {
+        let filter  = self.get_bpf_filter(my_ip, target_ip);
         let sniffer = PacketSniffer::new(self.args.iface.clone(), filter);
         let socket  = Layer3RawSocket::new(&self.args.iface);
         (sniffer, socket)
+    }
+
+
+
+    fn get_bpf_filter(&self, my_ip: Ipv4Addr, target_ip: Ipv4Addr) -> String {
+        format!("dst host {} and src host {}", my_ip, target_ip)
     }
 
 
@@ -97,12 +104,6 @@ impl ProtocolTunneler {
         if packets.len() < 1 { abort("Impossible to resolve MAC. try again or set a MAC address")}
         let mac = PacketDissector::get_src_mac(&packets[0]);
         parse_mac(&mac).unwrap()
-    }
-
-
-
-    fn get_bpf_filter(&self, target_ip: Ipv4Addr) -> String {
-        format!("src host {}", target_ip)
     }
 
 

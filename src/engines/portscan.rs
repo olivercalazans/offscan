@@ -226,10 +226,16 @@ impl PortScanner {
 
     fn get_bpf_filter(&self) -> String {
         if self.args.udp {
-            return format!("udp and src host {}", self.args.target_ip);
+            return format!(
+                "udp and dst host {} and src host {}",
+                self.my_ip, self.args.target_ip
+            );
         }
 
-        format!("tcp[13] & 0x12 == 0x12 and src host {}", self.args.target_ip)
+        format!(
+            "tcp[13] & 0x12 == 0x12 and dst host {} and src host {}",
+            self.my_ip, self.args.target_ip
+        )
     }
 
 
