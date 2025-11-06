@@ -126,7 +126,8 @@ impl Command {
 
 
     fn execute_wmap(&self) {
-        let mut wmap = WifiMapper::new();
+        let cmd_args = WmapArgs::parse_from(self.arguments.clone());
+        let mut wmap = WifiMapper::new(cmd_args);
         wmap.execute();
     }
 

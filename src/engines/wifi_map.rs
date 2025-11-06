@@ -1,4 +1,5 @@
 use std::{thread, time::Duration, collections::{HashSet, BTreeMap}, mem};
+use crate::arg_parser::WmapArgs;
 use crate::dissectors::BeaconDissector;
 use crate::iface::InterfaceManager;
 use crate::sniffer::PacketSniffer;
@@ -24,6 +25,7 @@ impl Info {
 
 
 pub struct WifiMapper {
+    args:        WmapArgs,
     iface:       String,
     raw_beacons: Vec<Vec<u8>>,
     wifis:       BTreeMap<String, Info>,
@@ -32,8 +34,9 @@ pub struct WifiMapper {
 
 impl WifiMapper {
     
-    pub fn new() -> Self {
+    pub fn new(args: WmapArgs) -> Self {
         Self {
+            args,
             iface:       "wlp2s0".to_string(),
             raw_beacons: Vec::new(),
             wifis:       BTreeMap::new(),
@@ -57,9 +60,11 @@ impl WifiMapper {
             self.iface.clone(),
             "type mgt and subtype beacon".to_string()
         );
+
+        println!("Sniffing beacons");
         
         sniffer.start();
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(self.args.time));
         sniffer.stop();
 
         InterfaceManager::disable_monitor_mode(&self.iface);

@@ -12,3 +12,6 @@ pub use pscan_parser::PortScanArgs;
 
 pub mod protun_parser;
 pub use protun_parser::TunnelArgs;
+
+pub mod wmap;
+pub use wmap::WmapArgs;
