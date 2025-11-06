@@ -53,11 +53,16 @@ impl WifiMapper {
     fn get_beacons(&mut self) {
         InterfaceManager::enable_monitor_mode(&self.iface);
         
-        let mut sniffer = PacketSniffer::new(self.iface.clone(), "type mgt and subtype beacon".to_string());
+        let mut sniffer = PacketSniffer::new(
+            self.iface.clone(),
+            "type mgt and subtype beacon".to_string()
+        );
         
         sniffer.start();
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_secs(2));
         sniffer.stop();
+
+        InterfaceManager::disable_monitor_mode(&self.iface);
 
         self.raw_beacons = sniffer.get_packets();
     }
@@ -108,6 +113,12 @@ impl WifiMapper {
 
     fn display_header(max_len: usize) {
         println!("\n{:<width$}  {:<17}  {}", "SSID", "MAC", "Channel", width = max_len);
+        Self::display_line(max_len);
+    }
+
+
+
+    fn display_line(max_len: usize) {
         println!("{}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7));
     }
 
@@ -115,6 +126,8 @@ impl WifiMapper {
 
     fn display_wifi_info(name: &str, info: &Info, max_len: usize) {
         let macs: Vec<&String> = info.macs.iter().collect();
+
+        Self::display_line(max_len);
         
         println!("{:<width$}  {}  {}",
                  name, 

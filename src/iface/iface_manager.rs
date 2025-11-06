@@ -1,6 +1,6 @@
 use std::{
-    ffi::CString, io::Error, os::unix::io::RawFd, process::Command,
-    mem, format, ptr::copy_nonoverlapping
+    ffi::CString, io::Error, os::unix::io::RawFd, process::{Command, Output}, thread,
+    time::Duration, mem, format, ptr::copy_nonoverlapping
 };
 use libc::{AF_INET, SOCK_DGRAM, socket, ifreq, ioctl, close, SIOCGIFFLAGS, SIOCSIFFLAGS, IFF_UP};
 use crate::utils::abort;
@@ -25,9 +25,9 @@ impl InterfaceManager {
 
 
 
-    fn set_interface_flags(sock: RawFd, iface_name: &str, up: bool) {
-        let c_interface = CString::new(iface_name).unwrap_or_else(|e| {
-            abort(&format!("Invalid interface name '{}': {}", iface_name, e));
+    fn set_interface_flags(sock: RawFd, iface: &str, up: bool) {
+        let c_interface = CString::new(iface).unwrap_or_else(|e| {
+            abort(&format!("Invalid interface name '{}': {}", iface, e));
         });
 
         let mut ifr: ifreq = unsafe { mem::zeroed() };
@@ -36,13 +36,13 @@ impl InterfaceManager {
             copy_nonoverlapping(
                 c_interface.as_ptr(),
                 ifr.ifr_name.as_mut_ptr(),
-                iface_name.len().min(ifr.ifr_name.len() - 1)
+                iface.len().min(ifr.ifr_name.len() - 1)
             );
         }
 
         if unsafe { ioctl(sock, SIOCGIFFLAGS, &mut ifr) } < 0 {
             unsafe { close(sock) };
-            abort(&format!("Failed to get flags for interface '{}': {}", iface_name, Error::last_os_error()));
+            abort(&format!("Failed to get flags for interface '{}': {}", iface, Error::last_os_error()));
         }
 
         unsafe {
@@ -56,7 +56,7 @@ impl InterfaceManager {
 
         if unsafe { ioctl(sock, SIOCSIFFLAGS, &mut ifr) } < 0 {
             unsafe { close(sock) };
-            abort(&format!("Failed to set flags for interface '{}': {}", iface_name, Error::last_os_error()));
+            abort(&format!("Failed to set flags for interface '{}': {}", iface, Error::last_os_error()));
         }
 
         unsafe { close(sock) };
@@ -64,62 +64,84 @@ impl InterfaceManager {
 
 
 
-    pub fn set_iface_up(iface_name: &str) {
+    pub fn set_iface_up(iface: &str) {
         let sock = Self::create_socket();
-        Self::set_interface_flags(sock, iface_name, true);
+        Self::set_interface_flags(sock, iface, true);
     }
 
 
 
-    pub fn set_iface_down(iface_name: &str) {
+    pub fn set_iface_down(iface: &str) {
         let sock = Self::create_socket();
-        Self::set_interface_flags(sock, iface_name, false);
+        Self::set_interface_flags(sock, iface, false);
     }
 
-    
-    
-    pub fn enable_monitor_mode(iface_name: &str) {
-        Self::set_iface_down(iface_name);
-        
-        let output = Command::new("sudo")
-            .args(&["iw", "dev", iface_name, "set", "type", "monitor"])
+
+
+    fn delete_iface(iface: &str) {
+        let _ = Command::new("sudo")
+            .args(&["iw", "dev", iface, "del"])
+            .status();
+
+        thread::sleep(Duration::from_millis(500));
+    }
+
+
+
+    fn change_iface_mode(iface: &str, mode: &str) -> Output {
+        Command::new("sudo")
+            .args(&["iw", "phy", "phy0", "interface", "add", iface, "type", mode])
             .output()
             .unwrap_or_else(|e| {
-                abort(&format!("Failed to execute iw command for '{}': {}", iface_name, e));
-            });
+                abort(&format!("Failed to add monitor interface '{}': {}", iface, e));
+            })
+    }
+
+    
+    
+    pub fn enable_monitor_mode(iface: &str) {        
+        Self::set_iface_down(iface);
+        Self::delete_iface(iface);
+        
+        let output = Self::change_iface_mode(iface, "monitor");
 
         if !output.status.success() {
-            abort(&format!(
-                "Failed to enable monitor mode for '{}': {}",
-                iface_name,
-                String::from_utf8_lossy(&output.stderr)
-            ));
+            let output = Command::new("sudo")
+                .args(&["iw", "dev", iface, "set", "type", "monitor"])
+                .output()
+                .unwrap_or_else(|e| {
+                    abort(&format!("Failed to set monitor type for '{}': {}", iface, e));
+                });
+
+            if !output.status.success() {
+                abort(&format!(
+                    "Failed to enable monitor mode for '{}': {}",
+                    iface,
+                    String::from_utf8_lossy(&output.stderr)
+                ));
+            }
         }
 
-        Self::set_iface_up(iface_name);
+        Self::set_iface_up(iface);
     }
 
     
     
-    pub fn disable_monitor_mode(iface_name: &str) {
-        Self::set_iface_down(iface_name);
-        
-        let output = Command::new("sudo")
-            .args(&["iw", "dev", iface_name, "set", "type", "managed"])
-            .output()
-            .unwrap_or_else(|e| {
-                abort(&format!("Failed to execute iw command for '{}': {}", iface_name, e));
-            });
+    pub fn disable_monitor_mode(iface: &str) {
+        Self::set_iface_down(iface);
+        Self::delete_iface(iface);
+                
+        let output = Self::change_iface_mode(iface, "managed");
 
         if !output.status.success() {
             abort(&format!(
                 "Failed to disable monitor mode for '{}': {}",
-                iface_name,
+                iface,
                 String::from_utf8_lossy(&output.stderr)
             ));
         }
 
-        Self::set_iface_up(iface_name);
+        Self::set_iface_up(iface);
     }
 
 }
