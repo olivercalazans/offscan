@@ -4,12 +4,34 @@
 
 <br>
 
-- ***Authentication Flooding***
-- ***Network Mapping***
-- ***Packet Flooding***
-- ***Port Scanning***
-- ***Protocol Tunneling test***
-- ***Wifi Mapping***
+<table align="center" style="width: 90%; border-collapse: collapse; margin-bottom: 20px;">
+  <tr>
+    <th style="width: 50%; text-align: center; padding: 10px; color: #58A6FF; font-size: 1.1em; border-bottom: 2px solid #30363D;">
+      Offensive Tests
+    </th>
+    <th style="width: 50%; text-align: center; padding: 10px; color: #58A6FF; font-size: 1.1em; border-bottom: 2px solid #30363D;">
+      Network Exploration
+    </th>
+  </tr>
+  <tr>
+    <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
+      <ul style="list-style-type: none; padding-left: 0; margin: 0;">
+        <li><strong><em>Authentication Flooding</em></strong></li>
+        <li><strong><em>Packet Flooding</em></strong></li>
+        <li><strong><em>Protocol Tunneling test</em></strong></li>
+      </ul>
+    </td>
+    <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
+      <ul style="list-style-type: none; padding-left: 0; margin: 0;">
+        <li><strong><em>Network Mapping</em></strong></li>
+        <li><strong><em>Port Scanning</em></strong></li>
+        <li><strong><em>Wifi Mapping</em></strong></li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+
 
 <br>
 
