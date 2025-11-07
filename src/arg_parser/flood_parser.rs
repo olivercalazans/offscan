@@ -31,6 +31,5 @@ pub struct FloodArgs {
     /// Define a destination MAC
     #[arg(long, value_parser = parse_mac)]
     pub dst_mac: Option<[u8; 6]>,
-    
 
 }

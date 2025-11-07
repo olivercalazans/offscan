@@ -16,4 +16,3 @@ pub fn parse_mac(s: &str) -> Result<[u8; 6], String> {
 
     Ok(mac)
 }
-

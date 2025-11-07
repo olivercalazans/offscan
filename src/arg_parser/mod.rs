@@ -1,3 +1,6 @@
+pub mod auth_parser;
+pub use auth_parser::AuthArgs;
+
 pub mod flood_parser;
 pub use flood_parser::FloodArgs;
 
@@ -12,3 +15,6 @@ pub use pscan_parser::PortScanArgs;
 
 pub mod protun_parser;
 pub use protun_parser::TunnelArgs;
+
+pub mod wmap_parser;
+pub use wmap_parser::WmapArgs;
