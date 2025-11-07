@@ -89,7 +89,9 @@ impl Command {
 
 
     fn execute_auth_flood(&self) {
-        AuthenticationFlooder::execute();
+        let cmd_args = AuthArgs::parse_from(self.arguments.clone());
+        let mut auth = AuthenticationFlooder::new(cmd_args);
+        auth.execute();
     }
 
 
