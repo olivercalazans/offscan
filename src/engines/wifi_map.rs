@@ -26,7 +26,6 @@ impl Info {
 
 pub struct WifiMapper {
     args:        WmapArgs,
-    iface:       String,
     raw_beacons: Vec<Vec<u8>>,
     wifis:       BTreeMap<String, Info>,
 }
@@ -36,10 +35,9 @@ impl WifiMapper {
     
     pub fn new(args: WmapArgs) -> Self {
         Self {
-            args,
-            iface:       "wlp2s0".to_string(),
             raw_beacons: Vec::new(),
             wifis:       BTreeMap::new(),
+            args,
         }
     }
 
@@ -54,10 +52,10 @@ impl WifiMapper {
 
 
     fn get_beacons(&mut self) {
-        InterfaceManager::enable_monitor_mode(&self.iface);
+        InterfaceManager::enable_monitor_mode(&self.args.iface);
         
         let mut sniffer = PacketSniffer::new(
-            self.iface.clone(),
+            self.args.iface.clone(),
             "type mgt and subtype beacon".to_string()
         );
 
@@ -67,7 +65,7 @@ impl WifiMapper {
         thread::sleep(Duration::from_secs(self.args.time));
         sniffer.stop();
 
-        InterfaceManager::disable_monitor_mode(&self.iface);
+        InterfaceManager::disable_monitor_mode(&self.args.iface);
 
         self.raw_beacons = sniffer.get_packets();
     }

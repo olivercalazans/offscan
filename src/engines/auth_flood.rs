@@ -12,28 +12,24 @@ use crate::utils::{abort, inline_display};
 
 pub struct AuthenticationFlooder {
     args:  AuthArgs,
-    iface: String,
 }
 
 
 impl AuthenticationFlooder {
 
     pub fn new(args: AuthArgs) -> Self {
-        Self {
-            args,
-            iface: "wlp2s0".to_string(),
-        }
+        Self { args }
     }
 
 
 
     pub fn execute(&mut self) {
-        InterfaceManager::enable_monitor_mode(&self.iface);
+        InterfaceManager::enable_monitor_mode(&self.args.iface);
         
         let bssid = self.args.bssid.unwrap_or_else(|| self.resolve_bssid());
         self.send_endlessly(bssid);
         
-        InterfaceManager::disable_monitor_mode(&self.iface);
+        InterfaceManager::disable_monitor_mode(&self.args.iface);
     }
 
 
@@ -46,10 +42,10 @@ impl AuthenticationFlooder {
 
 
     fn get_beacons(&mut self) -> Vec<Vec<u8>> {
-        InterfaceManager::enable_monitor_mode(&self.iface);
+        InterfaceManager::enable_monitor_mode(&self.args.iface);
         
         let mut sniffer = PacketSniffer::new(
-            self.iface.clone(), "type mgt and subtype beacon".to_string()
+            self.args.iface.clone(), "type mgt and subtype beacon".to_string()
         );
         
         sniffer.start();
@@ -70,7 +66,7 @@ impl AuthenticationFlooder {
             }
         }
         
-        InterfaceManager::disable_monitor_mode(&self.iface);
+        InterfaceManager::disable_monitor_mode(&self.args.iface);
         abort("It was not possible to resolve BSSID. Try again or set a BSSID")
     }
 
@@ -79,7 +75,7 @@ impl AuthenticationFlooder {
     fn send_endlessly(&self, bssid: [u8; 6]) {
         let mut rand    = RandValues::new();
         let mut builder = PacketBuilder::new();
-        let socket      = Layer2RawSocket::new(&self.iface);
+        let socket      = Layer2RawSocket::new(&self.args.iface);
         
         let mut sent: usize = 0;
         loop {

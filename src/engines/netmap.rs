@@ -95,8 +95,8 @@ impl NetworkMapper {
 
     fn setup_iterators(&self) -> Iterators {
         let cidr   = IfaceInfo::iface_network_cidr(&self.args.iface);
-        let ips    = Ipv4Iter::new(&cidr, None);
-        let len    = ips.total as usize;
+        let ips    = Ipv4Iter::new(&cidr, self.args.start_ip.clone(), self.args.end_ip.clone());
+        let len    = ips.total() as usize;
         let delays = DelayIter::new(&self.args.delay, len);
         
         Iterators {ips, delays, len}
@@ -131,7 +131,7 @@ impl NetworkMapper {
             };
             pkt_tools.socket.send_to(&pkt, dst_ip);
 
-            Self::display_progress(i + 1, iters.len - 2 , dst_ip.to_string(), delay);
+            Self::display_progress(i + 1, iters.len , dst_ip.to_string(), delay);
             thread::sleep(Duration::from_secs_f32(delay));
         }
         println!("");

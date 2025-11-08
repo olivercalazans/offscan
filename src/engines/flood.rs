@@ -41,9 +41,9 @@ impl PacketFlooder {
 
     fn set_ip_range(&mut self) {
         let cidr         = IfaceInfo::iface_network_cidr(&self.args.iface);
-        let mut ip_range = Ipv4Iter::new(&cidr, None);
+        let mut ip_range = Ipv4Iter::new(&cidr, None, None);
         let first_ip     = ip_range.next().expect("No IPs in range");
-        let last_ip      = Ipv4Addr::from(u32::from(first_ip) + ip_range.total as u32 - 3);
+        let last_ip      = Ipv4Addr::from(u32::from(first_ip) + ip_range.total() as u32 - 3);
         self.start       = first_ip.into();
         self.end         = last_ip.into();
     }
