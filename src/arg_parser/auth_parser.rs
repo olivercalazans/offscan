@@ -1,11 +1,17 @@
 use clap::Parser;
 use crate::arg_parser::parse_mac;
+use crate::iface::IfaceInfo;
 
 
 
 #[derive(Parser)]
 #[command(name = "auth", about = "Authentication flooder")]
 pub struct AuthArgs {
+
+    /// Interface to be use to send the frames
+    #[arg(value_parser = IfaceInfo::check_iface_exists)]
+    pub iface: String,
+
 
     /// SSID (Wifi name)
     pub ssid: String,

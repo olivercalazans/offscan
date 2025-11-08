@@ -14,7 +14,11 @@ pub struct NetMapArgs {
 
 
     /// Define a network interface to send the packets
-    #[arg(short, long, default_value_t = IfaceInfo::default_iface_name())]
+    #[
+        arg(short, long,
+        value_parser = IfaceInfo::check_iface_exists,
+        default_value_t = IfaceInfo::default_iface_name())
+    ]
     pub iface: String,
 
 
