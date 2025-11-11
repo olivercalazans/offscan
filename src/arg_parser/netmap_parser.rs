@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use clap::Parser;
 use crate::iface::IfaceInfo;
 
@@ -14,16 +15,21 @@ pub struct NetMapArgs {
 
 
     /// Define a network interface to send the packets
-    #[
-        arg(short, long,
+    #[arg(
+        short, long,
         value_parser = IfaceInfo::check_iface_exists,
-        default_value_t = IfaceInfo::default_iface_name())
-    ]
+        default_value_t = IfaceInfo::default_iface_name()
+    )]
     pub iface: String,
 
 
-    /// Send packets to hosts in random order
-    #[arg(short, long)]
-    pub random: bool,
+    /// Set a initial IP
+    #[arg(long)]
+    pub start_ip: Option<Ipv4Addr>,
+
+
+    /// Set a final IP
+    #[arg(long)]
+    pub end_ip: Option<Ipv4Addr>,
 
 }

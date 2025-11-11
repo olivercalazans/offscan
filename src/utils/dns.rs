@@ -30,16 +30,17 @@ pub fn get_host_name(ip: &str) -> String {
 
         freeaddrinfo(res);
 
-        if err == 0 {
-            let c_str    = CStr::from_ptr(host.as_ptr());
-            let hostname = c_str.to_string_lossy().into_owned();
-            if hostname.ends_with(".lan") {
-                hostname.trim_end_matches(".lan").to_string()
-            } else {
-                hostname
-            }
-        } else {
-            "Unknown".to_string()
+        if err != 0 {
+            return "Unknown".to_string();
         }
+
+        let c_str    = CStr::from_ptr(host.as_ptr());
+        let hostname = c_str.to_string_lossy().into_owned();
+        
+        if hostname.ends_with(".lan") {
+            return hostname.trim_end_matches(".lan").to_string();
+        }
+
+        hostname
     }
 }
