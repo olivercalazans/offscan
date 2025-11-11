@@ -119,17 +119,25 @@ impl AuthenticationFlooder {
                 };
                 
                 while libc::poll(&mut fds, 1, -1) > 0 {
-                    if fds.revents & libc::POLLIN != 0 {
-                        let mut info: libc::signalfd_siginfo = std::mem::zeroed();
-                        let size = std::mem::size_of::<libc::signalfd_siginfo>();
-                        if libc::read(fd, &mut info as *mut _ as *mut libc::c_void, size) == size as isize {
-                            if info.ssi_signo == libc::SIGINT as u32 {
-                                running.store(false, Ordering::SeqCst);
-                                break;
-                            }
-                        }
+                    if fds.revents & libc::POLLIN == 0 {
+                        continue;
                     }
+
+                    let mut info: libc::signalfd_siginfo = std::mem::zeroed();
+                    let size = std::mem::size_of::<libc::signalfd_siginfo>();
+                    
+                    if libc::read(fd, &mut info as *mut _ as *mut libc::c_void, size) != size as isize {
+                        continue;
+                    }
+
+                    if info.ssi_signo != libc::SIGINT as u32 {
+                        continue;
+                    }
+
+                    running.store(false, Ordering::SeqCst);
+                    break;
                 }
+
                 libc::close(fd);
             });
         }

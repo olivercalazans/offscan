@@ -34,16 +34,19 @@ impl IfaceInfo {
             while !ptr.is_null() {
                 let ifa = &*ptr;
 
-                if !ifa.ifa_addr.is_null() && (*ifa.ifa_addr).sa_family as i32 == AF_INET {
-                    let sockaddr   = &*(ifa.ifa_addr as *const sockaddr_in);
-                    let addr_bytes = sockaddr.sin_addr.s_addr.to_ne_bytes();
-                    let iface_ip   = Ipv4Addr::new(addr_bytes[0], addr_bytes[1], addr_bytes[2], addr_bytes[3]);
+                if ifa.ifa_addr.is_null() || (*ifa.ifa_addr).sa_family as i32 != AF_INET {
+                    ptr = ifa.ifa_next;
+                    continue;
+                }
 
-                    if iface_ip == ip {
-                        freeifaddrs(ifap);
-                        let name = CStr::from_ptr(ifa.ifa_name).to_string_lossy().to_string();
-                        return name;
-                    }
+                let sockaddr   = &*(ifa.ifa_addr as *const sockaddr_in);
+                let addr_bytes = sockaddr.sin_addr.s_addr.to_ne_bytes();
+                let iface_ip   = Ipv4Addr::new(addr_bytes[0], addr_bytes[1], addr_bytes[2], addr_bytes[3]);
+
+                if iface_ip == ip {
+                    freeifaddrs(ifap);
+                    let name = CStr::from_ptr(ifa.ifa_name).to_string_lossy().to_string();
+                    return name;
                 }
 
                 ptr = ifa.ifa_next;
@@ -89,14 +92,18 @@ impl IfaceInfo {
                 let name_cstr = CStr::from_ptr(ifa.ifa_name);
                 let name      = name_cstr.to_string_lossy();
 
-                if name == iface_name && !ifa.ifa_addr.is_null() && (*ifa.ifa_addr).sa_family as i32 == AF_INET {
-                    let addr = &*(ifa.ifa_addr as *const sockaddr_in);
-                    let ip   = Ipv4Addr::from(addr.sin_addr.s_addr.to_ne_bytes());
-                    freeifaddrs(ifap);
-                    return ip;
+                if name != iface_name
+                   || ifa.ifa_addr.is_null()
+                   || (*ifa.ifa_addr).sa_family as i32 != AF_INET 
+                {
+                    cur = ifa.ifa_next;
+                    continue;
                 }
 
-                cur = ifa.ifa_next;
+                let addr = &*(ifa.ifa_addr as *const sockaddr_in);
+                let ip   = Ipv4Addr::from(addr.sin_addr.s_addr.to_ne_bytes());
+                freeifaddrs(ifap);
+                return ip;
             }
 
             freeifaddrs(ifap);
@@ -116,29 +123,30 @@ impl IfaceInfo {
                 let name_cstr = CStr::from_ptr(ifa.ifa_name);
                 let name      = name_cstr.to_string_lossy();
 
-                if name == iface_name
-                    && !ifa.ifa_addr.is_null()
-                    && !ifa.ifa_netmask.is_null()
-                    && (*ifa.ifa_addr).sa_family as i32 == AF_INET
+                if name != iface_name
+                    || ifa.ifa_addr.is_null()
+                    || ifa.ifa_netmask.is_null()
+                    || (*ifa.ifa_addr).sa_family as i32 != AF_INET
                 {
-                    let addr = &*(ifa.ifa_addr as *const sockaddr_in);
-                    let ip   = Ipv4Addr::from(addr.sin_addr.s_addr.to_ne_bytes());
-
-                    let netmask = &*(ifa.ifa_netmask as *const sockaddr_in);
-                    let mask    = Ipv4Addr::from(netmask.sin_addr.s_addr.to_ne_bytes());
-
-                    freeifaddrs(ifap);
-
-                    let cidr        = mask.octets().iter().map(|b| b.count_ones()).sum::<u32>() as u8;
-                    let ip_u32      = u32::from(ip);
-                    let mask_u32    = u32::from(mask);
-                    let network_u32 = ip_u32 & mask_u32;
-                    let network     = Ipv4Addr::from(network_u32.to_be_bytes());
-
-                    return format!("{}/{}", network, cidr);
+                    cur = ifa.ifa_next;
+                    continue;
                 }
 
-                cur = ifa.ifa_next;
+                let addr = &*(ifa.ifa_addr as *const sockaddr_in);
+                let ip   = Ipv4Addr::from(addr.sin_addr.s_addr.to_ne_bytes());
+
+                let netmask = &*(ifa.ifa_netmask as *const sockaddr_in);
+                let mask    = Ipv4Addr::from(netmask.sin_addr.s_addr.to_ne_bytes());
+
+                freeifaddrs(ifap);
+
+                let cidr        = mask.octets().iter().map(|b| b.count_ones()).sum::<u32>() as u8;
+                let ip_u32      = u32::from(ip);
+                let mask_u32    = u32::from(mask);
+                let network_u32 = ip_u32 & mask_u32;
+                let network     = Ipv4Addr::from(network_u32.to_be_bytes());
+
+                return format!("{}/{}", network, cidr);
             }
 
             freeifaddrs(ifap);

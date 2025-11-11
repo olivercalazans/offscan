@@ -150,34 +150,36 @@ impl BeaconDissector {
         let mut offset = 36;
 
         while offset + 1 < frame.len() {
-            let element_id = frame[offset];
+            let element_id     = frame[offset];
             let element_length = frame[offset + 1] as usize;
+            offset += 2;
 
-            if element_id == 0 && element_length > 0 {
-                let ssid_start = offset + 2;
-                let ssid_end = ssid_start + element_length;
+            if element_id != 0 || element_length <= 0 {                
+                offset += element_length;
+                continue;
+            }
 
-                if ssid_end <= frame.len() {
-                    let ssid_bytes = &frame[ssid_start..ssid_end];
+            let ssid_start = offset;
+            let ssid_end   = ssid_start + element_length;
+
+            if ssid_end > frame.len() {
+                offset += element_length;
+                continue;
+            }
+
+            let ssid_bytes = &frame[ssid_start..ssid_end];
                     
-                    if ssid_bytes.iter().all(|&b| b == 0) {
-                        return "<hidden>".to_string();
-                    }
-                    
-                    if let Ok(ssid) = String::from_utf8(ssid_bytes.to_vec()) {
-                        if !ssid.trim().is_empty() {
-                            return ssid;
-                        }
-                    }
-                    
-                    return Self::format_ssid_bytes(ssid_bytes);
+            if ssid_bytes.iter().all(|&b| b == 0) {
+                return "<hidden>".to_string();
+            }
+    
+            if let Ok(ssid) = String::from_utf8(ssid_bytes.to_vec()) {
+                if !ssid.trim().is_empty() {
+                    return ssid;
                 }
             }
-
-            offset += 2 + element_length;
-            if offset >= frame.len() {
-                break;
-            }
+                    
+            return Self::format_ssid_bytes(ssid_bytes);
         }
 
         "<hidden>".to_string()
@@ -216,20 +218,19 @@ impl BeaconDissector {
         let mut offset = 36;
 
         while offset + 1 < frame.len() {
-            let element_id = frame[offset];
+            let element_id     = frame[offset];
             let element_length = frame[offset + 1] as usize;
+            offset += 2;
 
-            if element_id == 3 && element_length == 1 {
-                let channel_start = offset + 2;
-                if channel_start < frame.len() {
-                    return frame[channel_start];
-                }
+            if element_id != 3
+               || element_length != 1
+               || offset >= frame.len()
+            {
+                offset += element_length;
+                continue;
             }
 
-            offset += 2 + element_length;
-            if offset >= frame.len() {
-                break;
-            }
+            return frame[offset];
         }
 
         0

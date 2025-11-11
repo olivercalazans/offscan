@@ -126,6 +126,7 @@ impl Command {
         tunnel.execute();
     }
 
+    
 
     fn execute_wmap(&self) {
         let cmd_args = WmapArgs::parse_from(self.arguments.clone());
