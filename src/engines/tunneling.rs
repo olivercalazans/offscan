@@ -91,7 +91,7 @@ impl ProtocolTunneler {
 
     fn send_icmp_probes(&mut self, socket: Layer3RawSocket, target_ip: Ipv4Addr) {
         let my_ip = IfaceInfo::iface_ip(&self.args.iface);
-        let pkt   = self.pkt_builder.icmp_echo_req(my_ip, target_ip);
+        let pkt   = self.pkt_builder.icmp_ping(my_ip, target_ip);
         
         socket.send_to(pkt, target_ip);
         thread::sleep(Duration::from_secs(1));

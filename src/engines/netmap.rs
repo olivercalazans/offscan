@@ -125,7 +125,7 @@ impl NetworkMapper {
     ) {
         for (i, (dst_ip, delay)) in iters.ips.by_ref().zip(iters.delays.by_ref()).enumerate() {
             let pkt = match probe_type {
-                "icmp" => pkt_tools.builder.icmp_echo_req(self.my_ip, dst_ip),
+                "icmp" => pkt_tools.builder.icmp_ping(self.my_ip, dst_ip),
                 "tcp"  => pkt_tools.builder.tcp_ip(self.my_ip, self.rand.get_random_port(), dst_ip, 80),
                 &_     => abort(format!("Unknown protocol type: {}", probe_type)),
             };

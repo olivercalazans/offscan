@@ -6,7 +6,6 @@ use crate::pkt_builder::checksum::*;
 pub struct HeaderBuilder;
 
 
-
 impl HeaderBuilder { 
 
     pub fn tcp(
@@ -99,7 +98,7 @@ impl HeaderBuilder {
     ) {
         buffer[0..6].copy_from_slice(&dst_mac);
         buffer[6..12].copy_from_slice(&src_mac);
-        buffer[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
+        buffer[12..].copy_from_slice(&0x0800u16.to_be_bytes());
     }
 
 
