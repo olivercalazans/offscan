@@ -1,0 +1,16 @@
+name: Mirror to GitLab
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror repository to GitLab
+        run: |
+          git clone --mirror https://github.com/${{ github.repository }} repo.git
+          cd repo.git
+          git remote add gitlab https://oauth2:${{ secrets.GITLAB_OFFSCAN_BACKUP }}@gitlab.com/olivercalazans/offscan.git
+          git push --mirror gitlab
