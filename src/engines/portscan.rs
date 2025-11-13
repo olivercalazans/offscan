@@ -10,35 +10,10 @@ use crate::utils::{inline_display, get_host_name};
 
 
 
-struct PacketTools {
-    sniffer: PacketSniffer,
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
-
-
-struct UdpIterators {
-    ports:  UdpPayloads,
-    delays: DelayIter,
-    ip:     String,
-}
-
-
-
-struct TcpIterators {
-    ports:  PortIter,
-    delays: DelayIter,
-    ip:     String,
-}
-
-
-
 pub struct PortScanner {
     args:        PortScanArgs,
     iface:       String,
     my_ip:       Ipv4Addr,
-    rand:        RandValues,
     raw_packets: Vec<Vec<u8>>,
     open_ports:  Vec<String>,
 }
@@ -51,7 +26,6 @@ impl PortScanner {
         let iface = IfaceInfo::iface_name_from_ip(args.target_ip.clone());
         Self {
             my_ip:       IfaceInfo::iface_ip(&iface),
-            rand:        RandValues::new(),
             raw_packets: Vec::new(),
             open_ports:  Vec::new(),
             args,
@@ -80,16 +54,16 @@ impl PortScanner {
 
 
     fn send_and_receive_tcp(&mut self) {
-        let mut pkt_tools = self.setup_tools();
-        let mut iters     = self.setup_tcp_iterators();
+        let mut tools = self.setup_tools();
+        let mut iters = self.setup_tcp_iterators();
 
-        pkt_tools.sniffer.start();
-        self.send_tcp_probes(&mut pkt_tools, &mut iters);
+        tools.sniffer.start();
+        self.send_tcp_probes(&mut tools, &mut iters);
         
         thread::sleep(Duration::from_secs(5));
-        pkt_tools.sniffer.stop();
+        tools.sniffer.stop();
         
-        self.raw_packets = pkt_tools.sniffer.get_packets();
+        self.raw_packets = tools.sniffer.get_packets();
     }
 
 
@@ -103,12 +77,14 @@ impl PortScanner {
 
 
 
-    fn send_tcp_probes(&mut self, pkt_tools: &mut PacketTools, iters: &mut TcpIterators) {
+    #[inline]
+    fn send_tcp_probes(&mut self, tools: &mut PacketTools, iters: &mut TcpIterators) {
+        let mut rand = RandValues::new();
+
         for (port, delay) in iters.ports.by_ref().zip(iters.delays.by_ref())  {
 
-            let src_port = self.rand.get_random_port();
-            let pkt      = pkt_tools.builder.tcp_ip(self.my_ip, src_port, self.args.target_ip, port);
-            pkt_tools.socket.send_to(pkt, self.args.target_ip);
+            let pkt = tools.builder.tcp_ip(self.my_ip, rand.get_random_port(), self.args.target_ip, port);
+            tools.socket.send_to(pkt, self.args.target_ip);
 
             Self::display_progress(&iters.ip, port, delay);
             thread::sleep(Duration::from_secs_f32(delay));
@@ -148,16 +124,16 @@ impl PortScanner {
 
 
     fn send_and_receive_udp(&mut self) {
-        let mut pkt_tools = self.setup_tools();
-        let mut iters     = self.setup_udp_iterators();
+        let mut tools = self.setup_tools();
+        let mut iters = self.setup_udp_iterators();
 
-        pkt_tools.sniffer.start();
-        self.send_udp_probes(&mut pkt_tools, &mut iters);
+        tools.sniffer.start();
+        self.send_udp_probes(&mut tools, &mut iters);
         
         thread::sleep(Duration::from_secs(5));
-        pkt_tools.sniffer.stop();
+        tools.sniffer.stop();
 
-        self.raw_packets = pkt_tools.sniffer.get_packets();
+        self.raw_packets = tools.sniffer.get_packets();
     }
 
 
@@ -171,14 +147,15 @@ impl PortScanner {
 
 
 
-    fn send_udp_probes(&mut self, pkt_tools: &mut PacketTools, iters: &mut UdpIterators) {
+    fn send_udp_probes(&mut self, tools: &mut PacketTools, iters: &mut UdpIterators) {
+        let mut rand = RandValues::new();
+
         for ((port, payload), delay) in iters.ports.iter().zip(iters.delays.by_ref())  {
 
-            let src_port = self.rand.get_random_port();
-            let pkt      = pkt_tools.builder.udp_ip(
-                self.my_ip, src_port, self.args.target_ip, port, payload.data.clone()
+            let pkt = tools.builder.udp_ip(
+                self.my_ip, rand.get_random_port(), self.args.target_ip, port, payload.data.clone()
             );
-            pkt_tools.socket.send_to(pkt, self.args.target_ip);
+            tools.socket.send_to(pkt, self.args.target_ip);
 
             Self::display_progress(&iters.ip, port, delay);
             thread::sleep(Duration::from_secs_f32(delay));
@@ -242,7 +219,31 @@ impl PortScanner {
     
     fn display_progress(ip: &str, port: u16, delay: f32) {
         let msg = format!("Packet sent to {} port {:<5} - delay: {:.2}", ip, port, delay);
-        inline_display(msg);
+        inline_display(&msg);
     }
 
+}
+
+
+
+struct PacketTools {
+    sniffer: PacketSniffer,
+    builder: PacketBuilder,
+    socket:  Layer3RawSocket,
+}
+
+
+
+struct UdpIterators {
+    ports:  UdpPayloads,
+    delays: DelayIter,
+    ip:     String,
+}
+
+
+
+struct TcpIterators {
+    ports:  PortIter,
+    delays: DelayIter,
+    ip:     String,
 }

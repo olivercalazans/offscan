@@ -4,11 +4,11 @@ use pcap::{Device, Capture};
 
 
 pub struct PacketSniffer {
-    filter:      String,
-    handle:      Option<thread::JoinHandle<()>>,
-    iface:       String,
-    raw_packets: Arc<Mutex<Vec<Vec<u8>>>>,
-    running:     Arc<AtomicBool>,
+    filter:   String,
+    handle:   Option<thread::JoinHandle<()>>,
+    iface:    String,
+    raw_pkts: Arc<Mutex<Vec<Vec<u8>>>>,
+    running:  Arc<AtomicBool>,
 }
 
 
@@ -19,9 +19,9 @@ impl PacketSniffer {
         Self {
             filter,
             iface,
-            handle:      None,
-            raw_packets: Arc::new(Mutex::new(Vec::with_capacity(512))),
-            running:     Arc::new(AtomicBool::new(false)),
+            handle:   None,
+            raw_pkts: Arc::new(Mutex::new(Vec::new())),
+            running:  Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -30,7 +30,7 @@ impl PacketSniffer {
     pub fn start(&mut self) {
         self.running.store(true, Ordering::Relaxed);
         let running = Arc::clone(&self.running);
-        let packets = Arc::clone(&self.raw_packets);
+        let packets = Arc::clone(&self.raw_pkts);
         let cap     = self.create_sniffer();
 
         self.handle = Some(thread::spawn(move || {
@@ -114,7 +114,7 @@ impl PacketSniffer {
 
 
     pub fn get_packets(&self) -> Vec<Vec<u8>> {
-        self.raw_packets.lock().unwrap().clone()
+        self.raw_pkts.lock().unwrap().clone()
     }
 
 }

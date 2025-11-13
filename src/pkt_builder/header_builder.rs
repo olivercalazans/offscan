@@ -6,9 +6,9 @@ use crate::pkt_builder::checksum::*;
 pub struct HeaderBuilder;
 
 
-
 impl HeaderBuilder { 
 
+    #[inline]
     pub fn tcp(
         buffer:   &mut [u8],
         src_ip:   Ipv4Addr,
@@ -32,6 +32,7 @@ impl HeaderBuilder {
 
 
 
+    #[inline]
     pub fn udp(
         buffer:      &mut [u8],
         src_ip:      Ipv4Addr,
@@ -53,6 +54,7 @@ impl HeaderBuilder {
 
 
 
+    #[inline]
     pub fn icmp(
         buffer: &mut [u8]
     ) {
@@ -68,6 +70,7 @@ impl HeaderBuilder {
 
 
 
+    #[inline]
     pub fn ip(
         buffer:   &mut [u8],
         len:      u16,
@@ -92,6 +95,7 @@ impl HeaderBuilder {
 
 
 
+    #[inline]
     pub fn ether(
         buffer:  &mut [u8],
         src_mac: [u8; 6],
@@ -99,11 +103,12 @@ impl HeaderBuilder {
     ) {
         buffer[0..6].copy_from_slice(&dst_mac);
         buffer[6..12].copy_from_slice(&src_mac);
-        buffer[12..14].copy_from_slice(&0x0800u16.to_be_bytes());
+        buffer[12..].copy_from_slice(&0x0800u16.to_be_bytes());
     }
 
 
 
+    #[inline]
     pub fn auth_802_11(
         buffer:  &mut [u8],
         src_mac: [u8; 6],
