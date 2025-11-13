@@ -117,7 +117,7 @@ impl PacketFlooder {
     fn send_tcp(tools: &mut PktTools) {
         let tcp_pkt = tools.builder.tcp_ether(
             tools.info.src_mac, tools.info.src_ip, tools.info.src_port,
-            tools.info.dst_mac, tools.info.dst_ip, 53
+            tools.info.dst_mac, tools.info.dst_ip, 80
         );
         tools.socket.send(tcp_pkt);
     }
@@ -128,7 +128,7 @@ impl PacketFlooder {
     fn send_udp(tools: &mut PktTools) {
         let udp_pkt = tools.builder.udp_ether(
             tools.info.src_mac, tools.info.src_ip, tools.info.src_port,
-            tools.info.dst_mac, tools.info.dst_ip, 80
+            tools.info.dst_mac, tools.info.dst_ip, 53
         );
         tools.socket.send(udp_pkt);
     }
