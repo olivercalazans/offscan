@@ -85,8 +85,9 @@ impl Layer3RawSocket {
         }
     }
 
-
     
+
+    #[inline]
     pub fn send_to(&self, packet: &[u8], dst: Ipv4Addr) {
         unsafe {
             let mut addr: sockaddr_in = mem::zeroed();

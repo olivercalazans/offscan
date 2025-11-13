@@ -25,6 +25,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn tcp_ip(
         &mut self,
         src_ip:   Ipv4Addr,
@@ -43,6 +44,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn udp_ip(
         &mut self,
         src_ip:   Ipv4Addr,
@@ -68,6 +70,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn icmp_ping(
         &mut self,
         src_ip: Ipv4Addr,
@@ -84,6 +87,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn tcp_over_udp(
         &mut self,
         src_mac:      [u8; 6],
@@ -112,6 +116,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn tcp_ether(
         &mut self,
         src_mac:  [u8; 6],
@@ -134,6 +139,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn udp_ether(
         &mut self,
         src_mac:  [u8; 6],
@@ -156,6 +162,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn icmp_ping_ether(
         &mut self,
         src_mac: [u8; 6],
@@ -176,6 +183,7 @@ impl PacketBuilder {
 
 
 
+    #[inline]
     pub fn auth_802_11(
         &mut self,
         src_mac: [u8; 6],

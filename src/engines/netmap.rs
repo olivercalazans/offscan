@@ -59,17 +59,17 @@ impl NetworkMapper {
 
 
     fn send_and_receive(&mut self) {
-        let mut pkt_tools = self.setup_tools();
-        let mut iters     = self.setup_iterators();
+        let mut tools = self.setup_tools();
+        let mut iters = self.setup_iterators();
         
-        pkt_tools.sniffer.start();
+        tools.sniffer.start();
         
-        self.send_icmp_and_tcp_probes(&mut pkt_tools, &mut iters);
+        self.send_icmp_and_tcp_probes(&mut tools, &mut iters);
         
         thread::sleep(Duration::from_secs(3));
-        pkt_tools.sniffer.stop();
+        tools.sniffer.stop();
         
-        self.raw_packets = pkt_tools.sniffer.get_packets()
+        self.raw_packets = tools.sniffer.get_packets()
     }
 
 
@@ -104,15 +104,15 @@ impl NetworkMapper {
 
 
 
-    fn send_icmp_and_tcp_probes(&mut self, pkt_tools: &mut PacketTools, iters: &mut Iterators) {
+    fn send_icmp_and_tcp_probes(&mut self, tools: &mut PacketTools, iters: &mut Iterators) {
         println!("Sending ICMP probes");
-        self.send_probes("icmp", pkt_tools, iters);
+        self.send_probes("icmp", tools, iters);
         
         iters.ips.reset();
         iters.delays.reset();
 
         println!("Sending TCP probes");
-        self.send_probes("tcp", pkt_tools, iters);     
+        self.send_probes("tcp", tools, iters);     
     }
 
 
@@ -120,16 +120,16 @@ impl NetworkMapper {
     fn send_probes(
         &mut self,
         probe_type: &str,
-        pkt_tools:  &mut PacketTools,
+        tools:      &mut PacketTools,
         iters:      &mut Iterators
     ) {
         for (i, (dst_ip, delay)) in iters.ips.by_ref().zip(iters.delays.by_ref()).enumerate() {
             let pkt = match probe_type {
-                "icmp" => pkt_tools.builder.icmp_ping(self.my_ip, dst_ip),
-                "tcp"  => pkt_tools.builder.tcp_ip(self.my_ip, self.rand.get_random_port(), dst_ip, 80),
+                "icmp" => tools.builder.icmp_ping(self.my_ip, dst_ip),
+                "tcp"  => tools.builder.tcp_ip(self.my_ip, self.rand.get_random_port(), dst_ip, 80),
                 &_     => abort(format!("Unknown protocol type: {}", probe_type)),
             };
-            pkt_tools.socket.send_to(&pkt, dst_ip);
+            tools.socket.send_to(&pkt, dst_ip);
 
             Self::display_progress(i + 1, iters.len , dst_ip.to_string(), delay);
             thread::sleep(Duration::from_secs_f32(delay));
@@ -141,7 +141,7 @@ impl NetworkMapper {
 
     fn display_progress(i: usize, total: usize, ip: String, delay: f32) {
         let msg = format!("\tPackets sent: {}/{} - {:<15} - delay: {:.2}", i, total, ip, delay);
-        inline_display(msg);
+        inline_display(&msg);
     }
 
 

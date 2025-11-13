@@ -8,7 +8,7 @@ pub fn abort(error: impl Into<String>) -> ! {
 }
 
 
-pub fn inline_display(message: String) {
+pub fn inline_display(message: &str) {
     print!("\r{}", message);
     io::stdout().flush().unwrap();
 }

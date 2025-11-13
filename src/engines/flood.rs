@@ -87,7 +87,7 @@ impl PacketFlooder {
             tools.info.dst_mac  = fixed_dst_mac.unwrap_or_else(|| self.rng.get_random_mac());
             
             self.send_packets(&mut tools);
-            inline_display(format!("Packets sent: {}", &self.pkts_sent));
+            inline_display(&format!("Packets sent: {}", &self.pkts_sent));
         }
     }
 
