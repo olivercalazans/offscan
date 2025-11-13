@@ -1,4 +1,4 @@
-use std::{thread, time::Duration, collections::HashMap, mem, net::Ipv4Addr};
+use std::{thread, time::Duration, collections::BTreeMap, mem, net::Ipv4Addr};
 use crate::arg_parser::NetMapArgs;
 use crate::generators::{Ipv4Iter, DelayIter, RandValues};
 use crate::iface::IfaceInfo;
@@ -27,11 +27,10 @@ struct Iterators {
 
 
 pub struct NetworkMapper {
-    args:        NetMapArgs,
-    active_ips:  HashMap<String, Vec<String>>,
-    my_ip:       Ipv4Addr,
-    raw_packets: Vec<Vec<u8>>,
-    rand:        RandValues,
+    args:       NetMapArgs,
+    active_ips: BTreeMap<Ipv4Addr, Vec<String>>,
+    my_ip:      Ipv4Addr,
+    raw_pkts:   Vec<Vec<u8>>,
 }
 
 
@@ -40,10 +39,9 @@ impl NetworkMapper {
 
     pub fn new(args:NetMapArgs) -> Self {
         Self {
-            active_ips:  HashMap::new(),
-            my_ip:       IfaceInfo::iface_ip(&args.iface),
-            raw_packets: Vec::new(),
-            rand:        RandValues::new(),
+            active_ips: BTreeMap::new(),
+            my_ip:      IfaceInfo::iface_ip(&args.iface),
+            raw_pkts:   Vec::new(),
             args,
         }
     }
@@ -69,7 +67,7 @@ impl NetworkMapper {
         thread::sleep(Duration::from_secs(3));
         tools.sniffer.stop();
         
-        self.raw_packets = tools.sniffer.get_packets()
+        self.raw_pkts = tools.sniffer.get_packets()
     }
 
 
@@ -123,10 +121,12 @@ impl NetworkMapper {
         tools:      &mut PacketTools,
         iters:      &mut Iterators
     ) {
+        let mut rand = RandValues::new();
+
         for (i, (dst_ip, delay)) in iters.ips.by_ref().zip(iters.delays.by_ref()).enumerate() {
             let pkt = match probe_type {
                 "icmp" => tools.builder.icmp_ping(self.my_ip, dst_ip),
-                "tcp"  => tools.builder.tcp_ip(self.my_ip, self.rand.get_random_port(), dst_ip, 80),
+                "tcp"  => tools.builder.tcp_ip(self.my_ip, rand.get_random_port(), dst_ip, 80),
                 &_     => abort(format!("Unknown protocol type: {}", probe_type)),
             };
             tools.socket.send_to(&pkt, dst_ip);
@@ -147,10 +147,11 @@ impl NetworkMapper {
 
 
     fn process_raw_packets(&mut self) {
-        let raw_packets = mem::take(&mut self.raw_packets);
+        let raw_pkts = mem::take(&mut self.raw_pkts);
 
-        for packet in raw_packets.into_iter() {
-            let src_ip = PacketDissector::get_src_ip(&packet);
+        for packet in raw_pkts.into_iter() {
+            let str_ip           = PacketDissector::get_src_ip(&packet);
+            let src_ip: Ipv4Addr = str_ip.parse().unwrap();
 
             if self.active_ips.contains_key(&src_ip) { continue }
 
@@ -159,7 +160,7 @@ impl NetworkMapper {
             let mac_addr = PacketDissector::get_src_mac(&packet);
             info.push(mac_addr);
 
-            let device_name = get_host_name(&src_ip);
+            let device_name = get_host_name(&str_ip);
             info.push(device_name);
 
             self.active_ips.insert(src_ip, info);
