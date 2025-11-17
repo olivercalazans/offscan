@@ -51,7 +51,7 @@ impl PacketBuilder {
         src_port: u16,
         dst_ip:   Ipv4Addr,
         dst_port: u16,
-        payload:  Vec<u8>
+        payload:  &[u8]
         ) -> &[u8]
     {
         let len_payload: usize = payload.len().try_into().unwrap();

@@ -120,7 +120,7 @@ impl WifiMapper {
     }
 
 
-
+    
     fn display_line(max_len: usize) {
         println!("{}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7));
     }

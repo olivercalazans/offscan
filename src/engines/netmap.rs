@@ -10,22 +10,6 @@ use crate::utils::{abort, inline_display, get_host_name};
 
 
 
-struct PacketTools {
-    sniffer: PacketSniffer,
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
-
-
-struct Iterators {
-    ips:    Ipv4Iter,
-    delays: DelayIter,
-    len:    usize,
-}
-
-
-
 pub struct NetworkMapper {
     args:       NetMapArgs,
     active_ips: BTreeMap<Ipv4Addr, Vec<String>>,
@@ -185,4 +169,20 @@ impl NetworkMapper {
         println!("{}", format!("{}  {}  {}", "-".repeat(15), "-".repeat(17), "-".repeat(8)));
     }
 
+}
+
+
+
+struct PacketTools {
+    sniffer: PacketSniffer,
+    builder: PacketBuilder,
+    socket:  Layer3RawSocket,
+}
+
+
+
+struct Iterators {
+    ips:    Ipv4Iter,
+    delays: DelayIter,
+    len:    usize,
 }

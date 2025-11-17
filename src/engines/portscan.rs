@@ -77,18 +77,17 @@ impl PortScanner {
 
 
 
-    #[inline]
     fn send_tcp_probes(&mut self, tools: &mut PacketTools, iters: &mut TcpIterators) {
         let mut rand = RandValues::new();
+        
+        iters.ports.by_ref()
+            .zip(iters.delays.by_ref())
+            .for_each(|(port, delay)| {
+                let src_port = rand.get_random_port();
+                self.create_and_send_packet(tools, src_port, port, Protocol::Tcp);
+                Self::display_and_sleep(&iters.ip, port, delay);
+            });        
 
-        for (port, delay) in iters.ports.by_ref().zip(iters.delays.by_ref())  {
-
-            let pkt = tools.builder.tcp_ip(self.my_ip, rand.get_random_port(), self.args.target_ip, port);
-            tools.socket.send_to(pkt, self.args.target_ip);
-
-            Self::display_progress(&iters.ip, port, delay);
-            thread::sleep(Duration::from_secs_f32(delay));
-        }
         println!("");
     }
 
@@ -149,17 +148,15 @@ impl PortScanner {
 
     fn send_udp_probes(&mut self, tools: &mut PacketTools, iters: &mut UdpIterators) {
         let mut rand = RandValues::new();
-
-        for ((port, payload), delay) in iters.ports.iter().zip(iters.delays.by_ref())  {
-
-            let pkt = tools.builder.udp_ip(
-                self.my_ip, rand.get_random_port(), self.args.target_ip, port, payload.data.clone()
-            );
-            tools.socket.send_to(pkt, self.args.target_ip);
-
-            Self::display_progress(&iters.ip, port, delay);
-            thread::sleep(Duration::from_secs_f32(delay));
-        }
+        
+        iters.ports.iter()
+            .zip(iters.delays.by_ref())
+            .for_each(|((port, payload), delay)| {
+                let src_port = rand.get_random_port();
+                self.create_and_send_packet(tools, src_port, port, Protocol::Udp(&payload.data));
+                Self::display_and_sleep(&iters.ip, port, delay);
+            });
+        
         println!("");
     }
 
@@ -191,6 +188,27 @@ impl PortScanner {
 
 
 
+    #[inline]
+    fn create_and_send_packet(
+        &mut self,
+        tools:    &mut PacketTools,
+        src_port: u16,
+        dst_port: u16,
+        protocol: Protocol
+    ) {
+        let pkt = match protocol {
+            Protocol::Tcp => tools.builder.tcp_ip(
+                self.my_ip, src_port, self.args.target_ip, dst_port
+            ),
+            Protocol::Udp(payload) => tools.builder.udp_ip(
+                self.my_ip, src_port, self.args.target_ip, dst_port, payload
+            ),
+        };
+        tools.socket.send_to(pkt, self.args.target_ip);
+    }
+
+
+
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
             sniffer: PacketSniffer::new(self.iface.clone(), self.get_bpf_filter()),
@@ -217,9 +235,11 @@ impl PortScanner {
 
 
     
-    fn display_progress(ip: &str, port: u16, delay: f32) {
+    #[inline]
+    fn display_and_sleep(ip: &str, port: u16, delay: f32) {
         let msg = format!("Packet sent to {} port {:<5} - delay: {:.2}", ip, port, delay);
         inline_display(&msg);
+        thread::sleep(Duration::from_secs_f32(delay));
     }
 
 }
@@ -246,4 +266,12 @@ struct TcpIterators {
     ports:  PortIter,
     delays: DelayIter,
     ip:     String,
+}
+
+
+
+#[derive(Clone, Copy)]
+enum Protocol<'a> {
+    Tcp,
+    Udp(&'a [u8]),
 }
