@@ -106,26 +106,31 @@ impl NetworkMapper {
         iters:      &mut Iterators
     ) {
         let mut rand = RandValues::new();
+        let iter_len = iters.len;
 
-        for (i, (dst_ip, delay)) in iters.ips.by_ref().zip(iters.delays.by_ref()).enumerate() {
-            let pkt = match probe_type {
-                "icmp" => tools.builder.icmp_ping(self.my_ip, dst_ip),
-                "tcp"  => tools.builder.tcp_ip(self.my_ip, rand.get_random_port(), dst_ip, 80),
-                &_     => abort(format!("Unknown protocol type: {}", probe_type)),
-            };
-            tools.socket.send_to(&pkt, dst_ip);
-
-            Self::display_progress(i + 1, iters.len , dst_ip.to_string(), delay);
-            thread::sleep(Duration::from_secs_f32(delay));
-        }
+        iters.ips.by_ref()
+            .zip(iters.delays.by_ref())
+            .enumerate()
+            .for_each(|(i, (dst_ip, delay))| {
+                let pkt = match probe_type {
+                    "icmp" => tools.builder.icmp_ping(self.my_ip, dst_ip),
+                    "tcp"  => tools.builder.tcp_ip(self.my_ip, rand.get_random_port(), dst_ip, 80),
+                    &_     => abort(format!("Unknown protocol type: {}", probe_type)),
+                };
+                tools.socket.send_to(&pkt, dst_ip);
+            
+                Self::display_and_sleep(i + 1, iter_len, dst_ip.to_string(), delay);
+            });
         println!("");
     }
 
 
 
-    fn display_progress(i: usize, total: usize, ip: String, delay: f32) {
+    #[inline]
+    fn display_and_sleep(i: usize, total: usize, ip: String, delay: f32) {
         let msg = format!("\tPackets sent: {}/{} - {:<15} - delay: {:.2}", i, total, ip, delay);
         inline_display(&msg);
+        thread::sleep(Duration::from_secs_f32(delay));
     }
 
 
