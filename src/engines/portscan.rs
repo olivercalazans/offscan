@@ -37,18 +37,13 @@ impl PortScanner {
 
     pub fn execute(&mut self) {
         if self.args.udp {
-            self.perform_udp_scan();
+            self.send_and_receive_udp();
         } else {
-            self.perform_tcp_scan();
+            self.send_and_receive_tcp();
         }
-    }
 
-
-
-    fn perform_tcp_scan(&mut self) {
-        self.send_and_receive_tcp();
-        self.process_raw_tcp_packets();
-        self.display_tcp_result();
+        self.process_raw_packets();
+        self.display_result();
     }
 
 
@@ -84,40 +79,14 @@ impl PortScanner {
             .zip(iters.delays.by_ref())
             .for_each(|(port, delay)| {
                 let src_port = rand.get_random_port();
-                self.create_and_send_packet(tools, src_port, port, Protocol::Tcp);
+                
+                let pkt = tools.builder.tcp_ip(self.my_ip, src_port, self.args.target_ip, port);
+                tools.socket.send_to(pkt, self.args.target_ip);
+
                 Self::display_and_sleep(&iters.ip, port, delay);
             });        
 
         println!("");
-    }
-
-
-
-    fn process_raw_tcp_packets(&mut self) {
-        let tcp_packets = mem::take(&mut self.raw_packets);
-
-        for packet in tcp_packets.into_iter() {
-            let port = PacketDissector::get_tcp_src_port(&packet);
-            self.open_ports.push(port);
-        }
-    }
-
-
-
-    fn display_tcp_result(&self) {
-        let device_name = get_host_name(&self.args.target_ip.to_string());
-        let ports       = self.open_ports.join(", ");
-
-        println!("\nOpen ports from {} ({})", device_name, self.args.target_ip);
-        println!("{}", ports);
-    }
-
-
-
-    fn perform_udp_scan(&mut self) {
-        self.send_and_receive_udp();
-        self.process_raw_udp_packets();
-        self.display_udp_result();
     }
 
 
@@ -141,6 +110,7 @@ impl PortScanner {
         let ports  = UdpPayloads::new();
         let delays = DelayIter::new(&self.args.delay, ports.len());
         let ip     = self.args.target_ip.to_string();
+
         UdpIterators {ports, delays, ip}
     }
 
@@ -153,58 +123,14 @@ impl PortScanner {
             .zip(iters.delays.by_ref())
             .for_each(|((port, payload), delay)| {
                 let src_port = rand.get_random_port();
-                self.create_and_send_packet(tools, src_port, port, Protocol::Udp(&payload.data));
+                
+                let pkt = tools.builder.udp_ip(self.my_ip, src_port, self.args.target_ip, port, payload);
+                tools.socket.send_to(pkt, self.args.target_ip);
+                
                 Self::display_and_sleep(&iters.ip, port, delay);
             });
         
         println!("");
-    }
-
-
-
-    fn process_raw_udp_packets(&mut self) {
-        let udp_packets = mem::take(&mut self.raw_packets);
-        let payloads    = UdpPayloads::new();
-
-        for packet in udp_packets.into_iter() {
-            let port_str  = PacketDissector::get_udp_src_port(&packet);
-            let port: u16 = port_str.parse().unwrap();
-            let info      = payloads.get(port);
-            let result    = format!("{:<5} - {}", port_str, info.unwrap().description); 
-            self.open_ports.push(result);
-        }
-    }
-
-
-
-    fn display_udp_result(&self) {
-        let device_name = get_host_name(&self.args.target_ip.to_string());
-
-        println!("\nOpen ports from {} ({})", device_name, self.args.target_ip);
-        for p in &self.open_ports {
-            println!("{}", p);
-        }
-    }
-
-
-
-    #[inline]
-    fn create_and_send_packet(
-        &mut self,
-        tools:    &mut PacketTools,
-        src_port: u16,
-        dst_port: u16,
-        protocol: Protocol
-    ) {
-        let pkt = match protocol {
-            Protocol::Tcp => tools.builder.tcp_ip(
-                self.my_ip, src_port, self.args.target_ip, dst_port
-            ),
-            Protocol::Udp(payload) => tools.builder.udp_ip(
-                self.my_ip, src_port, self.args.target_ip, dst_port, payload
-            ),
-        };
-        tools.socket.send_to(pkt, self.args.target_ip);
     }
 
 
@@ -242,6 +168,32 @@ impl PortScanner {
         thread::sleep(Duration::from_secs_f32(delay));
     }
 
+
+
+    fn process_raw_packets(&mut self) {
+        let packets = mem::take(&mut self.raw_packets);
+
+        for packet in packets.into_iter() {
+            let port = if self.args.udp {
+                PacketDissector::get_udp_src_port(&packet)
+            } else {
+                PacketDissector::get_tcp_src_port(&packet)
+            };
+
+            self.open_ports.push(port);
+        }
+    }
+
+
+
+    fn display_result(&self) {
+        let device_name = get_host_name(&self.args.target_ip.to_string());
+        let ports       = self.open_ports.join(", ");
+
+        println!("\nOpen ports from {} ({})", device_name, self.args.target_ip);
+        println!("{}", ports);
+    }
+
 }
 
 
@@ -266,12 +218,4 @@ struct TcpIterators {
     ports:  PortIter,
     delays: DelayIter,
     ip:     String,
-}
-
-
-
-#[derive(Clone, Copy)]
-enum Protocol<'a> {
-    Tcp,
-    Udp(&'a [u8]),
 }
