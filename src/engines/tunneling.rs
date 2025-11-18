@@ -10,15 +10,6 @@ use crate::utils::abort;
 
 
 
-struct PacketInfo {
-    src_mac: [u8; 6],
-    src_ip:  Ipv4Addr,
-    dst_mac: [u8; 6],
-    dst_ip:  Ipv4Addr,
-}
-
-
-
 pub struct ProtocolTunneler {
     args:        TunnelArgs,
     pkt_builder: PacketBuilder,
@@ -129,4 +120,13 @@ impl ProtocolTunneler {
             .join(":")
     }
 
+}
+
+
+
+struct PacketInfo {
+    src_mac: [u8; 6],
+    src_ip:  Ipv4Addr,
+    dst_mac: [u8; 6],
+    dst_ip:  Ipv4Addr,
 }

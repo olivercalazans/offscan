@@ -94,6 +94,7 @@ impl AuthenticationFlooder {
 
 
 
+    #[inline]
     fn display_progress(sent: usize) {
         let msg: String = format!("Packets sent: {}", &sent);
         inline_display(&msg);

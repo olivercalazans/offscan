@@ -2,15 +2,8 @@ use std::collections::HashMap;
 
 
 
-#[derive(Debug, Clone)]
-pub struct UdpPayload {
-    pub data: Vec<u8>,
-    pub description: String,
-}
-
-
 pub struct UdpPayloads {
-    payloads: HashMap<u16, UdpPayload>,
+    payloads: HashMap<u16, Vec<u8>>,
 }
 
 
@@ -21,100 +14,92 @@ impl UdpPayloads {
         let mut payloads = HashMap::new();
         
 
-        payloads.insert(53, UdpPayload {
-            data: vec![
+        payloads.insert(53, // DNS Query for google.com
+            vec![
                 0xaa, 0xaa, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x06, b'g', b'o', b'o', b'g', b'l', b'e', 0x03, 
                 b'c', b'o', b'm', 0x00, 0x00, 0x01, 0x00, 0x01
-            ],
-            description: "DNS Query for google.com".to_string(),
-        });
+            ]
+        );
         
 
-        payloads.insert(161, UdpPayload {
-            data: vec![
+        payloads.insert(161, // SNMP GetRequest with community 'public
+            vec![
                 0x30, 0x26, 0x02, 0x01, 0x01, 0x04, 0x06, b'p', b'u', b'b', 
                 b'l', b'i', b'c', 0xa0, 0x19, 0x02, 0x04, 0x71, 0xb4, 0xb5, 
                 0x68, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00, 0x30, 0x0b, 0x30, 
                 0x09, 0x06, 0x05, 0x2b, 0x06, 0x01, 0x02, 0x01, 0x05, 0x00
-            ],
-            description: "SNMP GetRequest with community 'public'".to_string(),
-        });
+            ]
+        );
         
-
-        payloads.insert(123, UdpPayload {
-            data: vec![
+ 
+        payloads.insert(123, // NTP Client Request
+            vec![
                 0x1b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-            ],
-            description: "NTP Client Request".to_string(),
-        });
+            ]
+        );
         
 
-        payloads.insert(67, UdpPayload {
-            data: vec![
+        payloads.insert(67, // DHCP Discover
+            vec![
                 0x01, 0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x00, 0x00
-            ],
-            description: "DHCP Discover".to_string(),
-        });
+            ]
+        );
         
 
-        payloads.insert(69, UdpPayload {
-            data: {
+        payloads.insert(69, // TFTP Read Request for test.txt
+            {
                 let mut data = vec![0x00, 0x01]; // OPCODE = Read
                 data.extend_from_slice(b"test.txt");
                 data.push(0x00);
                 data.extend_from_slice(b"octet");
                 data.push(0x00);
                 data
-            },
-            description: "TFTP Read Request for test.txt".to_string(),
-        });
+            }
+        );
         
 
-        payloads.insert(137, UdpPayload {
-            data: vec![
+        payloads.insert(137, // NetBIOS Name Query
+            vec![
                 0x82, 0x84, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 
                 0x00, 0x00, 0x20, b'C', b'K', 0x41, 0x41, 0x41, 0x41, 0x41, 
                 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 
                 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 
                 0x41, 0x41, 0x41, 0x41, 0x41, 0x00, 0x00, 0x21, 0x00, 0x01
-            ],
-            description: "NetBIOS Name Query".to_string(),
-        });
+            ]
+        );
         
 
-        payloads.insert(162, UdpPayload {
-            data: vec![
+        payloads.insert(162, // SNMP Trap
+            vec![
                 0x30, 0x33, 0x02, 0x01, 0x01, 0x04, 0x06, b'p', b'u', b'b', 
                 b'l', b'i', b'c', 0xa7, 0x26, 0x02, 0x04, 0x00, 0x00, 0x00, 
                 0x01, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00, 0x30, 0x1a, 0x30, 
                 0x0e, 0x06, 0x0a, 0x2b, 0x06, 0x01, 0x04, 0x01, 0xbf, 0x08, 
                 0x03, 0x02, 0x0a, 0x40, 0x04, 0x00, 0x30, 0x08, 0x06, 0x04, 
                 0x2b, 0x06, 0x01, 0x02, 0x05, 0x00
-            ],
-            description: "SNMP Trap".to_string(),
-        });
+            ]
+        );
 
 
-        payloads.insert(0, UdpPayload {
-            data: vec![],
-            description: "Empty payload".to_string(),
-        });
+        payloads.insert(0, // Empty payload
+            vec![]
+        );
 
         UdpPayloads { payloads }
     }
     
 
 
-    pub fn get_payload_or_empty(&self, port: u16) -> &UdpPayload {
+    pub fn get_payload_or_empty(&self, port: u16) -> &Vec<u8> {
         self.payloads.get(&port).unwrap_or_else(|| {
             self.payloads.get(&0).expect("Empty payload should exist")
         })
@@ -128,13 +113,13 @@ impl UdpPayloads {
 
 
 
-    pub fn get(&self, port: u16) -> Option<&UdpPayload> {
+    pub fn get(&self, port: u16) -> Option<&Vec<u8>> {
         self.payloads.get(&port)
     }
 
 
 
-    pub fn iter(&self) -> impl Iterator<Item = (u16, &UdpPayload)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (u16, &Vec<u8>)> + '_ {
         self.payloads.iter()
             .filter(|&(&port, _)| port != 0)
             .map(|(&port, payload)| (port, payload))
