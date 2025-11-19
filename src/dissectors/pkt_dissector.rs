@@ -3,53 +3,51 @@ pub struct PacketDissector;
 
 impl PacketDissector {
 
-    pub fn get_udp_src_port(packet: &[u8]) -> String {
+    pub fn get_udp_src_port(packet: &[u8]) -> Option<u16> {
         if packet.len() < 42 {
-            return "small packet".into();
+            return None;
         }
 
         let ethertype = u16::from_be_bytes([packet[12], packet[13]]);
         if ethertype != 0x0800 {
-            return "not ipv4".into();
+            return None;
         }
 
         let ip_protocol = packet[23];
         if ip_protocol != 17 {
-            return "not udp".into();
+            return None;
         }
 
-        let source_port = u16::from_be_bytes([packet[34], packet[35]]);
-        source_port.to_string()
+        Some(u16::from_be_bytes([packet[34], packet[35]]))
     }
 
 
 
-    pub fn get_tcp_src_port(packet: &[u8]) -> String {
+    pub fn get_tcp_src_port(packet: &[u8]) -> Option<u16> {
         if packet.len() < 38 {
-            return "small packet".into();
+            return None;
         }
 
         if u16::from_be_bytes([packet[12], packet[13]]) != 0x0800 {
-            return "not ipv4".into();
+            return None;
         }
 
         let ihl = packet[14] & 0x0f;
         if ihl < 5 {
-            return "invalid ip".into();
+            return None;
         }
         let ip_header_len    = (ihl as usize) * 4;
         let ip_payload_start = 14 + ip_header_len;
 
         if packet[23] != 6 {
-            return "not tcp".into();
+            return None;
         }
 
         if packet.len() < ip_payload_start + 2 {
-            return "unknown".into();
+            return None;
         }
 
-        let port = u16::from_be_bytes([packet[ip_payload_start], packet[ip_payload_start + 1]]);
-        port.to_string()
+        Some(u16::from_be_bytes([packet[ip_payload_start], packet[ip_payload_start + 1]]))
     }
 
 

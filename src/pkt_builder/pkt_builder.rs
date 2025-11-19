@@ -4,8 +4,8 @@ use crate::pkt_builder::HeaderBuilder;
 
 
 pub struct PacketBuilder {
-    packet: [u8; 301],
-    layer4: [u8; 267],
+    packet: [u8; 347],
+    layer4: [u8; 313],
     ip:     [u8; 20],
     ether:  [u8; 14],
 }
@@ -16,8 +16,8 @@ impl PacketBuilder {
 
     pub fn new() -> Self {
         Self {
-            packet: [0; 301],
-            layer4: [0; 267],
+            packet: [0; 347],
+            layer4: [0; 313],
             ip:     [0; 20],
             ether:  [0; 14],
         }
