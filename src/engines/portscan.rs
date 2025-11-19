@@ -1,4 +1,4 @@
-use std::{thread, time::Duration, mem, net::Ipv4Addr};
+use std::{thread, time::Duration, mem, net::Ipv4Addr, collections::BTreeSet};
 use crate::arg_parser::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandValues};
 use crate::iface::IfaceInfo;
@@ -15,7 +15,7 @@ pub struct PortScanner {
     iface:       String,
     my_ip:       Ipv4Addr,
     raw_packets: Vec<Vec<u8>>,
-    open_ports:  Vec<String>,
+    open_ports:  BTreeSet<u16>,
 }
 
 
@@ -27,7 +27,7 @@ impl PortScanner {
         Self {
             my_ip:       IfaceInfo::iface_ip(&iface),
             raw_packets: Vec::new(),
-            open_ports:  Vec::new(),
+            open_ports:  BTreeSet::new(),
             args,
             iface,
         }
@@ -107,7 +107,7 @@ impl PortScanner {
 
 
     fn setup_udp_iterators(&self) -> UdpIterators {
-        let ports  = UdpPayloads::new();
+        let ports  = UdpPayloads::new(self.my_ip.clone());
         let delays = DelayIter::new(&self.args.delay, ports.len());
         let ip     = self.args.target_ip.to_string();
 
@@ -180,7 +180,9 @@ impl PortScanner {
                 PacketDissector::get_tcp_src_port(&packet)
             };
 
-            self.open_ports.push(port);
+            if port.is_some() {
+                self.open_ports.insert(port.unwrap());
+            }
         }
     }
 
@@ -188,10 +190,19 @@ impl PortScanner {
 
     fn display_result(&self) {
         let device_name = get_host_name(&self.args.target_ip.to_string());
-        let ports       = self.open_ports.join(", ");
+        let ports       = self.format_ports();
 
         println!("\nOpen ports from {} ({})", device_name, self.args.target_ip);
         println!("{}", ports);
+    }
+
+
+
+    fn format_ports(&self) -> String {
+        self.open_ports.iter()
+            .map(|port| port.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
     }
 
 }
