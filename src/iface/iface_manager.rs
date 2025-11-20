@@ -1,6 +1,6 @@
 use std::{
-    ffi::CString, io::Error, os::unix::io::RawFd, process::{Command, Output}, thread,
-    time::Duration, mem, format, ptr::copy_nonoverlapping
+    ffi::CString, io::Error, os::unix::io::RawFd, process::{Command, Output, Stdio},
+    thread, time::Duration, mem, format, ptr::copy_nonoverlapping
 };
 use libc::{AF_INET, SOCK_DGRAM, socket, ifreq, ioctl, close, SIOCGIFFLAGS, SIOCSIFFLAGS, IFF_UP};
 use crate::utils::abort;
@@ -142,6 +142,22 @@ impl InterfaceManager {
         }
 
         Self::set_iface_up(iface);
+    }
+
+
+
+    pub fn set_channel(iface: &str, channel: u32) -> bool {
+        let output = Command::new("sudo")
+            .args(&["iw", "dev", iface, "set", "channel", &channel.to_string()])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+
+        if output.is_err() {
+            return false;
+        }
+
+        true
     }
 
 }
