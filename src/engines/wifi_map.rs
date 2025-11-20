@@ -62,12 +62,32 @@ impl WifiMapper {
         println!("Sniffing beacons");
         
         sniffer.start();
-        thread::sleep(Duration::from_secs(self.args.time));
+        self.change_channels();
         sniffer.stop();
 
         InterfaceManager::disable_monitor_mode(&self.args.iface);
 
         self.raw_beacons = sniffer.get_packets();
+    }
+
+
+
+    fn change_channels(&self) {
+        const CHANNELS: [u32; 19] = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,  // 2.4 GHz
+            36, 40, 44, 48, 149, 153, 157, 161  // 5.0 GHz
+        ];
+
+        for channel in CHANNELS {
+            let done = InterfaceManager::set_channel(&self.args.iface, channel);
+
+            if !done {
+                println!("Uneable to set channel {}", channel);
+                continue
+            }
+
+            thread::sleep(Duration::from_millis(250));
+        }
     }
 
 
