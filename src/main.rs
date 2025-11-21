@@ -64,6 +64,7 @@ impl Command {
             "-h"     => Self::display_commands(),
             "--help" => Self::display_commands(),
             "auth"   => self.execute_auth_flood(),
+            "banner" => self.execute_banner_grab(),
             "flood"  => self.execute_flood(),
             "netmap" => self.execute_netmap(),
             "pscan"  => self.execute_pscan(),
@@ -78,6 +79,7 @@ impl Command {
     fn display_commands() {
         println!("\nAvailable commands:");
         println!("\tauth   -> Authentication Flooding");
+        println!("\tbanner -> Banner Grabbing");
         println!("\tflood  -> Packet Flooding");
         println!("\tnetmap -> Network Mapping");
         println!("\tpscan  -> Port Scanning");
@@ -92,6 +94,14 @@ impl Command {
         let cmd_args = AuthArgs::parse_from(self.arguments.clone());
         let mut auth = AuthenticationFlooder::new(cmd_args);
         auth.execute();
+    }
+
+
+
+    fn execute_banner_grab(&self) {
+        let cmd_args = BannerArgs::parse_from(self.arguments.clone());
+        let banner   = BannerGrabber::new(cmd_args);
+        banner.execute();
     }
 
 
