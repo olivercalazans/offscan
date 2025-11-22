@@ -99,8 +99,8 @@ impl Command {
 
 
     fn execute_banner_grab(&self) {
-        let cmd_args = BannerArgs::parse_from(self.arguments.clone());
-        let banner   = BannerGrabber::new(cmd_args);
+        let cmd_args   = BannerArgs::parse_from(self.arguments.clone());
+        let mut banner = BannerGrabber::new(cmd_args);
         banner.execute();
     }
 
