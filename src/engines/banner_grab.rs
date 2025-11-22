@@ -1,4 +1,6 @@
 use std::{net::TcpStream, io::{Write, BufRead, BufReader}, time::Duration, collections::BTreeMap};
+use std::sync::mpsc;
+use std::thread;
 use crate::arg_parser::BannerArgs;
 
 
@@ -6,6 +8,9 @@ use crate::arg_parser::BannerArgs;
 pub struct BannerGrabber {
     target_ip: String,
     result:    BTreeMap<u16, String>,
+    refused:   u32,
+    timeout:   u32,
+    errors:    u32,
 }
 
 
@@ -16,6 +21,9 @@ impl BannerGrabber {
         Self { 
             target_ip: args.target_ip.to_string(),
             result:    BTreeMap::new(),
+            refused:   0,
+            timeout:   0,
+            errors:    0,
         }
     }
 
@@ -26,31 +34,71 @@ impl BannerGrabber {
         self.http(80);
         self.http(8080);
         self.ipp(631);
+        self.display_errors();
         self.display_result();
     }
 
 
 
+    fn display_errors(&self) {
+        println!("Connection error.....: {}", self.errors);
+        println!("No response (timeout): {}", self.timeout);
+        println!("Refused connections..: {}", self.refused);
+        println!("");
+    }
+
+
+
     fn display_result(&self) {
-        for (port, respose) in &self.result {
-            println!("{:<5}  {}", port, respose);
+        println!("PORT   BANNER/SERVICE");
+        println!("-----  -----------------");
+        
+        for (port, response) in &self.result {
+            println!("{:<5}  {}", port, response);
         }
     }
 
 
 
-    fn ssh(&mut self, port: u16) {
-        let stream = match TcpStream::connect(format!("{}:{}", self.target_ip, port)) {
-            Ok(stream) => { stream }
-            Err(_)     => { return; }
-        };
+    fn connect_with_timeout(&mut self, port: u16) -> Option<TcpStream> {
+        let target = format!("{}:{}", self.target_ip, port);
+        let (tx, rx) = mpsc::channel();
+        
+        thread::spawn(move || {
+            let result = TcpStream::connect(&target);
+            let _ = tx.send(result);
+        });
 
-        if stream.set_read_timeout(Some(Duration::from_secs(5))).is_err() {
-            return;
+        match rx.recv_timeout(Duration::from_secs(5)) {
+            Ok(Ok(stream)) => {
+                let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+                let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
+                return Some(stream);
+            }
+            Ok(Err(_)) => {
+                self.refused += 1;
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                self.timeout += 1;
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                self.errors += 1;
+            }
         }
 
+        None
+    }
+
+
+
+    fn ssh(&mut self, port: u16) {
+        let stream = match self.connect_with_timeout(port) {
+            Some(stream) => stream,
+            None         => return,
+        };
+
         let mut banner_line = String::new();
-        let mut reader      = BufReader::new(stream);
+        let mut reader = BufReader::new(stream);
     
         if reader.read_line(&mut banner_line).is_ok() {
             self.result.insert(port, banner_line.trim().to_string());
@@ -60,9 +108,9 @@ impl BannerGrabber {
 
 
     fn http(&mut self, port: u16) {
-        let mut stream = match TcpStream::connect(format!("{}:{}", self.target_ip, port)) {
-            Ok(stream) => { stream }
-            Err(_)     => { return; }
+        let mut stream = match self.connect_with_timeout(port) {
+            Some(stream) => stream,
+            None => return,
         };
 
         if stream.write_all(b"HEAD / HTTP/1.0\r\n\r\n").is_err() {
@@ -74,7 +122,7 @@ impl BannerGrabber {
         for line in reader.lines() {
             let line = match line {
                 Ok(line) => line,
-                Err(_) => break,
+                Err(_)   => break,
             };
 
             if line.trim().is_empty() {
@@ -87,13 +135,13 @@ impl BannerGrabber {
             }
         }
     }
-
-
     
+
+
     fn ipp(&mut self, port: u16) {
-        let mut stream = match TcpStream::connect(format!("{}:{}", self.target_ip, port)) {
-            Ok(stream) => { stream }
-            Err(_)     => { return; }
+        let mut stream = match self.connect_with_timeout(port) {
+            Some(stream) => stream,
+            None => return,
         };
 
         let request = format!(
@@ -111,12 +159,12 @@ impl BannerGrabber {
 
         let reader = BufReader::new(stream);
         let mut server_header = None;
-        let mut ipp_info      = None;
+        let mut ipp_info = None;
 
         for line in reader.lines() {
             let line = match line {
                 Ok(line) => line,
-                Err(_)   => break,
+                Err(_) => break,
             };
 
             if line.trim().is_empty() {
@@ -148,5 +196,4 @@ impl BannerGrabber {
             self.result.insert(port, "IPP/Print Service (no banner)".to_string());
         }
     }
-
 }
