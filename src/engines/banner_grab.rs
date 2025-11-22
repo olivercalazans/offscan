@@ -73,35 +73,30 @@ impl BannerGrabber {
 
     fn http(&mut self) {
         let mut stream = self.connect_to_target(80);
-        
-        // Envia requisição HEAD (mais eficiente para banner grabbing)
+
         if let Err(e) = stream.write_all(b"HEAD / HTTP/1.0\r\n\r\n") {
             abort(&format!("Failed to send data: {}", e));
         }
-    
+
         let reader = BufReader::new(stream);
         let mut server_header = None;
-    
-        // Lê apenas os cabeçalhos HTTP
+
         for line in reader.lines() {
             let line = match line {
                 Ok(line) => line,
                 Err(_) => break,
             };
-        
-            // Para quando encontrar linha em branco (fim dos cabeçalhos)
+
             if line.trim().is_empty() {
                 break;
             }
-        
-            // Procura pelo cabeçalho Server
+
             if line.to_lowercase().starts_with("server:") {
                 server_header = Some(line);
-                break; // Encontrou o que precisava, pode parar
+                break;
             }
         }
-    
-        // Salva o resultado (ou "Not found" se não achou)
+
         let result = server_header.unwrap_or_else(|| "Server: Not found".to_string());
         self.result.insert(80, result);
     }
