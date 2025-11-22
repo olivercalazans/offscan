@@ -23,6 +23,7 @@
     </td>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
       <ul style="list-style-type: none; padding-left: 0; margin: 0;">
+        <li><strong><em>Banner Grabbing</em></strong></li>
         <li><strong><em>Network Mapping</em></strong></li>
         <li><strong><em>Port Scanning</em></strong></li>
         <li><strong><em>Wifi Mapping</em></strong></li>
