@@ -1,6 +1,4 @@
-use std::{
-    net::TcpStream, io::{Write, BufRead, BufReader}, time::Duration, collections::BTreeMap
-};
+use std::{net::TcpStream, io::{Write, BufRead, BufReader}, time::Duration, collections::BTreeMap};
 use crate::arg_parser::BannerArgs;
 
 
@@ -27,6 +25,7 @@ impl BannerGrabber {
         self.ssh(22);
         self.http(80);
         self.http(8080);
+        self.ipp(631);
         self.display_result();
     }
 
@@ -43,25 +42,18 @@ impl BannerGrabber {
     fn ssh(&mut self, port: u16) {
         let stream = match TcpStream::connect(format!("{}:{}", self.target_ip, port)) {
             Ok(stream) => { stream }
-            Err(e)     => {
-                self.result.insert(
-                    port, format!("Failed to connect to {}:{} {}", self.target_ip, port, e)
-                );
-                return;
-            }
+            Err(_)     => { return; }
         };
 
-        if let Err(e) = stream.set_read_timeout(Some(Duration::from_secs(5))) {
-            self.result.insert(port, format!("Failed to set timeout: {}", e));
+        if stream.set_read_timeout(Some(Duration::from_secs(5))).is_err() {
             return;
         }
 
         let mut banner_line = String::new();
         let mut reader      = BufReader::new(stream);
     
-        match reader.read_line(&mut banner_line) {
-            Ok(_)  => { self.result.insert(port, banner_line.trim().to_string()); }
-            Err(e) => { self.result.insert(port, e.to_string()); }
+        if reader.read_line(&mut banner_line).is_ok() {
+            self.result.insert(port, banner_line.trim().to_string());
         }
     }
 
@@ -70,19 +62,14 @@ impl BannerGrabber {
     fn http(&mut self, port: u16) {
         let mut stream = match TcpStream::connect(format!("{}:{}", self.target_ip, port)) {
             Ok(stream) => { stream }
-            Err(e)     => {
-                self.result.insert(port, format!("Failed to connect to {}:{} {}", self.target_ip, port, e));
-                return;
-            }
+            Err(_)     => { return; }
         };
 
-        if let Err(e) = stream.write_all(b"HEAD / HTTP/1.0\r\n\r\n") {
-            self.result.insert(port, format!("Failed to send data: {}", e));
+        if stream.write_all(b"HEAD / HTTP/1.0\r\n\r\n").is_err() {
             return;
         }
 
         let reader = BufReader::new(stream);
-        let mut server_header = None;
 
         for line in reader.lines() {
             let line = match line {
@@ -95,13 +82,71 @@ impl BannerGrabber {
             }
 
             if line.to_lowercase().starts_with("server:") {
-                server_header = Some(line);
+                self.result.insert(port, line);
                 break;
             }
         }
+    }
 
-        let result = server_header.unwrap_or_else(|| "Server: Not found".to_string());
-        self.result.insert(port, result);
+
+    
+    fn ipp(&mut self, port: u16) {
+        let mut stream = match TcpStream::connect(format!("{}:{}", self.target_ip, port)) {
+            Ok(stream) => { stream }
+            Err(_)     => { return; }
+        };
+
+        let request = format!(
+            "GET /ipp/print HTTP/1.1\r\n\
+            Host: localhost:{}\r\n\
+            User-Agent: Rust IPP Scanner\r\n\
+            Accept: application/ipp\r\n\
+            Connection: close\r\n\r\n", 
+            port
+        );
+
+        if stream.write_all(request.as_bytes()).is_err() {
+            return;
+        }
+
+        let reader = BufReader::new(stream);
+        let mut server_header = None;
+        let mut ipp_info      = None;
+
+        for line in reader.lines() {
+            let line = match line {
+                Ok(line) => line,
+                Err(_)   => break,
+            };
+
+            if line.trim().is_empty() {
+                break;
+            }
+
+            if line.to_lowercase().starts_with("server:") && server_header.is_none() {
+                server_header = Some(line.clone());
+            }
+
+            if line.to_lowercase().contains("ipp") || line.to_lowercase().contains("cups") {
+                ipp_info = Some(line.clone());
+            }
+
+            if line.to_lowercase().starts_with("x-") || 
+               line.to_lowercase().contains("printer") ||
+               line.to_lowercase().contains("print") {
+                if ipp_info.is_none() {
+                    ipp_info = Some(line.clone());
+                }
+            }
+        }
+
+        if let Some(server) = server_header {
+            self.result.insert(port, server);
+        } else if let Some(ipp) = ipp_info {
+            self.result.insert(port, format!("IPP Service: {}", ipp));
+        } else {
+            self.result.insert(port, "IPP/Print Service (no banner)".to_string());
+        }
     }
 
 }
