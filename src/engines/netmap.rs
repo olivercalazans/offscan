@@ -53,9 +53,10 @@ impl NetworkMapper {
 
 
     fn validate_protocol_flags(&mut self) {
-        if !self.args.icmp && !self.args.tcp {
+        if !self.args.icmp && !self.args.tcp && !self.args.udp {
             self.args.icmp = true;
             self.args.tcp  = true;
+            self.args.udp  = true;
         }
     }
 
@@ -78,7 +79,7 @@ impl NetworkMapper {
 
     fn get_bpf_filter(&self) -> String {
         format!(
-            "(dst host {} and src net {}) and (tcp or (icmp and icmp[0] = 0))",
+            "(dst host {} and src net {}) and (tcp or icmp or udp)",
             self.my_ip, IfaceInfo::iface_network_cidr(&self.args.iface)
         )
     }
@@ -100,12 +101,25 @@ impl NetworkMapper {
             None
         };
 
+
+        let udp_thread = if self.args.udp {
+            println!("Sending UDP probes");
+            Some(self.create_thread("udp".to_string()))
+        } else {
+            None
+        };
+
+
         if let Some(thread) = icmp_thread {
             thread.join().expect("ICMP thread failed");
         }
 
         if let Some(thread) = tcp_thread {
             thread.join().expect("TCP thread failed");
+        }
+
+        if let Some(thread) = udp_thread {
+            thread.join().expect("UDP thread failed");
         }
     }
 
@@ -157,6 +171,7 @@ impl NetworkMapper {
                 let pkt = match probe_type {
                     "icmp" => tools.builder.icmp_ping(my_ip, dst_ip),
                     "tcp"  => tools.builder.tcp_ip(my_ip, rand.get_random_port(), dst_ip, 80),
+                    "udp"  => tools.builder.udp_ip(my_ip, rand.get_random_port(), dst_ip, 53, &[]),
                     &_     => abort(format!("Unknown protocol type: {}", probe_type)),
                 };
                 tools.socket.send_to(&pkt, dst_ip);

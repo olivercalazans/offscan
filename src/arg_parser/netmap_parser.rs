@@ -42,4 +42,9 @@ pub struct NetMapArgs {
     #[arg(long)]
     pub tcp: bool,
 
+
+    /// Use only TCP probes
+    #[arg(long)]
+    pub udp: bool,
+
 }
