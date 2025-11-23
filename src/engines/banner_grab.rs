@@ -66,7 +66,7 @@ impl BannerGrabber {
         
         thread::spawn(move || {
             let result = TcpStream::connect(&target);
-            let _ = tx.send(result);
+            let _      = tx.send(result);
         });
 
         match rx.recv_timeout(Duration::from_secs(5)) {
@@ -98,7 +98,7 @@ impl BannerGrabber {
         };
 
         let mut banner_line = String::new();
-        let mut reader = BufReader::new(stream);
+        let mut reader      = BufReader::new(stream);
     
         if reader.read_line(&mut banner_line).is_ok() {
             self.result.insert(port, banner_line.trim().to_string());
@@ -110,7 +110,7 @@ impl BannerGrabber {
     fn http(&mut self, port: u16) {
         let mut stream = match self.connect_with_timeout(port) {
             Some(stream) => stream,
-            None => return,
+            None         => return,
         };
 
         if stream.write_all(b"HEAD / HTTP/1.0\r\n\r\n").is_err() {
@@ -141,7 +141,7 @@ impl BannerGrabber {
     fn ipp(&mut self, port: u16) {
         let mut stream = match self.connect_with_timeout(port) {
             Some(stream) => stream,
-            None => return,
+            None         => return,
         };
 
         let request = format!(
@@ -157,14 +157,14 @@ impl BannerGrabber {
             return;
         }
 
-        let reader = BufReader::new(stream);
+        let reader            = BufReader::new(stream);
         let mut server_header = None;
-        let mut ipp_info = None;
+        let mut ipp_info      = None;
 
         for line in reader.lines() {
             let line = match line {
                 Ok(line) => line,
-                Err(_) => break,
+                Err(_)   => break,
             };
 
             if line.trim().is_empty() {

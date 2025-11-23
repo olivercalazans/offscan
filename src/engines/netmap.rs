@@ -6,7 +6,19 @@ use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer3RawSocket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{abort, inline_display, get_host_name};
+use crate::utils::{abort, get_host_name};
+
+
+
+struct Iterators {
+    ips:    Ipv4Iter,
+    delays: DelayIter,
+}
+
+struct PacketTools {
+    builder: PacketBuilder,
+    socket:  Layer3RawSocket,
+}
 
 
 
@@ -16,7 +28,6 @@ pub struct NetworkMapper {
     my_ip:      Ipv4Addr,
     raw_pkts:   Vec<Vec<u8>>,
 }
-
 
 
 impl NetworkMapper {
@@ -33,6 +44,7 @@ impl NetworkMapper {
 
 
     pub fn execute(&mut self) {
+        self.validate_protocol_flags();
         self.send_and_receive();
         self.process_raw_packets();
         self.display_result();
@@ -40,28 +52,26 @@ impl NetworkMapper {
 
 
 
-    fn send_and_receive(&mut self) {
-        let mut tools = self.setup_tools();
-        let mut iters = self.setup_iterators();
-        
-        tools.sniffer.start();
-        
-        self.send_icmp_and_tcp_probes(&mut tools, &mut iters);
-        
-        thread::sleep(Duration::from_secs(3));
-        tools.sniffer.stop();
-        
-        self.raw_pkts = tools.sniffer.get_packets()
+    fn validate_protocol_flags(&mut self) {
+        if !self.args.icmp && !self.args.tcp {
+            self.args.icmp = true;
+            self.args.tcp  = true;
+        }
     }
 
 
 
-    fn setup_tools(&self) -> PacketTools {
-        PacketTools {
-            sniffer: PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter()),
-            builder: PacketBuilder::new(),
-            socket:  Layer3RawSocket::new(&self.args.iface),
-        }
+    fn send_and_receive(&mut self) {    
+        let mut sniffer = PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter());   
+        
+        sniffer.start();
+        
+        self.send_icmp_and_tcp_probes();
+        
+        thread::sleep(Duration::from_secs(3));
+        sniffer.stop();
+        
+        self.raw_pkts = sniffer.get_packets()
     }
 
 
@@ -75,62 +85,85 @@ impl NetworkMapper {
 
 
 
+    fn send_icmp_and_tcp_probes(&mut self) {
+        let icmp_thread = if self.args.icmp {
+            println!("Sending ICMP probes");
+            Some(self.create_thread("icmp".to_string()))
+        } else {
+            None
+        };
+
+        let tcp_thread = if self.args.tcp {
+            println!("Sending TCP probes");
+            Some(self.create_thread("tcp".to_string()))
+        } else {
+            None
+        };
+
+        if let Some(thread) = icmp_thread {
+            thread.join().expect("ICMP thread failed");
+        }
+
+        if let Some(thread) = tcp_thread {
+            thread.join().expect("TCP thread failed");
+        }
+    }
+
+
+
+    fn create_thread(&self, probe_type: String) -> thread::JoinHandle<()> {
+        let iters = self.setup_iterators();
+        let tools = self.setup_tools();
+        let my_ip = self.my_ip.clone();
+
+        thread::spawn(move || {
+            Self::send_probes(&probe_type, my_ip, iters, tools);
+        })
+    }
+
+
+
     fn setup_iterators(&self) -> Iterators {
         let cidr   = IfaceInfo::iface_network_cidr(&self.args.iface);
         let ips    = Ipv4Iter::new(&cidr, self.args.start_ip.clone(), self.args.end_ip.clone());
         let len    = ips.total() as usize;
         let delays = DelayIter::new(&self.args.delay, len);
         
-        Iterators {ips, delays, len}
+        Iterators {ips, delays}
     }
 
 
 
-    fn send_icmp_and_tcp_probes(&mut self, tools: &mut PacketTools, iters: &mut Iterators) {
-        println!("Sending ICMP probes");
-        self.send_probes("icmp", tools, iters);
-        
-        iters.ips.reset();
-        iters.delays.reset();
-
-        println!("Sending TCP probes");
-        self.send_probes("tcp", tools, iters);     
+    fn setup_tools(&self) -> PacketTools {
+        PacketTools {
+            builder: PacketBuilder::new(),
+            socket:  Layer3RawSocket::new(&self.args.iface),
+        }
     }
 
 
 
     fn send_probes(
-        &mut self,
         probe_type: &str,
-        tools:      &mut PacketTools,
-        iters:      &mut Iterators
+        my_ip:      Ipv4Addr,
+        mut iters:  Iterators,
+        mut tools:  PacketTools
     ) {
         let mut rand = RandValues::new();
-        let iter_len = iters.len;
 
         iters.ips.by_ref()
             .zip(iters.delays.by_ref())
-            .enumerate()
-            .for_each(|(i, (dst_ip, delay))| {
+            .for_each(|(dst_ip, delay)| {
                 let pkt = match probe_type {
-                    "icmp" => tools.builder.icmp_ping(self.my_ip, dst_ip),
-                    "tcp"  => tools.builder.tcp_ip(self.my_ip, rand.get_random_port(), dst_ip, 80),
+                    "icmp" => tools.builder.icmp_ping(my_ip, dst_ip),
+                    "tcp"  => tools.builder.tcp_ip(my_ip, rand.get_random_port(), dst_ip, 80),
                     &_     => abort(format!("Unknown protocol type: {}", probe_type)),
                 };
                 tools.socket.send_to(&pkt, dst_ip);
             
-                Self::display_and_sleep(i + 1, iter_len, dst_ip.to_string(), delay);
+                thread::sleep(Duration::from_secs_f32(delay));
             });
         println!("");
-    }
-
-
-
-    #[inline]
-    fn display_and_sleep(i: usize, total: usize, ip: String, delay: f32) {
-        let msg = format!("\tPackets sent: {}/{} - {:<15} - delay: {:.2}", i, total, ip, delay);
-        inline_display(&msg);
-        thread::sleep(Duration::from_secs_f32(delay));
     }
 
 
@@ -174,20 +207,4 @@ impl NetworkMapper {
         println!("{}", format!("{}  {}  {}", "-".repeat(15), "-".repeat(17), "-".repeat(8)));
     }
 
-}
-
-
-
-struct PacketTools {
-    sniffer: PacketSniffer,
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
-
-
-struct Iterators {
-    ips:    Ipv4Iter,
-    delays: DelayIter,
-    len:    usize,
 }
