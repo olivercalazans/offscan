@@ -32,4 +32,19 @@ pub struct NetMapArgs {
     #[arg(long)]
     pub end_ip: Option<Ipv4Addr>,
 
+
+    /// Use only ICMP probes
+    #[arg(long)]
+    pub icmp: bool,
+
+
+    /// Use only TCP probes
+    #[arg(long)]
+    pub tcp: bool,
+
+
+    /// Use only TCP probes
+    #[arg(long)]
+    pub udp: bool,
+
 }
