@@ -10,6 +10,9 @@ pub use flood_parser::FloodArgs;
 pub mod mac_parser;
 pub use mac_parser::parse_mac;
 
+pub mod net_info_parser;
+pub use net_info_parser::NetInfoArgs;
+
 pub mod netmap_parser;
 pub use netmap_parser::NetMapArgs;
 

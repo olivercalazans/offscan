@@ -117,6 +117,7 @@ impl Command {
 
 
     fn execute_info(&self) {
+        NetInfoArgs::parse_from(self.arguments.clone());
         NetworkInfo::execute();
     }
 
