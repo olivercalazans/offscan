@@ -66,6 +66,7 @@ impl Command {
             "auth"   => self.execute_auth_flood(),
             "banner" => self.execute_banner_grab(),
             "flood"  => self.execute_flood(),
+            "info"   => self.execute_info(),
             "netmap" => self.execute_netmap(),
             "pscan"  => self.execute_pscan(),
             "protun" => self.execute_protun(),
@@ -81,6 +82,7 @@ impl Command {
         println!("\tauth   -> Authentication Flooding");
         println!("\tbanner -> Banner Grabbing");
         println!("\tflood  -> Packet Flooding");
+        println!("\tinfo   -> Network Information");
         println!("\tnetmap -> Network Mapping");
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
@@ -110,6 +112,13 @@ impl Command {
         let cmd_args  = FloodArgs::parse_from(self.arguments.clone());
         let mut flood = PacketFlooder::new(cmd_args);
         flood.execute();
+    }
+
+
+
+    fn execute_info(&self) {
+        let mut info = NetworkInfo::new();
+        info.execute();
     }
 
 

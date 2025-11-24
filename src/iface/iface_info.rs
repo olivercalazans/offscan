@@ -1,6 +1,7 @@
+use std::fs;
 use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
-use std::ffi::{CStr, CString};
-use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in, if_nametoindex};
+use std::ffi::{CStr};
+use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in};
 use crate::utils::abort;
 
 
@@ -8,8 +9,55 @@ use crate::utils::abort;
 pub struct IfaceInfo;
 
 
-
 impl IfaceInfo {
+
+    pub fn get_iface_names() -> Vec<String> {
+        let entries = fs::read_dir("/sys/class/net")
+            .unwrap_or_else(|e| {
+                abort(format!("Failed to read /sys/class/net: {}", e))
+            });
+
+        let interfaces: Vec<String> = entries
+            .filter_map(|entry| {
+                entry.ok().and_then(|e| {
+                    e.file_name().into_string().ok()
+                })
+            })
+            .collect();
+        
+        interfaces
+    }
+
+
+
+    pub fn check_iface_exists(iface_name: &str) -> Result<bool, String> {
+        let interfaces = Self::get_iface_names();
+    
+        if interfaces.iter().any(|iface| iface == iface_name) {
+            Ok(true)
+        } else {
+            Err("Network interface does not exist".to_string())
+        }
+    }
+
+
+
+    pub fn get_iface_index(iface_name: &str) -> i32 {
+        let ifindex_path = format!("/sys/class/net/{}/ifindex", iface_name);
+        
+        match fs::read_to_string(&ifindex_path) {
+            Ok(content) => {
+                content.trim().parse().unwrap_or_else(|_| {
+                    abort(&format!("Failed to parse ifindex for interface: {}", iface_name));
+                })
+            }
+            Err(_) => {
+                abort(&format!("Interface not found or ifindex unavailable: {}", iface_name));
+            }
+        }
+    }
+
+
 
     unsafe fn get_ifaddrs_ptr() -> *mut ifaddrs {
         unsafe {
@@ -154,61 +202,4 @@ impl IfaceInfo {
         }
     }
 
-
-
-    pub fn get_iface_index(iface_name: &str) -> i32 {
-        unsafe {
-            let c_name = CString::new(iface_name).unwrap_or_else(|_| {
-                abort(&format!("Invalid interface name: {}", iface_name));
-            });
-
-            let ifindex = if_nametoindex(c_name.as_ptr()) as i32;
-            if ifindex == 0 {
-                abort(&format!("Interface not found: {}", iface_name));
-            }
-
-            ifindex
-        }
-    }
-
-
-
-    pub fn check_iface_exists(interface_name: &str) -> Result<String, String> {
-        let ifname = CString::new(interface_name)
-            .map_err(|_| "Invalid interface name containing null byte".to_string())?;
-
-        let sock = unsafe { libc::socket(AF_INET, libc::SOCK_DGRAM, 0) };
-        if sock < 0 {
-            return Err("Failed to create socket for interface check".to_string());
-        }
-
-        #[repr(C)]
-        struct IFReq {
-            ifr_name: [libc::c_char; libc::IF_NAMESIZE],
-            ifr_flags: libc::c_short,
-        }
-
-        let mut ifr: IFReq = unsafe { std::mem::zeroed() };
-        unsafe {
-            libc::strcpy(
-                ifr.ifr_name.as_mut_ptr(),
-                ifname.as_ptr() as *const libc::c_char,
-            );
-        }
-
-        let result = unsafe { libc::ioctl(sock, libc::SIOCGIFFLAGS, &mut ifr) };
-
-        unsafe { libc::close(sock); }
-
-        if result == 0 {
-            return Ok(interface_name.to_string());
-        }
-
-        let io_error = std::io::Error::last_os_error();
-        if io_error.raw_os_error() == Some(libc::ENODEV) {
-            return Err("Network interface does not exist".to_string());
-        }
-
-        Err("Failed to check network interface status".to_string())
-    }
 }
