@@ -1,3 +1,4 @@
+use std::fs;
 use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
 use std::ffi::{CStr, CString};
 use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in, if_nametoindex};
@@ -6,7 +7,6 @@ use crate::utils::abort;
 
 
 pub struct IfaceInfo;
-
 
 
 impl IfaceInfo {
@@ -26,6 +26,35 @@ impl IfaceInfo {
             .collect();
         
         interfaces
+    }
+
+
+
+    pub fn check_iface_exists(iface_name: &str) -> Result<bool, String> {
+        let interfaces = Self::get_iface_names();
+    
+        if interfaces.iter().any(|iface| iface == iface_name) {
+            Ok(true)
+        } else {
+            Err("Network interface does not exist".to_string())
+        }
+    }
+
+
+
+    pub fn get_iface_index(iface_name: &str) -> i32 {
+        let ifindex_path = format!("/sys/class/net/{}/ifindex", iface_name);
+        
+        match fs::read_to_string(&ifindex_path) {
+            Ok(content) => {
+                content.trim().parse().unwrap_or_else(|_| {
+                    abort(&format!("Failed to parse ifindex for interface: {}", iface_name));
+                })
+            }
+            Err(_) => {
+                abort(&format!("Interface not found or ifindex unavailable: {}", iface_name));
+            }
+        }
     }
 
 
@@ -170,35 +199,6 @@ impl IfaceInfo {
 
             freeifaddrs(ifap);
             abort(format!("Interface {} not found or missing IPv4/netmask", iface_name));
-        }
-    }
-
-
-
-    pub fn get_iface_index(iface_name: &str) -> i32 {
-        unsafe {
-            let c_name = CString::new(iface_name).unwrap_or_else(|_| {
-                abort(&format!("Invalid interface name: {}", iface_name));
-            });
-
-            let ifindex = if_nametoindex(c_name.as_ptr()) as i32;
-            if ifindex == 0 {
-                abort(&format!("Interface not found: {}", iface_name));
-            }
-
-            ifindex
-        }
-    }
-
-
-
-    pub fn check_iface_exists(iface_name: &str) -> Result<bool, String> {
-        let interfaces = Self::get_iface_names();
-    
-        if interfaces.iter().any(|iface| iface == iface_name) {
-            Ok(true)
-        } else {
-            Err("Network interface does not exist".to_string())
         }
     }
 

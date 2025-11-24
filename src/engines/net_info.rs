@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 use crate::iface::IfaceInfo;
 use crate::utils::abort;
 
