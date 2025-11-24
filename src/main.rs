@@ -117,8 +117,7 @@ impl Command {
 
 
     fn execute_info(&self) {
-        let mut info = NetworkInfo::new();
-        info.execute();
+        NetworkInfo::execute();
     }
 
 

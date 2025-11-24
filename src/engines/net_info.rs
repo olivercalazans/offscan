@@ -1,55 +1,33 @@
-use std::{collections::HashMap, fs, net::Ipv4Addr};
+use std::fs;
 use crate::iface::IfaceInfo;
 
 
 
-pub struct NetworkInfo {
-    ifaces: HashMap<String, Info>,
-}
-
-
-struct Info {
-    state:    String,
-    if_type:  String,
-    mac:      String,
-    ip:       Ipv4Addr,
-    cidr:     String,
-    host_len: String,
-    mtu:      String,
-    gateway:  String,
-}
-
+pub struct NetworkInfo;
 
 
 impl NetworkInfo {
 
-    pub fn new() -> Self {
-        Self { ifaces: HashMap::new(), }
-    }
-
-
-    pub fn execute(&mut self) {
-        self.get_iface_info();
-        self.display_result();
-    }
-
-
-    fn get_iface_info(&mut self) {
+    pub fn execute() {
         for iface in IfaceInfo::get_iface_names() {
             let state    = Self::get_info("operstate", &iface).to_uppercase();
             let if_type  = Self::get_iface_type(&iface);
-            let ip       = IfaceInfo::iface_ip(&iface);
+            let ip       = Self::get_iface_ip(&iface);
             let mac      = Self::get_info("address", &iface);
             let mtu      = Self::get_info("mtu", &iface);
             let gateway  = Self::get_gateway(&iface);
-            let cidr     = IfaceInfo::iface_network_cidr(&iface);
+            let cidr     = Self::get_cidr(&iface);
             let host_len = Self::calculate_hosts_from_cidr(&cidr);
 
-            let info = Info{
-                state, if_type, ip, mac, mtu, gateway, cidr, host_len
-            };
-            
-            self.ifaces.insert(iface, info);
+            println!("Interface: {} - State: {}", iface, state);
+            println!("\tType.....: {}", if_type);
+            println!("\tMAC......: {}", mac);
+            println!("\tIP.......: {}", ip);
+            println!("\tNet Addr.: {}", cidr);
+            println!("\tLen hosts: {}", host_len);
+            println!("\tMTU......: {}", mtu);
+            println!("\tGateway..: {}", gateway);
+            println!("")            
         }
     }
 
@@ -78,6 +56,24 @@ impl NetworkInfo {
                 }
             })
             .unwrap_or_else(|_| "Unknown".to_string())
+    }
+
+
+
+    fn get_iface_ip(iface: &str) -> String {
+        match IfaceInfo::iface_ip(iface) {
+            Ok(ip) => ip.to_string(),
+            Err(_) => "None".to_string(),
+        }
+    }
+
+
+
+    fn get_cidr(iface: &str) -> String {
+        match IfaceInfo::iface_network_cidr(iface) {
+            Ok(ip) => ip.to_string(),
+            Err(_) => "Unknown".to_string(),
+        }
     }
 
 
@@ -118,10 +114,10 @@ impl NetworkInfo {
 
 
 
-    pub fn calculate_hosts_from_cidr(cidr: &str) -> String {
+    fn calculate_hosts_from_cidr(cidr: &str) -> String {
         let parts: Vec<&str> = cidr.split('/').collect();
         if parts.len() != 2 {
-            return "Unknown".to_string();
+            return "None".to_string();
         }
 
         let cidr_value: u8 = match parts[1].parse() {
@@ -130,7 +126,7 @@ impl NetworkInfo {
         };
 
         if cidr_value > 32 {
-            return "Unknown".to_string();
+            return "None".to_string();
         }
 
         let host_bits   = 32 - cidr_value;
@@ -141,22 +137,6 @@ impl NetworkInfo {
         }
         
         (total_hosts - 2).to_string()
-    }
-
-
-
-    fn display_result(&self) {
-        for (name, info) in &self.ifaces {
-            println!("Interface: {} - State: {}", name, info.state);
-            println!("\tType.....: {}", info.if_type);
-            println!("\tMAC......: {}", info.mac);
-            println!("\tIP.......: {}", info.ip);
-            println!("\tNet Addr.: {}", info.cidr);
-            println!("\tLen hosts: {}", info.host_len);
-            println!("\tMTU......: {}", info.mtu);
-            println!("\tGateway..: {}", info.gateway);
-            println!("")
-        }
     }
 
 }
