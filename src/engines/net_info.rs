@@ -27,7 +27,7 @@ impl NetworkInfo {
 
 
     pub fn execute(&self) {
-        let i = Self::get_iface_names();
+        let i = IfaceInfo::get_iface_names();
         println!("{:?}", i);
     }
 
