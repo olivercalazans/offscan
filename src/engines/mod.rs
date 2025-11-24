@@ -7,6 +7,9 @@ pub use banner_grab::BannerGrabber;
 pub mod flood;
 pub use flood::PacketFlooder;
 
+pub mod net_info;
+pub use net_info::NetworkInfo;
+
 pub mod netmap;
 pub use netmap::NetworkMapper;
 

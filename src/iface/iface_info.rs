@@ -11,6 +11,25 @@ pub struct IfaceInfo;
 
 impl IfaceInfo {
 
+    pub fn get_iface_names() -> Vec<String> {
+        let entries = fs::read_dir("/sys/class/net")
+            .unwrap_or_else(|e| {
+                abort(format!("Failed to read /sys/class/net: {}", e))
+            });
+
+        let interfaces: Vec<String> = entries
+            .filter_map(|entry| {
+                entry.ok().and_then(|e| {
+                    e.file_name().into_string().ok()
+                })
+            })
+            .collect();
+        
+        interfaces
+    }
+
+    
+
     unsafe fn get_ifaddrs_ptr() -> *mut ifaddrs {
         unsafe {
             let mut ifap: *mut ifaddrs = std::ptr::null_mut();
@@ -211,4 +230,5 @@ impl IfaceInfo {
 
         Err("Failed to check network interface status".to_string())
     }
+
 }
