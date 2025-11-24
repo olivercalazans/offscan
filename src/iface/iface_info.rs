@@ -1,7 +1,7 @@
 use std::fs;
 use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
-use std::ffi::{CStr, CString};
-use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in, if_nametoindex};
+use std::ffi::{CStr};
+use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in};
 use crate::utils::abort;
 
 
