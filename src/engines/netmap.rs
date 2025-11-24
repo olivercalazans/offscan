@@ -35,7 +35,7 @@ impl NetworkMapper {
     pub fn new(args:NetMapArgs) -> Self {
         Self {
             active_ips: BTreeMap::new(),
-            my_ip:      IfaceInfo::iface_ip(&args.iface),
+            my_ip:      IfaceInfo::iface_ip(&args.iface).unwrap_or_else(|e| abort(e)),
             raw_pkts:   Vec::new(),
             args,
         }
@@ -79,9 +79,14 @@ impl NetworkMapper {
 
     fn get_bpf_filter(&self) -> String {
         format!(
-            "(dst host {} and src net {}) and (tcp or icmp or udp)",
-            self.my_ip, IfaceInfo::iface_network_cidr(&self.args.iface)
-        )
+            "(dst host {} and src net {}) and (tcp or icmp or udp)", 
+            self.my_ip, self.get_cidr())
+    }
+
+
+
+    fn get_cidr(&self) -> String {
+        IfaceInfo::iface_network_cidr(&self.args.iface).unwrap_or_else(|e| abort(e))
     }
 
 
@@ -138,7 +143,7 @@ impl NetworkMapper {
 
 
     fn setup_iterators(&self) -> Iterators {
-        let cidr   = IfaceInfo::iface_network_cidr(&self.args.iface);
+        let cidr   = self.get_cidr();
         let ips    = Ipv4Iter::new(&cidr, self.args.start_ip.clone(), self.args.end_ip.clone());
         let len    = ips.total() as usize;
         let delays = DelayIter::new(&self.args.delay, len);

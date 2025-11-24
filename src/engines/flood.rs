@@ -4,7 +4,7 @@ use crate::generators::{Ipv4Iter, RandValues};
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::inline_display;
+use crate::utils::{inline_display, abort};
 
 
 
@@ -41,7 +41,7 @@ impl PacketFlooder {
 
 
     fn set_ip_range(&mut self) {
-        let cidr         = IfaceInfo::iface_network_cidr(&self.args.iface);
+        let cidr         = IfaceInfo::iface_network_cidr(&self.args.iface).unwrap_or_else(|e| abort(e));
         let mut ip_range = Ipv4Iter::new(&cidr, None, None);
         let first_ip     = ip_range.next().expect("No IPs in range");
         let last_ip      = Ipv4Addr::from(u32::from(first_ip) + ip_range.total() as u32 - 3);

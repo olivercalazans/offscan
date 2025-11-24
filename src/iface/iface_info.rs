@@ -30,11 +30,11 @@ impl IfaceInfo {
 
 
 
-    pub fn check_iface_exists(iface_name: &str) -> Result<bool, String> {
+    pub fn check_iface_exists(iface_name: &str) -> Result<String, String> {
         let interfaces = Self::get_iface_names();
     
         if interfaces.iter().any(|iface| iface == iface_name) {
-            Ok(true)
+            Ok(iface_name.to_string())
         } else {
             Err("Network interface does not exist".to_string())
         }
@@ -130,7 +130,7 @@ impl IfaceInfo {
 
 
 
-    pub fn iface_ip(iface_name: &str) -> Ipv4Addr {
+    pub fn iface_ip(iface_name: &str) -> Result<Ipv4Addr, String> {
         unsafe {
             let ifap    = Self::get_ifaddrs_ptr();
             let mut cur = ifap;
@@ -151,17 +151,17 @@ impl IfaceInfo {
                 let addr = &*(ifa.ifa_addr as *const sockaddr_in);
                 let ip   = Ipv4Addr::from(addr.sin_addr.s_addr.to_ne_bytes());
                 freeifaddrs(ifap);
-                return ip;
+                return Ok(ip);
             }
 
             freeifaddrs(ifap);
-            abort(format!("Interface {} not found or has no IPv4 address", iface_name));
+            Err(format!("Interface {} not found or has no IPv4 address", iface_name))
         }
     }
 
 
 
-    pub fn iface_network_cidr(iface_name: &str) -> String {
+    pub fn iface_network_cidr(iface_name: &str) -> Result<String, String> {
         unsafe {
             let ifap    = Self::get_ifaddrs_ptr();
             let mut cur = ifap;
@@ -194,11 +194,11 @@ impl IfaceInfo {
                 let network_u32 = ip_u32 & mask_u32;
                 let network     = Ipv4Addr::from(network_u32.to_be_bytes());
 
-                return format!("{}/{}", network, cidr);
+                return Ok(format!("{}/{}", network, cidr));
             }
 
             freeifaddrs(ifap);
-            abort(format!("Interface {} not found or missing IPv4/netmask", iface_name));
+            Err(format!("Interface {} not found or missing IPv4/netmask", iface_name))
         }
     }
 

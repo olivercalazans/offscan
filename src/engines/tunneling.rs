@@ -40,7 +40,7 @@ impl ProtocolTunneler {
 
 
     fn set_pkt_info(&mut self) -> PacketInfo {
-        let src_ip  = self.args.src_ip.unwrap_or_else(|| IfaceInfo::iface_ip(&self.args.iface));
+        let src_ip  = self.get_src_ip();
         let src_mac = self.args.src_mac.unwrap_or_else(|| self.resolve_mac(src_ip));
         let dst_ip  = Ipv4Addr::new(8, 8, 8, 8);
         let dst_mac = self.resolve_mac(dst_ip);
@@ -49,8 +49,19 @@ impl ProtocolTunneler {
 
 
 
+    fn get_src_ip(&self) -> Ipv4Addr {
+        self.args.src_ip.unwrap_or_else(|| 
+            IfaceInfo::iface_ip(&self.args.iface).unwrap_or_else(|e| 
+                abort(e)
+            )
+        )
+    }
+
+
+
     fn resolve_mac(&mut self, target_ip: Ipv4Addr) -> [u8; 6] {
-        let my_ip = IfaceInfo::iface_ip(&self.args.iface);
+        let my_ip = IfaceInfo::iface_ip(&self.args.iface).unwrap_or_else(|e| abort(e));
+
         let (mut sniffer, socket) = self.setup_tools(my_ip, target_ip);
         
         sniffer.start();
@@ -81,7 +92,7 @@ impl ProtocolTunneler {
 
 
     fn send_icmp_probes(&mut self, socket: Layer3RawSocket, target_ip: Ipv4Addr) {
-        let my_ip = IfaceInfo::iface_ip(&self.args.iface);
+        let my_ip = IfaceInfo::iface_ip(&self.args.iface).unwrap_or_else(|e| abort(e));
         let pkt   = self.pkt_builder.icmp_ping(my_ip, target_ip);
         
         socket.send_to(pkt, target_ip);

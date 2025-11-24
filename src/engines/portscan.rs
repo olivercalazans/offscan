@@ -6,7 +6,7 @@ use crate::pkt_builder::{PacketBuilder, UdpPayloads};
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer3RawSocket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{inline_display, get_host_name};
+use crate::utils::{inline_display, get_host_name, abort};
 
 
 
@@ -25,7 +25,7 @@ impl PortScanner {
     pub fn new(args: PortScanArgs) -> Self {
         let iface = IfaceInfo::iface_name_from_ip(args.target_ip.clone());
         Self {
-            my_ip:       IfaceInfo::iface_ip(&iface),
+            my_ip:       IfaceInfo::iface_ip(&iface).unwrap_or_else(|e| abort(e)),
             raw_packets: Vec::new(),
             open_ports:  BTreeSet::new(),
             args,
