@@ -25,7 +25,7 @@ impl ProtocolTunneler {
         Self {
             socket:      Layer2RawSocket::new(&args.iface),
             pkt_builder: PacketBuilder::new(),
-            rand:        RandValues::new(),
+            rand:        RandValues::new(None, None),
             args,
         }
     }

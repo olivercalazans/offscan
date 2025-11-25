@@ -4,6 +4,9 @@ pub use auth_flood::AuthenticationFlooder;
 pub mod banner_grab;
 pub use banner_grab::BannerGrabber;
 
+pub mod flood_ping;
+pub use flood_ping::PingFlooder;
+
 pub mod flood;
 pub use flood::PacketFlooder;
 

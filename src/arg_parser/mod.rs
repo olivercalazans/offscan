@@ -4,6 +4,9 @@ pub use auth_parser::AuthArgs;
 pub mod banner_parser;
 pub use banner_parser::BannerArgs;
 
+pub mod ping_parser;
+pub use ping_parser::PingArgs;
+
 pub mod flood_parser;
 pub use flood_parser::FloodArgs;
 

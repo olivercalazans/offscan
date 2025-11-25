@@ -168,7 +168,7 @@ impl NetworkMapper {
         mut iters:  Iterators,
         mut tools:  PacketTools
     ) {
-        let mut rand = RandValues::new();
+        let mut rand = RandValues::new(None, None);
 
         iters.ips.by_ref()
             .zip(iters.delays.by_ref())

@@ -75,7 +75,7 @@ impl AuthenticationFlooder {
 
 
     fn send_endlessly(&self, bssid: [u8; 6]) {
-        let mut rand    = RandValues::new();
+        let mut rand    = RandValues::new(None, None);
         let mut builder = PacketBuilder::new();
         let socket      = Layer2RawSocket::new(&self.args.iface);        
         let running     = Arc::new(AtomicBool::new(true));

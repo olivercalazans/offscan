@@ -4,14 +4,12 @@ use crate::generators::{Ipv4Iter, RandValues};
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{inline_display, abort};
+use crate::utils::{inline_display, abort, get_first_and_last_ips};
 
 
 
 pub struct PacketFlooder {
     args:      FloodArgs,
-    start:     u32,
-    end:       u32,
     pkts_sent: usize,
     rng:       RandValues,
 }
@@ -21,32 +19,20 @@ pub struct PacketFlooder {
 impl PacketFlooder {
 
     pub fn new(args: FloodArgs) -> Self {
+        let (first_ip, last_ip) = get_first_and_last_ips(&args.iface);
+
         Self {
             args,
-            start:     0,
-            end:       0,
             pkts_sent: 0,
-            rng:       RandValues::new(),
+            rng:       RandValues::new(first_ip, last_ip),
         }
     }
 
 
 
     pub fn execute(&mut self){
-        self.set_ip_range();
         self.set_proto_flags();
         self.send_endlessly();
-    }
-
-
-
-    fn set_ip_range(&mut self) {
-        let cidr         = IfaceInfo::iface_network_cidr(&self.args.iface).unwrap_or_else(|e| abort(e));
-        let mut ip_range = Ipv4Iter::new(&cidr, None, None);
-        let first_ip     = ip_range.next().expect("No IPs in range");
-        let last_ip      = Ipv4Addr::from(u32::from(first_ip) + ip_range.total() as u32 - 3);
-        self.start       = first_ip.into();
-        self.end         = last_ip.into();
     }
 
 
@@ -100,9 +86,9 @@ impl PacketFlooder {
     #[inline]
     fn get_pkt_info(&mut self) -> (u16, Ipv4Addr, [u8; 6], Ipv4Addr, [u8; 6]) {(
         self.rng.get_random_port(),
-        self.args.src_ip.as_ref().unwrap_or( &self.rng.get_random_ip(self.start, self.end)).clone(),
+        self.args.src_ip.as_ref().unwrap_or( &self.rng.get_random_ip()).clone(),
         self.args.src_mac.as_ref().unwrap_or(&self.rng.get_random_mac()).clone(),
-        self.args.dst_ip.as_ref().unwrap_or( &self.rng.get_random_ip(self.start, self.end)).clone(),
+        self.args.dst_ip.as_ref().unwrap_or( &self.rng.get_random_ip()).clone(),
         self.args.dst_mac.as_ref().unwrap_or(&self.rng.get_random_mac()).clone()
     )}
 

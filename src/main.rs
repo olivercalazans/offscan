@@ -9,7 +9,7 @@ pub mod sockets;
 pub mod utils;
 
 
-use std::env;
+use std::{env, mem};
 use clap::Parser;
 use crate::arg_parser::*;
 use crate::engines::*;
@@ -84,6 +84,7 @@ impl Command {
         println!("\tflood  -> Packet Flooding");
         println!("\tinfo   -> Network Information");
         println!("\tnetmap -> Network Mapping");
+        println!("\tping   -> Ping Flooding");
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
         println!("\twmap   -> Wifi Mapping");
@@ -92,63 +93,77 @@ impl Command {
 
 
 
-    fn execute_auth_flood(&self) {
-        let cmd_args = AuthArgs::parse_from(self.arguments.clone());
+    fn get_arguments(&mut self) -> Vec<String> {
+        mem::take(&mut self.arguments)
+    }
+
+
+
+    fn execute_auth_flood(&mut self) {
+        let cmd_args = AuthArgs::parse_from(self.get_arguments());
         let mut auth = AuthenticationFlooder::new(cmd_args);
         auth.execute();
     }
 
 
 
-    fn execute_banner_grab(&self) {
-        let cmd_args   = BannerArgs::parse_from(self.arguments.clone());
+    fn execute_banner_grab(&mut self) {
+        let cmd_args   = BannerArgs::parse_from(self.get_arguments());
         let mut banner = BannerGrabber::new(cmd_args);
         banner.execute();
     }
 
 
+
+    fn execute_ping(&mut self) {
+        let cmd_args = PingArgs::parse_from(self.get_arguments());
+        let mut ping = PingFlooder::new(cmd_args);
+        ping.execute();
+    }
+
+
     
-    fn execute_flood(&self) {
-        let cmd_args  = FloodArgs::parse_from(self.arguments.clone());
+    fn execute_flood(&mut self) {
+        let cmd_args  = FloodArgs::parse_from(self.get_arguments());
         let mut flood = PacketFlooder::new(cmd_args);
         flood.execute();
     }
 
 
 
-    fn execute_info(&self) {
-        NetInfoArgs::parse_from(self.arguments.clone());
+    fn execute_info(&mut self) {
+        NetInfoArgs::parse_from(self.get_arguments());
         NetworkInfo::execute();
     }
 
 
     
-    fn execute_netmap(&self) {
-        let cmd_args   = NetMapArgs::parse_from(self.arguments.clone());
+    fn execute_netmap(&mut self) {
+        let cmd_args   = NetMapArgs::parse_from(self.get_arguments());
         let mut mapper = NetworkMapper::new(cmd_args);
         mapper.execute();
     }
 
 
     
-    fn execute_pscan(&self) {
-        let cmd_args    = PortScanArgs::parse_from(self.arguments.clone());
+    fn execute_pscan(&mut self) {
+        let cmd_args    = PortScanArgs::parse_from(self.get_arguments());
         let mut scanner = PortScanner::new(cmd_args);
         scanner.execute();
     }
 
 
     
-    fn execute_protun(&self) {
-        let cmd_args   = TunnelArgs::parse_from(self.arguments.clone());
+    fn execute_protun(&mut self) {
+        let cmd_args   = TunnelArgs::parse_from(self.get_arguments());
         let mut tunnel = ProtocolTunneler::new(cmd_args);
         tunnel.execute();
     }
 
     
 
-    fn execute_wmap(&self) {
-        let cmd_args = WmapArgs::parse_from(self.arguments.clone());
+    fn execute_wmap(&mut self) {
+        let cmd_args = WmapArgs::parse_from(self.get_arguments());
         let mut wmap = WifiMapper::new(cmd_args);
         wmap.execute();
     }

@@ -38,16 +38,16 @@ pub struct FloodArgs {
 
 
     /// Send only TCP echo-request or combined with other(s) protocol(s)
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub tcp: bool,
 
 
     /// Send only UDP echo-request or combined with other(s) protocol(s)
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub udp: bool,
 
 
     /// Send only ICMP echo-request or combined with other(s) protocol(s)
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub icmp: bool,
 }
