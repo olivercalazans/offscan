@@ -1,12 +1,12 @@
 use std::{net::Ipv4Addr, thread, time::Duration};
-use crate::arg_parser::{TunnelArgs, parse_mac};
+use crate::arg_parser::TunnelArgs;
 use crate::generators::RandValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::{Layer2RawSocket, Layer3RawSocket};
 use crate::dissectors::PacketDissector;
-use crate::utils::abort;
+use crate::utils::{abort, parse_mac};
 
 
 

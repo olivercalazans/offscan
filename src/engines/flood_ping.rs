@@ -1,13 +1,11 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::{net::Ipv4Addr, time::Duration, thread};
-use crate::arg_parser::{PingArgs, parse_mac};
+use std::net::Ipv4Addr;
+use crate::arg_parser::PingArgs;
 use crate::generators::RandValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
-use crate::dissectors::PacketDissector;
-use crate::sniffer::PacketSniffer;
-use crate::sockets::{Layer2RawSocket, Layer3RawSocket};
+use crate::sockets::Layer2RawSocket;
 use crate::utils::{inline_display, get_first_and_last_ip, CtrlCHandler};
 
 
@@ -26,7 +24,7 @@ pub struct PingFlooder {
 impl PingFlooder {
 
     pub fn new(args: PingArgs) -> Self {
-        let iface = Self::get_iface(args.target_ip);
+        let iface = IfaceInfo::iface_name_from_ip(args.target_ip);
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
@@ -37,12 +35,6 @@ impl PingFlooder {
             iface,
             args,
         }
-    }
-
-
-
-    fn get_iface(target_ip: Ipv4Addr) -> String {
-        IfaceInfo::iface_name_from_ip(target_ip)
     }
 
 
@@ -70,55 +62,6 @@ impl PingFlooder {
     
     
     pub fn execute(&mut self){
-        self.set_targe_mac();
-        self.send_endlessly();
-    }
-
-    
-    
-    fn set_targe_mac(&mut self) {
-        if self.args.target_mac.is_some() {
-            return;
-        }
-
-        self.resolve_target_mac();
-    }
-
-    
-    
-    fn resolve_target_mac(&mut self) {
-        let my_ip       = IfaceInfo::iface_ip(&self.iface).unwrap();
-
-        let mut sniffer = PacketSniffer::new(self.iface.clone(), self.bpf_filter());
-        sniffer.start();
-
-        let l3_socket = Layer3RawSocket::new(&self.iface.clone());
-        let pkt       = self.builder.icmp_ping(my_ip, self.args.target_ip);
-        l3_socket.send_to(pkt, self.args.target_ip);
-
-        thread::sleep(Duration::from_secs(5));
-        sniffer.stop();
-        let raw_pkts         = sniffer.get_packets();
-        
-        if raw_pkts.is_empty() {
-            eprintln!("Warning: Could not resolve target MAC address");
-            return;
-        }
-        
-        let target_mac_str   = PacketDissector::get_src_mac(&raw_pkts[0]);
-        let target_mac_vec   = parse_mac(&target_mac_str).unwrap();
-        self.args.target_mac = Some(target_mac_vec);
-    }
-
-
-
-    fn bpf_filter(&self) -> String {
-        format!("src host {}", self.args.target_ip)
-    }
-
-
-
-    fn send_endlessly(&mut self) {
         let l2_socket = Layer2RawSocket::new(&self.iface);
         let running   = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
@@ -131,7 +74,7 @@ impl PingFlooder {
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
         }
         
-        println!("\nFlood interrupted. Total packets sent: {}", self.pkts_sent);
+        println!("\nFlood interrupted");
     }
 
 
@@ -152,7 +95,7 @@ impl PingFlooder {
     #[inline]
     fn get_src_addrs(&mut self) -> ([u8; 6], Ipv4Addr) {
         if self.args.smurf {
-            return (self.args.target_mac.unwrap(), self.args.target_ip);
+            return (self.args.target_mac, self.args.target_ip);
         }
 
         (self.rand.get_random_mac(), self.rand.get_random_ip())
@@ -166,7 +109,7 @@ impl PingFlooder {
             return ([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], self.broadcast);
         }
 
-        (self.args.target_mac.unwrap(), self.args.target_ip)
+        (self.args.target_mac, self.args.target_ip)
     }
 
 }

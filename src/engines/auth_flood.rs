@@ -1,14 +1,14 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{thread, time::Duration};
 use std::sync::Arc;
-use crate::arg_parser::{AuthArgs, parse_mac};
+use crate::arg_parser::AuthArgs;
 use crate::dissectors::BeaconDissector;
 use crate::generators::RandValues;
 use crate::iface::InterfaceManager;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display, CtrlCHandler};
+use crate::utils::{abort, inline_display, CtrlCHandler, parse_mac};
 
 
 

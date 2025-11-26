@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 use clap::Parser;
-use crate::arg_parser::parse_mac;
+use crate::utils::parse_mac;
 
 
 #[derive(Parser)]
@@ -12,8 +12,8 @@ pub struct PingArgs {
 
 
     /// Define the target MAC
-    #[arg(long, value_parser = parse_mac)]
-    pub target_mac: Option<[u8; 6]>,
+    #[arg(value_parser = parse_mac)]
+    pub target_mac: [u8; 6],
 
 
     /// Use the Smurf attack

@@ -2,7 +2,8 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::ptr;
 use libc::{
-    addrinfo, freeaddrinfo, getnameinfo, getaddrinfo, NI_NAMEREQD, NI_MAXHOST, AF_UNSPEC, AI_NUMERICHOST
+    addrinfo, freeaddrinfo, getnameinfo, getaddrinfo, 
+    NI_NAMEREQD, NI_MAXHOST, AF_UNSPEC, AI_NUMERICHOST
 };
 
 

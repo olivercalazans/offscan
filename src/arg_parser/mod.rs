@@ -4,14 +4,11 @@ pub use auth_parser::AuthArgs;
 pub mod banner_parser;
 pub use banner_parser::BannerArgs;
 
-pub mod ping_parser;
-pub use ping_parser::PingArgs;
+pub mod flood_ping_parser;
+pub use flood_ping_parser::PingArgs;
 
 pub mod flood_parser;
 pub use flood_parser::FloodArgs;
-
-pub mod mac_parser;
-pub use mac_parser::parse_mac;
 
 pub mod net_info_parser;
 pub use net_info_parser::NetInfoArgs;
