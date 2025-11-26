@@ -68,6 +68,7 @@ impl Command {
             "flood"  => self.execute_flood(),
             "info"   => self.execute_info(),
             "netmap" => self.execute_netmap(),
+            "ping"   => self.execute_ping(),
             "pscan"  => self.execute_pscan(),
             "protun" => self.execute_protun(),
             "wmap"   => self.execute_wmap(),

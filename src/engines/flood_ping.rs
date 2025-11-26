@@ -1,12 +1,12 @@
-use std::net::Ipv4Addr;
-use crate::arg_parser::PingArgs;
+use std::{net::Ipv4Addr, time::Duration, thread};
+use crate::arg_parser::{PingArgs, parse_mac};
 use crate::generators::RandValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::dissectors::PacketDissector;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::{Layer2RawSocket, Layer3RawSocket};
-use crate::utils::{inline_display, abort, get_first_and_last_ips};
+use crate::utils::{inline_display, get_first_and_last_ip};
 
 
 
@@ -25,10 +25,10 @@ impl PingFlooder {
 
     pub fn new(args: PingArgs) -> Self {
         let iface = Self::get_iface(args.target_ip);
-        let (first_ip, last_ip) = get_first_and_last_ips(&iface);
+        let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
-            rand:       RandValues::new(first_ip, last_ip),
+            rand:       RandValues::new(Some(first_ip), Some(last_ip)),
             builder:    PacketBuilder::new(),
             pkts_sent:  0,
             broadcast:  Self::get_broadcast(&iface),
@@ -55,17 +55,19 @@ impl PingFlooder {
     }
 
 
-    fn get_ip_and_prefix(&iface) -> (Ipv4Addr, u8) {
-        let cidr             = IfaceInfo::iface_network_cidr(iface);
+    fn get_ip_and_prefix(iface: &str) -> (Ipv4Addr, u8) {
+        let cidr             = IfaceInfo::iface_network_cidr(iface).unwrap();
+        println!("{}",cidr);
         let parts: Vec<&str> = cidr.split('/').collect();
         let ip: Ipv4Addr     = parts[0].parse().unwrap();
-        let prefix: u8       = parts[0].parse().unwrap();
+        let prefix: u8       = parts[1].parse().unwrap();
         (ip, prefix)
     }
 
 
 
     pub fn execute(&mut self){
+        self.set_targe_mac();
         self.send_endlessly();
     }
 
@@ -75,24 +77,28 @@ impl PingFlooder {
         if self.args.target_mac.is_some() {
             return;
         }
+
+        self.resolve_target_mac();
     }
 
 
 
     fn resolve_target_mac(&mut self) {
-        let mut sniffer = PacketSniffer::new(self.iface.clone(&self.iface, self.bpf_filter()));
+        let my_ip       = IfaceInfo::iface_ip(&self.iface).unwrap();
+
+        let mut sniffer = PacketSniffer::new(self.iface.clone(), self.bpf_filter(my_ip));
         sniffer.start();
 
-        let my_ip     = IfaceInfo::iface_ip(&self.iface);
         let l3_socket = Layer3RawSocket::new(&self.iface.clone());
-        let pkt       = self.builder::icmp_ping(my_ip, self.args.target_ip);
-        l3_socket.send_to(pkt, &self.args.target_ip);
+        let pkt       = self.builder.icmp_ping(my_ip, self.args.target_ip);
+        l3_socket.send_to(pkt, self.args.target_ip);
 
         thread::sleep(Duration::from_secs(5));
         sniffer.stop();
         let raw_pkts         = sniffer.get_packets();
-        let target_mac       = PacketDissector::get_src_mac(raw_pkts[0]);
-        self.args.target_mac = Some(target_mac);
+        let target_mac_str   = PacketDissector::get_src_mac(&raw_pkts[0]);
+        let target_mac_vec   = parse_mac(&target_mac_str).unwrap();
+        self.args.target_mac = Some(target_mac_vec);
     }
 
 

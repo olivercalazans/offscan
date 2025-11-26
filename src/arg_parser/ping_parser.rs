@@ -19,7 +19,7 @@ pub struct PingArgs {
     /// Use the Smurf attack
     ///
     /// This attack send a ping broadcast
-    #[arg(short = "S", long)]
+    #[arg(short = 'S', long)]
     pub smurf: bool,
 
 }

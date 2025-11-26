@@ -1,10 +1,9 @@
 use std::net::Ipv4Addr;
 use crate::arg_parser::FloodArgs;
-use crate::generators::{Ipv4Iter, RandValues};
-use crate::iface::IfaceInfo;
+use crate::generators::RandValues;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{inline_display, abort, get_first_and_last_ips};
+use crate::utils::{inline_display, get_first_and_last_ip};
 
 
 
@@ -19,12 +18,12 @@ pub struct PacketFlooder {
 impl PacketFlooder {
 
     pub fn new(args: FloodArgs) -> Self {
-        let (first_ip, last_ip) = get_first_and_last_ips(&args.iface);
+        let (first_ip, last_ip) = get_first_and_last_ip(&args.iface);
 
         Self {
             args,
             pkts_sent: 0,
-            rng:       RandValues::new(first_ip, last_ip),
+            rng:       RandValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
