@@ -32,7 +32,10 @@
   </tr>
 </table>
 
+<br>
 
+> [!WARNING]
+> The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
 
 <br>
 
@@ -54,12 +57,9 @@ You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/o
 >   
 > Make sure these are installed before building.
 
-> [!WARNING]
-> The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
-
 <br>
 
 
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for deta
