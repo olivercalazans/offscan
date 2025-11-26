@@ -1,3 +1,6 @@
+pub mod ctrl_c_handler;
+pub use ctrl_c_handler::CtrlCHandler;
+
 pub mod displays;
 pub use displays::*;
 

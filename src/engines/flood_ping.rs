@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{net::Ipv4Addr, time::Duration, thread};
 use crate::arg_parser::{PingArgs, parse_mac};
 use crate::generators::RandValues;
@@ -6,7 +8,7 @@ use crate::pkt_builder::PacketBuilder;
 use crate::dissectors::PacketDissector;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::{Layer2RawSocket, Layer3RawSocket};
-use crate::utils::{inline_display, get_first_and_last_ip};
+use crate::utils::{inline_display, get_first_and_last_ip, CtrlCHandler};
 
 
 
@@ -54,7 +56,8 @@ impl PingFlooder {
         Ipv4Addr::from(broadcast_u32)
     }
 
-
+    
+    
     fn get_ip_and_prefix(iface: &str) -> (Ipv4Addr, u8) {
         let cidr             = IfaceInfo::iface_network_cidr(iface).unwrap();
         println!("{}",cidr);
@@ -64,15 +67,15 @@ impl PingFlooder {
         (ip, prefix)
     }
 
-
-
+    
+    
     pub fn execute(&mut self){
         self.set_targe_mac();
         self.send_endlessly();
     }
 
-
-
+    
+    
     fn set_targe_mac(&mut self) {
         if self.args.target_mac.is_some() {
             return;
@@ -81,12 +84,12 @@ impl PingFlooder {
         self.resolve_target_mac();
     }
 
-
-
+    
+    
     fn resolve_target_mac(&mut self) {
         let my_ip       = IfaceInfo::iface_ip(&self.iface).unwrap();
 
-        let mut sniffer = PacketSniffer::new(self.iface.clone(), self.bpf_filter(my_ip));
+        let mut sniffer = PacketSniffer::new(self.iface.clone(), self.bpf_filter());
         sniffer.start();
 
         let l3_socket = Layer3RawSocket::new(&self.iface.clone());
@@ -96,6 +99,12 @@ impl PingFlooder {
         thread::sleep(Duration::from_secs(5));
         sniffer.stop();
         let raw_pkts         = sniffer.get_packets();
+        
+        if raw_pkts.is_empty() {
+            eprintln!("Warning: Could not resolve target MAC address");
+            return;
+        }
+        
         let target_mac_str   = PacketDissector::get_src_mac(&raw_pkts[0]);
         let target_mac_vec   = parse_mac(&target_mac_str).unwrap();
         self.args.target_mac = Some(target_mac_vec);
@@ -111,14 +120,18 @@ impl PingFlooder {
 
     fn send_endlessly(&mut self) {
         let l2_socket = Layer2RawSocket::new(&self.iface);
+        let running   = Arc::new(AtomicBool::new(true));
+        CtrlCHandler::setup(running.clone());
 
-        loop {
+        while running.load(Ordering::SeqCst) {
             let pkt = self.get_packet();
             l2_socket.send(pkt);
             
             self.pkts_sent += 1;
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
         }
+        
+        println!("\nFlood interrupted. Total packets sent: {}", self.pkts_sent);
     }
 
 
