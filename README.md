@@ -17,6 +17,7 @@
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
       <ul style="list-style-type: none; padding-left: 0; margin: 0;">
         <li><strong><em>Authentication Flooding</em></strong></li>
+        <li><strong><em>ICMP (Ping) Flooding</em></strong></li>
         <li><strong><em>Packet Flooding</em></strong></li>
         <li><strong><em>Protocol Tunneling test</em></strong></li>
       </ul>
@@ -32,7 +33,10 @@
   </tr>
 </table>
 
+<br>
 
+> [!WARNING]
+> The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
 
 <br>
 
@@ -48,17 +52,15 @@ You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/o
 > [!IMPORTANT]
 > In addition to Cargo-managed crates, this project requires some **system-level dependencies**:
 >
-> - `libpcap-dev` — required for network packet capture  
-> - A C compiler and linker (e.g. `gcc` or `clang`) — required to build and link Rust binaries  
->
+> - A C compiler and linker (`build-essential` has everyting) — required to build and link Rust binaries.
+> - `libpcap-dev` — required for network packet capture.
+> - `iw` command — required for wireless interface controll.
+>   
 > Make sure these are installed before building.
-
-> [!NOTE]
-> The code is primarily designed for Linux systems, but it can also run on Windows via **WSL (Windows Subsystem for Linux)**.
 
 <br>
 
 
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for deta

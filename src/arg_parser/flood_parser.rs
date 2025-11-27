@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 use clap::Parser;
-use crate::arg_parser::parse_mac;
 use crate::iface::IfaceInfo;
+use crate::utils::parse_mac;
 
 
 #[derive(Parser)]
@@ -38,16 +38,16 @@ pub struct FloodArgs {
 
 
     /// Send only TCP echo-request or combined with other(s) protocol(s)
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub tcp: bool,
 
 
     /// Send only UDP echo-request or combined with other(s) protocol(s)
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub udp: bool,
 
 
     /// Send only ICMP echo-request or combined with other(s) protocol(s)
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub icmp: bool,
 }

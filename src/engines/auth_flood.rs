@@ -1,15 +1,14 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{thread, time::Duration};
 use std::sync::Arc;
-use libc;
-use crate::arg_parser::{AuthArgs, parse_mac};
+use crate::arg_parser::AuthArgs;
 use crate::dissectors::BeaconDissector;
 use crate::generators::RandValues;
 use crate::iface::InterfaceManager;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display};
+use crate::utils::{abort, inline_display, CtrlCHandler, parse_mac};
 
 
 
@@ -75,11 +74,11 @@ impl AuthenticationFlooder {
 
 
     fn send_endlessly(&self, bssid: [u8; 6]) {
-        let mut rand    = RandValues::new();
+        let mut rand    = RandValues::new(None, None);
         let mut builder = PacketBuilder::new();
         let socket      = Layer2RawSocket::new(&self.args.iface);        
         let running     = Arc::new(AtomicBool::new(true));
-        Self::setup_ctrl_c_handler(running.clone());
+        CtrlCHandler::setup(running.clone());
 
         let mut sent: usize = 0;
         while running.load(Ordering::SeqCst) {
@@ -98,50 +97,6 @@ impl AuthenticationFlooder {
     fn display_progress(sent: usize) {
         let msg: String = format!("Packets sent: {}", &sent);
         inline_display(&msg);
-    }
-
-
-
-    fn setup_ctrl_c_handler(running: Arc<AtomicBool>) {
-        unsafe {
-            let mut mask: libc::sigset_t = std::mem::zeroed();
-            libc::sigemptyset(&mut mask);
-            libc::sigaddset(&mut mask, libc::SIGINT);
-            
-            libc::pthread_sigmask(libc::SIG_BLOCK, &mask, std::ptr::null_mut());
-            
-            let fd = libc::signalfd(-1, &mask, 0);
-            
-            thread::spawn(move || {
-                let mut fds = libc::pollfd {
-                    fd,
-                    events: libc::POLLIN,
-                    revents: 0,
-                };
-                
-                while libc::poll(&mut fds, 1, -1) > 0 {
-                    if fds.revents & libc::POLLIN == 0 {
-                        continue;
-                    }
-
-                    let mut info: libc::signalfd_siginfo = std::mem::zeroed();
-                    let size = std::mem::size_of::<libc::signalfd_siginfo>();
-                    
-                    if libc::read(fd, &mut info as *mut _ as *mut libc::c_void, size) != size as isize {
-                        continue;
-                    }
-
-                    if info.ssi_signo != libc::SIGINT as u32 {
-                        continue;
-                    }
-
-                    running.store(false, Ordering::SeqCst);
-                    break;
-                }
-
-                libc::close(fd);
-            });
-        }
     }
 
 }

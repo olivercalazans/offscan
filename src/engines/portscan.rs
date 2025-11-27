@@ -73,7 +73,7 @@ impl PortScanner {
 
 
     fn send_tcp_probes(&mut self, tools: &mut PacketTools, iters: &mut TcpIterators) {
-        let mut rand = RandValues::new();
+        let mut rand = Self::get_rand();
         
         iters.ports.by_ref()
             .zip(iters.delays.by_ref())
@@ -117,7 +117,7 @@ impl PortScanner {
 
 
     fn send_udp_probes(&mut self, tools: &mut PacketTools, iters: &mut UdpIterators) {
-        let mut rand = RandValues::new();
+        let mut rand = Self::get_rand();
         
         iters.ports.iter()
             .zip(iters.delays.by_ref())
@@ -157,6 +157,12 @@ impl PortScanner {
             "tcp[13] & 0x12 == 0x12 and dst host {} and src host {}",
             self.my_ip, self.args.target_ip
         )
+    }
+
+
+
+    fn get_rand() -> RandValues {
+        RandValues::new(None, None)
     }
 
 

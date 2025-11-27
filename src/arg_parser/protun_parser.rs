@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 use clap::Parser;
-use crate::arg_parser::parse_mac;
 use crate::iface::IfaceInfo;
+use crate::utils::parse_mac;
 
 
 #[derive(Parser)]

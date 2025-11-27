@@ -5,14 +5,20 @@ use rand::{Rng, rngs::ThreadRng};
 
 pub struct RandValues {
     rng: ThreadRng,
+    first_ip: u32,
+    last_ip:  u32,
 }
 
 
 
 impl RandValues {
 
-    pub fn new() -> Self {
-        Self { rng: rand::thread_rng()}
+    pub fn new(first_ip: Option<u32>, last_ip: Option<u32>) -> Self {
+        Self { 
+            rng:      rand::thread_rng(),
+            first_ip: first_ip.unwrap_or_else(|| 0),
+            last_ip:  last_ip.unwrap_or_else(|| 0),
+        }
     }
 
 
@@ -25,8 +31,8 @@ impl RandValues {
 
 
     #[inline]
-    pub fn get_random_ip(&mut self, start: u32, end: u32) -> Ipv4Addr {
-        let rand_num     = self.rng.gen_range(start..=end);
+    pub fn get_random_ip(&mut self) -> Ipv4Addr {
+        let rand_num     = self.rng.gen_range(self.first_ip..=self.last_ip);
         let ip: Ipv4Addr = rand_num.into();
         ip
     }
