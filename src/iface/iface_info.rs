@@ -30,6 +30,43 @@ impl IfaceInfo {
 
 
 
+    pub fn get_info(info_type: &str, iface: &str) -> String {
+        let info = format!("/sys/class/net/{}/{}", iface, info_type);
+        
+        fs::read_to_string(&info)
+            .map(|content| content.trim().to_string())
+            .unwrap_or_else(|_| "Unknown".to_string())
+    }
+
+
+
+    pub fn get_mac(iface: &str) -> String {
+        Self::get_info("address", &iface)
+    }
+
+
+
+    pub fn get_broadcast_ip(iface: &str) -> Ipv4Addr {
+        let (ip, prefix) = Self::get_ip_and_prefix(iface);
+        let ip_u32       = u32::from(ip);
+        
+        let mask = if prefix == 0 { 0 } else { (!0u32) << (32 - prefix) };
+        let broadcast_u32 = ip_u32 | !mask;
+        Ipv4Addr::from(broadcast_u32)
+    }
+
+    
+    
+    fn get_ip_and_prefix(iface: &str) -> (Ipv4Addr, u8) {
+        let cidr             = IfaceInfo::iface_network_cidr(iface).unwrap();
+        let parts: Vec<&str> = cidr.split('/').collect();
+        let ip: Ipv4Addr     = parts[0].parse().unwrap();
+        let prefix: u8       = parts[1].parse().unwrap();
+        (ip, prefix)
+    }
+
+
+
     pub fn check_iface_exists(iface_name: &str) -> Result<String, String> {
         let interfaces = Self::get_iface_names();
     

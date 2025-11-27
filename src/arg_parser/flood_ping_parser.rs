@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 use clap::Parser;
-use crate::utils::parse_mac;
+
 
 
 #[derive(Parser)]
@@ -12,8 +12,7 @@ pub struct PingArgs {
 
 
     /// Define the target MAC
-    #[arg(value_parser = parse_mac)]
-    pub target_mac: [u8; 6],
+    pub target_mac: String,
 
 
     /// Use the Smurf attack
@@ -21,5 +20,30 @@ pub struct PingArgs {
     /// This attack send a ping broadcast
     #[arg(short = 'S', long)]
     pub smurf: bool,
+
+
+    /// Set an IP to perform a Reflection Attack
+    ///
+    /// The host with this IP will send the reply packets to the target
+    /// WARNING: THIS FLAG WILL BE IGNORED IF THE SMURF FLAG IS USED
+    #[arg(long)]
+    pub mirror_ip: Option<Ipv4Addr>,
+
+
+    /// Set a MAC to perform a Reflection Attack
+    /// 
+    /// The host with this MAC will send the reply packets to the target
+    /// Write "local" to use the iface MAC
+    /// WARNING: THIS MAC WILL BE USED IF A MIRROR IP IS SET TOO
+    #[arg(long)]
+    pub mirror_mac: Option<String>,
+
+
+    // Set a MAC to perform a Reflection Attack
+    /// 
+    /// The host with this MAC will send the reply packets to the target
+    /// WARNING: THIS MAC WILL BE USED IF A MIRROR IP IS SET TOO
+    #[arg(long)]
+    pub mirror_mac: Option<String>,
 
 }

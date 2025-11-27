@@ -12,7 +12,7 @@ impl NetworkInfo {
         for (i, iface) in IfaceInfo::get_iface_names().into_iter().enumerate() {
             let state       = Self::get_state(&iface);
             let if_type     = Self::get_type(&iface);
-            let mac         = Self::get_mac(&iface);
+            let mac         = IfaceInfo::get_mac(&iface);
             let ip          = Self::get_ip(&iface);
             let cidr        = Self::get_cidr(&iface);
             let host_len    = Self::get_len_host(&cidr);
@@ -35,17 +35,8 @@ impl NetworkInfo {
 
 
 
-    fn get_info(info_type: &str, iface: &str) -> String {
-        let info = format!("/sys/class/net/{}/{}", iface, info_type);
-        
-        fs::read_to_string(&info)
-            .map(|content| content.trim().to_string())
-            .unwrap_or_else(|_| "Unknown".to_string())
-    }
-
-
     fn get_state(iface: &str) -> String {
-        Self::get_info("operstate", &iface).to_uppercase()
+        IfaceInfo::get_info("operstate", &iface).to_uppercase()
     }
 
 
@@ -67,12 +58,6 @@ impl NetworkInfo {
 
 
 
-    fn get_mac(iface: &str) -> String {
-        Self::get_info("address", &iface)
-    }
-
-
-
     fn get_ip(iface: &str) -> String {
         match IfaceInfo::iface_ip(iface) {
             Ok(ip) => ip.to_string(),
@@ -82,13 +67,13 @@ impl NetworkInfo {
 
 
 
-
     fn get_cidr(iface: &str) -> String {
         match IfaceInfo::iface_network_cidr(iface) {
             Ok(ip) => ip.to_string(),
             Err(_) => "Unknown".to_string(),
         }
     }
+
 
 
     fn get_len_host(cidr: &str) -> String {
@@ -119,7 +104,7 @@ impl NetworkInfo {
 
 
     fn get_mtu(iface: &str) -> String {
-        Self::get_info("mtu", &iface)
+        IfaceInfo::get_info("mtu", &iface)
     }
 
 
