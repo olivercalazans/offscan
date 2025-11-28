@@ -16,7 +16,7 @@
   <tr>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
       <ul style="list-style-type: none; padding-left: 0; margin: 0;">
-        <li><strong><em>Authentication Flooding</em></strong></li>
+        <li><strong><em>802.11 Authentication Flooding</em></strong></li>
         <li><strong><em>ICMP (Ping) Flooding</em></strong></li>
         <li><strong><em>Packet Flooding</em></strong></li>
         <li><strong><em>Protocol Tunneling test</em></strong></li>

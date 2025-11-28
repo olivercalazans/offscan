@@ -80,7 +80,7 @@ impl Command {
     
     fn display_commands() {
         println!("\nAvailable commands:");
-        println!("\tauth   -> Authentication Flooding");
+        println!("\tauth   -> 802.11 Auth Flooding");
         println!("\tbanner -> Banner Grabbing");
         println!("\tflood  -> Packet Flooding");
         println!("\tinfo   -> Network Information");

@@ -5,7 +5,7 @@ use crate::utils::parse_mac;
 
 
 #[derive(Parser)]
-#[command(name = "auth", about = "Authentication flooder")]
+#[command(name = "auth", about = "802.11 Authentication flooder")]
 pub struct AuthArgs {
 
     /// Interface to be use to send the frames
