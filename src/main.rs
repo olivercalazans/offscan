@@ -1,4 +1,3 @@
-pub mod arg_parser;
 pub mod dissectors;
 pub mod engines;
 pub mod generators;
@@ -11,7 +10,6 @@ pub mod utils;
 
 use std::{env, mem};
 use clap::Parser;
-use crate::arg_parser::*;
 use crate::engines::*;
 use crate::utils::abort;
 
