@@ -109,24 +109,11 @@ impl NetworkInfo {
 
 
 
-    fn get_gateway_mac(interface: &str) -> String {
-        let arp_content = match fs::read_to_string("/proc/net/arp") {
-            Ok(content) => content,
-            Err(_) => return "Unknown".to_string(),
-        };
-
-        for line in arp_content.lines().skip(1) {
-            let fields: Vec<&str> = line.split_whitespace().collect();
-
-            if fields.len() >= 6 && fields[5] == interface {
-                let mac = fields[3];
-                if !mac.is_empty() && mac != "00:00:00:00:00:00" {
-                    return mac.to_string();
-                }
-            }
+    fn get_gateway_mac(iface: &str) -> String {
+        match IfaceInfo::gateway_mac(iface) {
+            Ok(mac) => { mac },
+            Err(_)  => { "Unknown".to_string() }
         }
-
-        "Unknown".to_string()
     }
 
 
