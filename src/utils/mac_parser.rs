@@ -1,9 +1,8 @@
-use crate::iface::IfaceInfo;
 use crate::utils::abort;
 
 
 
-pub fn parse_mac(input: &str) -> [u8; 6] {
+pub fn parse_mac(input: &str) -> Result<[u8; 6], String> {
     let parts: Vec<&str> = input.split(':').collect();
     if parts.len() != 6 {
         abort(format!("Invalid MAC: {}", input));
@@ -16,16 +15,4 @@ pub fn parse_mac(input: &str) -> [u8; 6] {
     }
 
     Ok(mac)
-}
-
-
-
-pub fn use_local_or_input_mac(input: &str, iface: &str) -> [u8; 6] {
-    let mac_to_parse = if input == "local".to_string() {
-        IfaceInfo::get_mac(iface);
-    } else {
-        input;
-    }
-
-    parse_mac(input)
 }

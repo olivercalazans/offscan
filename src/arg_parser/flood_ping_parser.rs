@@ -7,43 +7,47 @@ use clap::Parser;
 #[command(name = "ping", about = "Ping Flooder")]
 pub struct PingArgs {
 
-    /// Target IP
+    /// Target IP address to flood
     pub target_ip: Ipv4Addr,
 
 
-    /// Define the target MAC
+    /// Target MAC address
     pub target_mac: String,
 
 
-    /// Use the Smurf attack
-    ///
-    /// This attack send a ping broadcast
+    /// Use Smurf attack (sends ping broadcasts)
     #[arg(short = 'S', long)]
     pub smurf: bool,
 
 
-    /// Set an IP to perform a Reflection Attack
+    /// IP address for Reflection Attack
     ///
-    /// The host with this IP will send the reply packets to the target
-    /// WARNING: THIS FLAG WILL BE IGNORED IF THE SMURF FLAG IS USED
+    /// Host with this IP will send replies to target
+    /// NOTE: Ignored if --smurf flag is used
     #[arg(long)]
     pub mirror_ip: Option<Ipv4Addr>,
 
 
-    /// Set a MAC to perform a Reflection Attack
-    /// 
-    /// The host with this MAC will send the reply packets to the target
-    /// Write "local" to use the iface MAC
-    /// WARNING: THIS MAC WILL BE USED IF A MIRROR IP IS SET TOO
+    /// MAC address for Reflection Attack
+    ///
+    /// Host with this MAC will send replies to target
+    /// Use "local" for interface's MAC address
+    /// NOTE: Requires --mirror-ip to be effective
     #[arg(long)]
     pub mirror_mac: Option<String>,
 
-
-    // Set a MAC to perform a Reflection Attack
-    /// 
-    /// The host with this MAC will send the reply packets to the target
-    /// WARNING: THIS MAC WILL BE USED IF A MIRROR IP IS SET TOO
+    
+    /// Source IP address (spoofing)
+    ///
+    /// NOTE: Ignored if --smurf or --mirror-ip are used
     #[arg(long)]
-    pub mirror_mac: Option<String>,
+    pub src_ip: Option<Ipv4Addr>,
+
+    
+    /// Source MAC address (spoofing)
+    ///
+    /// NOTE: Ignored if --smurf or --mirror-ip are used
+    #[arg(long)]
+    pub src_mac: Option<String>,
 
 }

