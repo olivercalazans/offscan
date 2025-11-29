@@ -8,7 +8,6 @@ pub struct PacketBuilder {
 }
 
 
-
 impl PacketBuilder {
 
     pub fn new() -> Self {
