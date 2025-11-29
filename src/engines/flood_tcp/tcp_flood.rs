@@ -38,6 +38,7 @@ impl TcpFlooder {
 
     pub fn execute(&mut self){
         self.set_pkt_data();
+        self.display_pkt_data();
         self.send_endlessly();
     }
 
@@ -62,7 +63,7 @@ impl TcpFlooder {
 
         let mac_to_parse = match mac.as_str() {
             "gateway" => IfaceInfo::gateway_mac(&self.iface).unwrap().to_string(),
-            "local"   => IfaceInfo::iface_ip(&self.iface).unwrap().to_string(),
+            "local"   => IfaceInfo::get_mac(&self.iface),
             _         => mac
         };
 
@@ -70,6 +71,33 @@ impl TcpFlooder {
             Err(e)  => { abort(e) },
             Ok(mac) => { Some(mac) },    
         }
+    }
+
+
+    
+    fn display_pkt_data(&self) {
+        let src_mac = match self.pkt_data.src_mac {
+            Some(mac) => Self::format_mac(mac),
+            None      => "Random".to_string(),
+        };
+
+        let src_ip = match self.pkt_data.src_ip {
+            Some(ip) => ip.to_string(),
+            None     => "Random".to_string(),
+        };
+
+        println!("SRC >> MAC: {}  IP: {}", src_mac, src_ip);
+        println!("DST >> MAC: {}  IP: {}", Self::format_mac(self.pkt_data.dst_mac), self.pkt_data.dst_ip);
+        println!("IFACE: {}", self.iface);
+    }
+
+
+
+    fn format_mac(mac: [u8; 6]) -> String {
+        format!(
+            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+        )
     }
 
 
@@ -87,6 +115,7 @@ impl TcpFlooder {
     }
 
 
+    
     #[inline]
     fn get_pkt(&mut self) -> &[u8] {
         self.builder.tcp_ether(

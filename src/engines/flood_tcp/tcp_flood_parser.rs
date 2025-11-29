@@ -20,10 +20,12 @@ pub struct TcpArgs {
 
 
     /// Optional source IP address
+    #[arg(long)]
     pub src_ip: Option<Ipv4Addr>,
 
 
     /// Use "local" to use the interface MAC address
+    #[arg(long)]
     pub src_mac: Option<String>,
 
 
