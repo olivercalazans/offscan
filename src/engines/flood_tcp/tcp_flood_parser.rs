@@ -23,7 +23,7 @@ pub struct TcpArgs {
     pub src_ip: Option<Ipv4Addr>,
 
 
-    /// Optional source MAC address
+    /// Use "local" to use the interface MAC address
     pub src_mac: Option<String>,
 
 

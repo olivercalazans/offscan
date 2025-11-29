@@ -67,7 +67,7 @@ impl IfaceInfo {
 
 
 
-    fn gateway_mac(iface: &str) -> Result<String, String> {
+    pub fn gateway_mac(iface: &str) -> Result<String, String> {
         let arp_content = match fs::read_to_string("/proc/net/arp") {
             Ok(content) => content,
             Err(_)      => return Err("Unknown".to_string()),

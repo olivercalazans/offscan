@@ -69,6 +69,7 @@ impl Command {
             "ping"   => self.execute_ping(),
             "pscan"  => self.execute_pscan(),
             "protun" => self.execute_protun(),
+            "tcp"    => self.execute_tcp_flood(),
             "wmap"   => self.execute_wmap(),
             _        => abort(format!("No command '{}'", self.command)),
         }
@@ -86,6 +87,7 @@ impl Command {
         println!("\tping   -> Ping Flooding");
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
+        println!("\ttcp    -> TCP Flooding");
         println!("\twmap   -> Wifi Mapping");
         println!("");
     }
@@ -157,6 +159,14 @@ impl Command {
         let cmd_args   = TunnelArgs::parse_from(self.get_arguments());
         let mut tunnel = ProtocolTunneler::new(cmd_args);
         tunnel.execute();
+    }
+
+
+
+    fn execute_tcp_flood(&mut self) {
+        let cmd_args = TcpArgs::parse_from(self.get_arguments());
+        let mut tcp  = TcpFlooder::new(cmd_args);
+        tcp.execute();
     }
 
     
