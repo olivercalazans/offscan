@@ -67,7 +67,7 @@ impl NetworkMapper {
         
         sniffer.start();
         
-        self.send_icmp_and_tcp_probes();
+        self.create_proto_thread();
         
         thread::sleep(Duration::from_secs(3));
         sniffer.stop();
@@ -91,46 +91,31 @@ impl NetworkMapper {
 
 
 
-    fn send_icmp_and_tcp_probes(&mut self) {
-        let icmp_thread = if self.args.icmp {
-            println!("Sending ICMP probes");
-            Some(self.create_thread("icmp".to_string()))
-        } else {
-            None
-        };
-
-        let tcp_thread = if self.args.tcp {
-            println!("Sending TCP probes");
-            Some(self.create_thread("tcp".to_string()))
-        } else {
-            None
-        };
-
-
-        let udp_thread = if self.args.udp {
-            println!("Sending UDP probes");
-            Some(self.create_thread("udp".to_string()))
-        } else {
-            None
-        };
-
-
-        if let Some(thread) = icmp_thread {
-            thread.join().expect("ICMP thread failed");
+    fn create_proto_thread(&mut self) {
+        let mut threads = vec![];
+        
+        let protocols = [
+            ("icmp", self.args.icmp),
+            ("tcp", self.args.tcp),
+            ("udp", self.args.udp),
+        ];
+        
+        for (name, flag) in protocols.iter() {
+            if *flag {
+                threads.push((self.create_thread(name.to_string()), name));
+            }
         }
 
-        if let Some(thread) = tcp_thread {
-            thread.join().expect("TCP thread failed");
-        }
-
-        if let Some(thread) = udp_thread {
-            thread.join().expect("UDP thread failed");
+        for (thread, name) in threads {
+            thread.join().unwrap_or_else(|_| abort(format!("{} thread failed", name)));
         }
     }
 
 
 
     fn create_thread(&self, probe_type: String) -> thread::JoinHandle<()> {
+        println!("Sending {} probes", probe_type.to_uppercase());
+
         let iters = self.setup_iterators();
         let tools = self.setup_tools();
         let my_ip = self.my_ip.clone();
@@ -183,7 +168,6 @@ impl NetworkMapper {
             
                 thread::sleep(Duration::from_secs_f32(delay));
             });
-        println!("");
     }
 
 

@@ -17,4 +17,3 @@ libc = "0.2.177"
 pcap = "2.3.0"
 rand = "0.8.5"
 clap = { version = "4.5", features = ["derive"] }
-tokio = { version = "1.48.0", features = ["rt", "net", "io-util", "time", "macros"] }
