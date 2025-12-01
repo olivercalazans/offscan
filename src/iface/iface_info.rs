@@ -67,13 +67,39 @@ impl IfaceInfo {
 
 
 
+    pub fn gateway_mac(iface: &str) -> Result<String, String> {
+        let arp_content = match fs::read_to_string("/proc/net/arp") {
+            Ok(content) => content,
+            Err(_)      => return Err("Unknown".to_string()),
+        };
+
+        for line in arp_content.lines().skip(1) {
+            let fields: Vec<&str> = line.split_whitespace().collect();
+
+            if fields.len() < 6 || fields[5] != iface {
+                continue;
+            }
+
+            let mac = fields[3];
+            if mac.is_empty() || mac == "00:00:00:00:00:00" {
+                continue
+            }
+            
+            return Ok(mac.to_string());
+        }
+
+        Err("Unknown".to_string())
+    }
+
+
+
     pub fn check_iface_exists(iface_name: &str) -> Result<String, String> {
         let interfaces = Self::get_iface_names();
     
         if interfaces.iter().any(|iface| iface == iface_name) {
             Ok(iface_name.to_string())
         } else {
-            Err("Network interface does not exist".to_string())
+            Err("Network iface does not exist".to_string())
         }
     }
 
@@ -85,7 +111,7 @@ impl IfaceInfo {
         match fs::read_to_string(&ifindex_path) {
             Ok(content) => {
                 content.trim().parse().unwrap_or_else(|_| {
-                    abort(&format!("Failed to parse ifindex for interface: {}", iface_name));
+                    abort(&format!("Failed to parse ifindex for iface: {}", iface_name));
                 })
             }
             Err(_) => {
@@ -138,7 +164,7 @@ impl IfaceInfo {
             }
 
             freeifaddrs(ifap);
-            abort(format!("Could not find any interface with IP {}", ip));
+            abort(format!("Could not find any iface with IP {}", ip));
         }
     }
 
