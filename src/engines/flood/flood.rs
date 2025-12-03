@@ -104,7 +104,7 @@ impl PacketFlooder {
     ) {
         let tcp_pkt = tools.builder.tcp_ether(
             src_mac, src_ip, src_port,
-            dst_mac, dst_ip, 80);
+            dst_mac, dst_ip, 80, "syn");
         tools.socket.send(tcp_pkt);
     }
 

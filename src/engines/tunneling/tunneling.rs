@@ -116,6 +116,7 @@ impl ProtocolTunneler {
             pkt_info.dst_mac, pkt_info.dst_ip, 53, 80
         );
         self.socket.send(pkt);
+        
         println!(
             "> TCP over UDP packet sent.\n\tFrom IP: {:<15} MAC: {}\n\tTo   IP: {:<15} MAC: {}",
             pkt_info.src_ip, Self::format_mac(pkt_info.src_mac),

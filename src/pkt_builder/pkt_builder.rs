@@ -25,7 +25,7 @@ impl PacketBuilder {
         dst_port: u16,
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.buffer[20..40], src_ip, src_port, dst_ip, dst_port);
+        HeaderBuilder::tcp(&mut self.buffer[20..40], src_ip, src_port, dst_ip, dst_port, "syn");
         HeaderBuilder::ip(&mut self.buffer[..20], 40, 6, src_ip, dst_ip);
         
         &self.buffer[..40]
@@ -89,7 +89,7 @@ impl PacketBuilder {
         dst_tcp_port: u16
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.buffer[42..69], src_ip, src_tcp_port, dst_ip, dst_tcp_port);
+        HeaderBuilder::tcp(&mut self.buffer[42..69], src_ip, src_tcp_port, dst_ip, dst_tcp_port, "syn");
         HeaderBuilder::udp(&mut self.buffer[34..42], src_ip, src_udp_port, dst_ip, dst_udp_port, 0);
         HeaderBuilder::ip(&mut self.buffer[14..34], 40, 17, src_ip, dst_ip);
         HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
@@ -108,9 +108,10 @@ impl PacketBuilder {
         dst_mac:  [u8; 6],
         dst_ip:   Ipv4Addr,
         dst_port: u16,
+        flag:     &str,
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.buffer[34..54], src_ip, src_port, dst_ip, dst_port);
+        HeaderBuilder::tcp(&mut self.buffer[34..54], src_ip, src_port, dst_ip, dst_port, flag);
         HeaderBuilder::ip(&mut self.buffer[14..34], 40, 6, src_ip, dst_ip);
         HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
         

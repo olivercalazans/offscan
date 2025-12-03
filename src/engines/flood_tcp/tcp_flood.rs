@@ -50,6 +50,7 @@ impl TcpFlooder {
         self.pkt_data.dst_port = self.args.port;
         self.pkt_data.dst_ip   = self.args.target_ip;
         self.pkt_data.dst_mac  = self.resolve_mac(Some(self.args.target_mac.clone())).unwrap();
+        self.pkt_data.flag     = if self.args.ack {"ack".to_string()} else {"syn".to_string()};
     }
 
 
@@ -124,7 +125,8 @@ impl TcpFlooder {
             self.rng.get_random_port(),
             self.pkt_data.dst_mac, 
             self.pkt_data.dst_ip,
-            self.pkt_data.dst_port 
+            self.pkt_data.dst_port,
+            &self.pkt_data.flag
         )
     }
 
@@ -138,6 +140,7 @@ struct PacketData {
     dst_ip:   Ipv4Addr,
     dst_mac:  [u8; 6],
     dst_port: u16,
+    flag:     String,
 }
 
 
@@ -149,6 +152,7 @@ impl PacketData {
             dst_ip:   Ipv4Addr::new(0, 0, 0, 0),
             dst_mac:  [0u8; 6],
             dst_port: 0,
+            flag:     "".to_string(),
         }
     }
 }
