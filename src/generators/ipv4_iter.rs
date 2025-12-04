@@ -14,45 +14,21 @@ pub struct Ipv4Iter {
 
 impl Ipv4Iter {
 
-    pub fn new(
-        cidr:     &str,
-        start_ip: Option<Ipv4Addr>,
-        end_ip:   Option<Ipv4Addr>,
-    ) -> Self {
+    pub fn new(cidr: &str, range_str: Option<&str>) -> Self {
         let (network_u32, broadcast_u32) = Self::parse_cidr(cidr);
         
         let usable_start = network_u32.saturating_add(1);
-        let usable_end = broadcast_u32.saturating_sub(1);
+        let usable_end   = broadcast_u32.saturating_sub(1);
         
         if usable_start > usable_end {
             abort("No usable IP addresses in CIDR (network and broadcast excluded)");
         }
 
-        let start_range = start_ip
-            .map(|ip| u32::from_be_bytes(ip.octets()))
-            .unwrap_or(usable_start);
-
-        let end_range = end_ip
-            .map(|ip| u32::from_be_bytes(ip.octets()))
-            .unwrap_or(usable_end);
-
-        if start_range < usable_start || start_range > usable_end {
-            abort(&format!(
-                "Start IP {} is out of usable range ({}-{})",
-                Ipv4Addr::from(start_range.to_be_bytes()),
-                Ipv4Addr::from(usable_start.to_be_bytes()),
-                Ipv4Addr::from(usable_end.to_be_bytes())
-            ));
-        }
-
-        if end_range < usable_start || end_range > usable_end {
-            abort(&format!(
-                "End IP {} is out of usable range ({}-{})",
-                Ipv4Addr::from(end_range.to_be_bytes()),
-                Ipv4Addr::from(usable_start.to_be_bytes()),
-                Ipv4Addr::from(usable_end.to_be_bytes())
-            ));
-        }
+        let (start_range, end_range) = if let Some(range) = range_str {
+            Self::parse_range(range)
+        } else {
+            (usable_start, usable_end)
+        };
 
         if start_range > end_range {
             abort("Start IP cannot be greater than end IP");
@@ -62,9 +38,56 @@ impl Ipv4Iter {
 
         Ipv4Iter {
             current: start_range,
-            end:     end_range,
-            start:   start_range,
+            end: end_range,
+            start: start_range,
             total,
+        }
+    }
+
+
+
+    fn parse_range(range_str: &str) -> (u32, u32) {
+        let range_str = range_str.trim();
+        
+        if range_str.contains('-') {
+            let parts: Vec<&str> = range_str.split('-').collect();
+            
+            if parts.len() != 2 {
+                abort(&format!("Invalid range format: {}", range_str));
+            }
+            
+            let start_str = parts[0].trim();
+            let end_str   = parts[1].trim();
+            
+            if start_str.is_empty() || end_str.is_empty() {
+                abort("Range format must include both start and end IPs when using hyphen");
+            }
+            
+            let start_ip: Ipv4Addr = start_str.parse().unwrap_or_else(|e| {
+                abort(&format!("Invalid start IP '{}': {}", start_str, e));
+            });
+            
+            let end_ip: Ipv4Addr = end_str.parse().unwrap_or_else(|e| {
+                abort(&format!("Invalid end IP '{}': {}", end_str, e));
+            });
+            
+            let start_u32 = u32::from_be_bytes(start_ip.octets());
+            let end_u32 = u32::from_be_bytes(end_ip.octets());
+            
+            if start_u32 > end_u32 {
+                abort("Start IP cannot be greater than end IP");
+            }
+            
+            (start_u32, end_u32)
+
+        } else {
+
+            let ip: Ipv4Addr = range_str.parse().unwrap_or_else(|e| {
+                abort(&format!("Invalid IP address '{}': {}", range_str, e));
+            });
+            let ip_u32 = u32::from_be_bytes(ip.octets());
+            
+            (ip_u32, ip_u32)
         }
     }
 
@@ -112,6 +135,7 @@ impl Ipv4Iter {
     pub fn total(&self) -> u64 {
         self.total
     }
+
 }
 
 

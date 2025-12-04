@@ -1,4 +1,3 @@
-use std::net::Ipv4Addr;
 use clap::Parser;
 use crate::iface::IfaceInfo;
 
@@ -24,13 +23,8 @@ pub struct NetMapArgs {
 
 
     /// Set a initial IP
-    #[arg(long)]
-    pub start_ip: Option<Ipv4Addr>,
-
-
-    /// Set a final IP
-    #[arg(long)]
-    pub end_ip: Option<Ipv4Addr>,
+    #[arg(short, long)]
+    pub range: Option<String>,
 
 
     /// Use only ICMP probes

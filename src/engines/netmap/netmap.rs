@@ -129,7 +129,7 @@ impl NetworkMapper {
 
     fn setup_iterators(&self) -> Iterators {
         let cidr   = self.get_cidr();
-        let ips    = Ipv4Iter::new(&cidr, self.args.start_ip.clone(), self.args.end_ip.clone());
+        let ips    = Ipv4Iter::new(&cidr, self.args.range.as_deref());
         let len    = ips.total() as usize;
         let delays = DelayIter::new(&self.args.delay, len);
         
