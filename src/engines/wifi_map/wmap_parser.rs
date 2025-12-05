@@ -10,6 +10,7 @@ pub struct WmapArgs {
     #[arg(value_parser = IfaceInfo::check_iface_exists)]
     pub iface: String,
 
+    
     /// Set a time to wait before close the beacons capture
     #[arg(short, long, default_value_t = 2)]
     pub time: u64,
