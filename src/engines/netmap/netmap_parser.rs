@@ -22,9 +22,19 @@ pub struct NetMapArgs {
     pub iface: String,
 
 
-    /// Set a initial IP
+    /// Set an IP range
+    ///
+    /// Accepted formats:
+    /// For local network ranges:
+    /// - "<ip>" - from first network IP to specified IP (e.g., "192.168.1.100")
+    /// - "<ip>*" - from specified IP to last network IP (e.g., "192.168.1.100*")
+    /// - "<ip>*<ip>" - all IPs between two addresses (e.g., "192.168.1.1*192.168.1.50")
+    ///
+    /// For external IP ranges:
+    /// - "<ip>*<ip>" - all IPs between two addresses (e.g., "8.8.8.1*8.8.8.10")
     #[arg(short, long)]
     pub range: Option<String>,
+
 
 
     /// Use only ICMP probes
