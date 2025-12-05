@@ -30,6 +30,7 @@ pub struct NetMapArgs {
     pub delay: String,
 
 
+
     /// Define a network interface to send packets
     #[arg(
         short, long,
@@ -42,6 +43,7 @@ pub struct NetMapArgs {
         ),
     )]
     pub iface: String,
+
 
 
     /// Set an IP range to scan
@@ -66,6 +68,7 @@ pub struct NetMapArgs {
     pub range: Option<String>,
 
 
+    
     /// Use only ICMP probes
     #[arg(long)]
     pub icmp: bool,
@@ -75,8 +78,9 @@ pub struct NetMapArgs {
     #[arg(long)]
     pub tcp: bool,
 
-
+    
     /// Use only UDP probes
     #[arg(long)]
     pub udp: bool,
+
 }

@@ -10,5 +10,8 @@ pub use dns::get_host_name;
 pub mod first_and_last_ip;
 pub use first_and_last_ip::get_first_and_last_ip;
 
+pub mod ip_parser;
+pub use ip_parser::parse_ip;
+
 pub mod mac_parser;
 pub use mac_parser::parse_mac;

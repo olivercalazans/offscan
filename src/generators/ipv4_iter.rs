@@ -103,7 +103,7 @@ impl Ipv4Iter {
                 (false, true) => {
                     if !start_is_in_cidr {
                         abort(&format!(
-                            "Start IP {} is outside CIDR range. When using 'IP-', the IP must be within the CIDR.",
+                            "Start IP {} is outside CIDR range. When using 'IP*', the IP must be within the CIDR.",
                             Ipv4Addr::from(start_ip.unwrap().to_be_bytes())
                         ));
                     }
@@ -113,7 +113,7 @@ impl Ipv4Iter {
                 (true, false) => {
                     if !end_is_in_cidr {
                         abort(&format!(
-                            "End IP {} is outside CIDR range. When using '-IP', the IP must be within the CIDR.",
+                            "End IP {} is outside CIDR range. When using '*IP', the IP must be within the CIDR.",
                             Ipv4Addr::from(end_ip.unwrap().to_be_bytes())
                         ));
                     }

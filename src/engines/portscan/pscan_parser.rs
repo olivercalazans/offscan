@@ -19,8 +19,8 @@ pub struct PortScanArgs {
     pub target_ip: Ipv4Addr,
 
 
+
     /// Scan specific ports or ranges of ports (can be combined).
-    ///
     #[arg(
         short, long,
         value_name = "INTEGER",
@@ -32,9 +32,11 @@ pub struct PortScanArgs {
     pub ports: String,
 
 
+
     /// Scan the ports in random order
     #[arg(short, long)]
     pub random: bool,
+
 
 
     /// Add a delay between packet transmissions.
@@ -46,6 +48,7 @@ pub struct PortScanArgs {
     )]
     pub delay: String,
 
+    
     
     /// Scan UDP ports
     #[arg(short = 'U', long = "UDP")]

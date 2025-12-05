@@ -19,7 +19,7 @@ pub struct PingArgs {
     pub target_ip: Ipv4Addr,
 
 
-    /// Target MAC address
+    /// Target MAC address. Use 'local' to use the iface MAC
     pub target_mac: String,
 
 
@@ -28,41 +28,35 @@ pub struct PingArgs {
     pub smurf: bool,
 
 
-    /// IP address for Reflection Attack
+
+    /// IP and MAC addresses for Reflection Attack
     #[arg(
+        short = 'R',
         long,
         long_help = long_help!(
-            "Host with this IP will send replies to target\n\
-            NOTE: Ignored if --smurf flag is used"
+            "Host with this IP and MAC will send replies to target\n\
+            \tExample: 192.168.1.1/11:22:33:aa:bb:cc\n\
+            !!! NOTE: It's necessary to infome both IP and MAC\n\
+            !!! NOTE: Ignored if --smurf flag is used"
         ),
     )]
-    pub reflector_ip: Option<Ipv4Addr>,
-
-
-    /// MAC address for Reflection Attack
-    #[arg(
-        long,
-        long_help = long_help!(
-            "Host with this MAC will send replies to target\n\
-            Use 'local' for interface's MAC address\n\
-            NOTE: Requires --mirror-ip to be effective"
-        ),
-    )]
-    pub reflector_mac: Option<String>,
+    pub reflector: Option<String>,
 
     
+
     /// Source IP address (spoofing)
     #[arg(
         long,
-        long_help = long_help!("NOTE: Ignored if --smurf or --mirror-ip are used"),
+        long_help = long_help!("!!! NOTE: Ignored if --smurf or --mirror-ip are used"),
     )]
     pub src_ip: Option<Ipv4Addr>,
 
     
-    /// Source MAC address (spoofing)
+
+    /// Source MAC address (spoofing). Use 'local' to use the iface MAC
     #[arg(
         long,
-        long_help = long_help!("NOTE: Ignored if --smurf or --mirror-ip are used"),
+        long_help = long_help!("!!! NOTE: Ignored if --smurf or --mirror-ip are used"),
     )]
     pub src_mac: Option<String>,
 

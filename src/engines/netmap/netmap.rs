@@ -6,7 +6,7 @@ use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer3RawSocket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{abort, get_host_name, get_first_and_last_ip};
+use crate::utils::{abort, get_host_name, get_first_and_last_ip, parse_ip};
 
 
 
@@ -217,18 +217,14 @@ impl NetworkMapper {
         let start = if start_str.is_empty() {
             Some(cidr_first)
         } else {
-            let ip: Ipv4Addr = start_str.parse().unwrap_or_else(|e| {
-                abort(&format!("Invalid start IP '{}': {}", start_str, e));
-            });
+            let ip = parse_ip(start_str);
             Some(u32::from_be_bytes(ip.octets()))
         };
     
         let end = if end_str.is_empty() {
             Some(cidr_last)
         } else {
-            let ip: Ipv4Addr = end_str.parse().unwrap_or_else(|e| {
-                abort(&format!("Invalid end IP '{}': {}", end_str, e));
-            });
+            let ip = parse_ip(end_str);
             Some(u32::from_be_bytes(ip.octets()))
         };
     

