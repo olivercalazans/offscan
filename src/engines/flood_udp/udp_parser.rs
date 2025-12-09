@@ -4,8 +4,8 @@ use clap::Parser;
 
 
 #[derive(Parser)]
-#[command(name = "udp", about = "UDP Flooder")]
-pub struct UdpArgs {
+#[command(name = "dns", about = "DNS Flooder")]
+pub struct DnsArgs {
 
     /// Target IP address to flood
     pub target_ip: Ipv4Addr,

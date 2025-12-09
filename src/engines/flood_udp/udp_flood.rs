@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use crate::engines::UdpArgs;
+use crate::engines::DnsArgs;
 use crate::iface::IfaceInfo;
 use crate::generators::RandomValues;
 use crate::pkt_builder::PacketBuilder;
@@ -8,7 +8,7 @@ use crate::utils::{ inline_display, parse_mac, mac_u8_to_string };
 
 
 
-pub struct UdpFlooder {
+pub struct DnsFlooder {
     builder:   PacketBuilder,
     iface:     String,
     pkts_sent: usize,
@@ -26,9 +26,9 @@ struct PacketData {
 }
 
 
-impl UdpFlooder {
+impl DnsFlooder {
 
-    pub fn new(args: UdpArgs) -> Self {
+    pub fn new(args: DnsArgs) -> Self {
         let iface = IfaceInfo::default_iface();
 
         Self {
@@ -42,7 +42,7 @@ impl UdpFlooder {
 
 
 
-    fn set_pkt_data(args: UdpArgs, iface: &str) -> PacketData {
+    fn set_pkt_data(args: DnsArgs, iface: &str) -> PacketData {
         let src_mac_str = IfaceInfo::mac(iface);
         let dst_mac_str = IfaceInfo::gateway_mac(iface).unwrap();
 
@@ -66,8 +66,11 @@ impl UdpFlooder {
 
     
     fn display_pkt_data(&self) {
-        println!("TAR >> MAC: {}  IP: {}", mac_u8_to_string(self.pkt_data.src_mac), self.pkt_data.src_ip);
-        println!("DNS >> MAC: {}  IP: {}", mac_u8_to_string(self.pkt_data.dst_mac), self.pkt_data.dst_ip);
+        let src_mac = mac_u8_to_string(self.pkt_data.src_mac);
+        let dst_mac = mac_u8_to_string(self.pkt_data.dst_mac);
+
+        println!("TARGET     >> MAC: {}  IP: {}", src_mac, self.pkt_data.src_ip);
+        println!("DNS SERVER >> MAC: {}  IP: {}", dst_mac, self.pkt_data.dst_ip);
         println!("IFACE: {}", self.iface);
     }
 

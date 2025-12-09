@@ -63,6 +63,7 @@ impl Command {
             "--help" => Self::display_commands(),
             "auth"   => self.execute_auth_flood(),
             "banner" => self.execute_banner_grab(),
+            "dns"    => self.execute_dns_flood(),
             "flood"  => self.execute_flood(),
             "info"   => self.execute_info(),
             "netmap" => self.execute_netmap(),
@@ -70,7 +71,6 @@ impl Command {
             "pscan"  => self.execute_pscan(),
             "protun" => self.execute_protun(),
             "tcp"    => self.execute_tcp_flood(),
-            "udp"    => self.execute_udp_flood(),
             "wmap"   => self.execute_wmap(),
             _        => abort(format!("No command '{}'", self.command)),
         }
@@ -173,10 +173,10 @@ impl Command {
 
 
 
-    fn execute_udp_flood(&mut self) {
-        let cmd_args = UdpArgs::parse_from(self.get_arguments());
-        let mut udp  = UdpFlooder::new(cmd_args);
-        udp.execute();
+    fn execute_dns_flood(&mut self) {
+        let cmd_args = DnsArgs::parse_from(self.get_arguments());
+        let mut dns  = DnsFlooder::new(cmd_args);
+        dns.execute();
     }
 
     
