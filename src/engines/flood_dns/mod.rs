@@ -1,5 +1,5 @@
-pub mod udp_parser;
-pub use udp_parser::DnsArgs;
+pub mod dns_parser;
+pub use dns_parser::DnsArgs;
 
-pub mod udp_flood;
-pub use udp_flood::DnsFlooder;
+pub mod dns_flood;
+pub use dns_flood::DnsFlooder;

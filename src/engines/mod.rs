@@ -4,14 +4,14 @@ pub use auth_flood::*;
 pub mod banner_grab;
 pub use banner_grab::*;
 
+pub mod flood_dns;
+pub use flood_dns::*;
+
 pub mod flood_ping;
 pub use flood_ping::*;
 
 pub mod flood_tcp;
 pub use flood_tcp::*;
-
-pub mod flood_udp;
-pub use flood_udp::*;
 
 pub mod flood;
 pub use flood::*;
