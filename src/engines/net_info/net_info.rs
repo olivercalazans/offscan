@@ -9,10 +9,10 @@ pub struct NetworkInfo;
 impl NetworkInfo {
 
     pub fn execute() {
-        for (i, iface) in IfaceInfo::get_iface_names().into_iter().enumerate() {
+        for (i, iface) in IfaceInfo::iface_names().into_iter().enumerate() {
             let state       = Self::get_state(&iface);
             let if_type     = Self::get_type(&iface);
-            let mac         = IfaceInfo::get_mac(&iface);
+            let mac         = IfaceInfo::mac(&iface);
             let ip          = Self::get_ip(&iface);
             let cidr        = Self::get_cidr(&iface);
             let host_len    = Self::get_len_host(&cidr);
@@ -68,7 +68,7 @@ impl NetworkInfo {
 
 
     fn get_cidr(iface: &str) -> String {
-        match IfaceInfo::iface_network_cidr(iface) {
+        match IfaceInfo::iface_cidr(iface) {
             Ok(ip) => ip.to_string(),
             Err(_) => "Unknown".to_string(),
         }

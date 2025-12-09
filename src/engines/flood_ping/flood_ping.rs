@@ -33,7 +33,7 @@ struct PacketData {
 impl PingFlooder {
 
     pub fn new(args: PingArgs) -> Self {
-        let iface = IfaceInfo::iface_name_from_ip(args.target_ip);
+        let iface               = IfaceInfo::iface_from_ip(args.target_ip);
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
@@ -70,7 +70,7 @@ impl PingFlooder {
     fn smurf_attack(&mut self) {
         self.pkt_data.src_ip  = Some(self.args.target_ip);
         self.pkt_data.src_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
-        self.pkt_data.dst_ip  = Some(IfaceInfo::get_broadcast_ip(&self.iface));
+        self.pkt_data.dst_ip  = Some(IfaceInfo::broadcast_ip(&self.iface));
         self.pkt_data.dst_mac = Some([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
     }
 
@@ -115,7 +115,7 @@ impl PingFlooder {
         let mac = input_mac.unwrap();
 
         let mac_to_parse = if mac == "local" {
-            IfaceInfo::get_mac(&self.iface)
+            IfaceInfo::mac(&self.iface)
         } else {
             mac
         };

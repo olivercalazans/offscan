@@ -36,7 +36,7 @@ pub struct NetMapArgs {
         short, long,
         value_name = "INTERFACE",
         value_parser = IfaceInfo::check_iface_exists,
-        default_value_t = IfaceInfo::default_iface_name(),
+        default_value_t = IfaceInfo::default_iface(),
         long_help = long_help!(
             "Define a network interface to send the packets.\n\
             If not specified, defaults to the system's default interface."

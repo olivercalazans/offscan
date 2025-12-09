@@ -137,7 +137,7 @@ impl NetworkMapper {
 
 
     fn get_cidr(&self) -> String {
-        IfaceInfo::iface_network_cidr(&self.args.iface).unwrap_or_else(|e| abort(e))
+        IfaceInfo::iface_cidr(&self.args.iface).unwrap_or_else(|e| abort(e))
     }
 
 

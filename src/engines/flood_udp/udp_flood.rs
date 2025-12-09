@@ -3,7 +3,7 @@ use crate::engines::UdpArgs;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display, get_first_and_last_ip, parse_mac};
+use crate::utils::{abort, inline_display, parse_mac};
 
 
 
@@ -13,13 +13,22 @@ pub struct UdpFlooder {
     pkts_sent: usize,
 }
 
+#[derive(Default)]
+struct PacketData {
+    src_ip:  Ipv4Addr,
+    src_mac: [u8; 6],
+    dst_ip:  Ipv4Addr,
+    dst_mac: [u8; 6],
+}
+
 
 impl UdpFlooder {
 
     pub fn new(args: UdpArgs) -> Self {
         Self {
-            iface:     IfaceInfo::iface_name_from_ip(args.target_ip)
+            iface:     IfaceInfo::default_iface(),
             pkts_sent: 0,
+            pkt_data:  Default::default(),     
             args,
         }
     }

@@ -11,7 +11,7 @@ pub struct UdpArgs {
     pub target_ip: Ipv4Addr,
 
 
-    /// Use "gateway" if the target isn't in the local net
-    pub target_mac: String,
+    /// DNS server to amplificate the packet lengths
+    pub dns_ip: Ipv4Addr,
 
 }

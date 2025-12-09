@@ -23,7 +23,7 @@ pub struct PortScanner {
 impl PortScanner {
 
     pub fn new(args: PortScanArgs) -> Self {
-        let iface = IfaceInfo::iface_name_from_ip(args.target_ip.clone());
+        let iface = IfaceInfo::iface_from_ip(args.target_ip.clone());
         Self {
             my_ip:       IfaceInfo::iface_ip(&iface).unwrap_or_else(|e| abort(e)),
             raw_packets: Vec::new(),

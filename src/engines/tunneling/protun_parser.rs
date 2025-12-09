@@ -13,7 +13,7 @@ pub struct TunnelArgs {
     #[arg(
         short, long, 
         value_parser = IfaceInfo::check_iface_exists,
-        default_value_t = IfaceInfo::default_iface_name()
+        default_value_t = IfaceInfo::default_iface()
     )]
     pub iface: String,
 

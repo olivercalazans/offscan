@@ -21,7 +21,7 @@ pub struct TcpFlooder {
 impl TcpFlooder {
 
     pub fn new(args: TcpArgs) -> Self {
-        let iface = IfaceInfo::iface_name_from_ip(args.target_ip);
+        let iface               = IfaceInfo::iface_from_ip(args.target_ip);
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
@@ -64,7 +64,7 @@ impl TcpFlooder {
 
         let mac_to_parse = match mac.as_str() {
             "gateway" => IfaceInfo::gateway_mac(&self.iface).unwrap().to_string(),
-            "local"   => IfaceInfo::get_mac(&self.iface),
+            "local"   => IfaceInfo::mac(&self.iface),
             _         => mac
         };
 
