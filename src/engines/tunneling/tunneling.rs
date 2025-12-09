@@ -1,6 +1,6 @@
 use std::{net::Ipv4Addr, thread, time::Duration};
 use crate::engines::TunnelArgs;
-use crate::generators::RandValues;
+use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
@@ -13,7 +13,7 @@ use crate::utils::{abort, parse_mac};
 pub struct ProtocolTunneler {
     args:        TunnelArgs,
     pkt_builder: PacketBuilder,
-    rand:        RandValues,
+    rand:        RandomValues,
     socket:      Layer2RawSocket,
 }
 
@@ -25,7 +25,7 @@ impl ProtocolTunneler {
         Self {
             socket:      Layer2RawSocket::new(&args.iface),
             pkt_builder: PacketBuilder::new(),
-            rand:        RandValues::new(None, None),
+            rand:        RandomValues::new(None, None),
             args,
         }
     }

@@ -1,6 +1,6 @@
 use std::{thread, time::Duration, collections::BTreeMap, mem, net::Ipv4Addr};
 use crate::engines::NetMapArgs;
-use crate::generators::{Ipv4Iter, DelayIter, RandValues};
+use crate::generators::{Ipv4Iter, DelayIter, RandomValues};
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
@@ -157,7 +157,7 @@ impl NetworkMapper {
         mut iters:  Iterators,
         mut tools:  PacketTools
     ) {
-        let mut rand = RandValues::new(None, None);
+        let mut rand = RandomValues::new(None, None);
 
         iters.ips.by_ref()
             .zip(iters.delays.by_ref())

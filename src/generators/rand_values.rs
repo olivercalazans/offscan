@@ -3,7 +3,7 @@ use rand::{Rng, rngs::ThreadRng};
 
 
 
-pub struct RandValues {
+pub struct RandomValues {
     rng: ThreadRng,
     first_ip: u32,
     last_ip:  u32,
@@ -11,7 +11,7 @@ pub struct RandValues {
 
 
 
-impl RandValues {
+impl RandomValues {
 
     pub fn new(first_ip: Option<u32>, last_ip: Option<u32>) -> Self {
         Self { 

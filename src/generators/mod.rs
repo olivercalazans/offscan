@@ -8,4 +8,4 @@ pub mod port_iter;
 pub use port_iter::PortIter;
 
 pub mod rand_values;
-pub use rand_values::RandValues;
+pub use rand_values::RandomValues;

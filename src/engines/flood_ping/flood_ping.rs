@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{net::Ipv4Addr, mem};
 use crate::engines::PingArgs;
-use crate::generators::RandValues;
+use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
@@ -12,7 +12,7 @@ use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, 
 
 pub struct PingFlooder {
     args:       PingArgs,
-    rand:       RandValues,
+    rand:       RandomValues,
     builder:    PacketBuilder,
     iface:      String,
     pkts_sent:  usize,
@@ -37,7 +37,7 @@ impl PingFlooder {
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
-            rand:      RandValues::new(Some(first_ip), Some(last_ip)),
+            rand:      RandomValues::new(Some(first_ip), Some(last_ip)),
             builder:   PacketBuilder::new(),
             pkts_sent: 0,
             pkt_data:  Default::default(),

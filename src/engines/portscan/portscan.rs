@@ -1,6 +1,6 @@
 use std::{thread, time::Duration, mem, net::Ipv4Addr, collections::BTreeSet};
 use crate::engines::PortScanArgs;
-use crate::generators::{DelayIter, PortIter, RandValues};
+use crate::generators::{DelayIter, PortIter, RandomValues};
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::{PacketBuilder, UdpPayloads};
 use crate::sniffer::PacketSniffer;
@@ -18,6 +18,26 @@ pub struct PortScanner {
     open_ports:  BTreeSet<u16>,
 }
 
+
+struct PacketTools {
+    sniffer: PacketSniffer,
+    builder: PacketBuilder,
+    socket:  Layer3RawSocket,
+}
+
+
+struct UdpIterators {
+    ports:  UdpPayloads,
+    delays: DelayIter,
+    ip:     String,
+}
+
+
+struct TcpIterators {
+    ports:  PortIter,
+    delays: DelayIter,
+    ip:     String,
+}
 
 
 impl PortScanner {
@@ -161,8 +181,8 @@ impl PortScanner {
 
 
 
-    fn get_rand() -> RandValues {
-        RandValues::new(None, None)
+    fn get_rand() -> RandomValues {
+        RandomValues::new(None, None)
     }
 
 
@@ -211,28 +231,4 @@ impl PortScanner {
             .join(", ")
     }
 
-}
-
-
-
-struct PacketTools {
-    sniffer: PacketSniffer,
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
-
-
-struct UdpIterators {
-    ports:  UdpPayloads,
-    delays: DelayIter,
-    ip:     String,
-}
-
-
-
-struct TcpIterators {
-    ports:  PortIter,
-    delays: DelayIter,
-    ip:     String,
 }
