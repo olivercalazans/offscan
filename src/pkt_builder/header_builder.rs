@@ -6,7 +6,8 @@ use crate::pkt_builder::checksum::*;
 pub struct HeaderBuilder;
 
 
-impl HeaderBuilder { 
+impl HeaderBuilder {
+
 
     #[inline]
     pub fn tcp(
