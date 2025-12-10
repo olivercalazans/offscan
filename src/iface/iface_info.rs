@@ -11,7 +11,7 @@ pub struct IfaceInfo;
 
 impl IfaceInfo {
 
-    pub fn get_iface_names() -> Vec<String> {
+    pub fn iface_names() -> Vec<String> {
         let entries = fs::read_dir("/sys/class/net")
             .unwrap_or_else(|e| {
                 abort(format!("Failed to read /sys/class/net: {}", e))
@@ -40,14 +40,14 @@ impl IfaceInfo {
 
 
 
-    pub fn get_mac(iface: &str) -> String {
+    pub fn mac(iface: &str) -> String {
         Self::get_info("address", &iface)
     }
 
 
 
-    pub fn get_broadcast_ip(iface: &str) -> Ipv4Addr {
-        let (ip, prefix) = Self::get_ip_and_prefix(iface);
+    pub fn broadcast_ip(iface: &str) -> Ipv4Addr {
+        let (ip, prefix) = Self::ip_and_prefix(iface);
         let ip_u32       = u32::from(ip);
         
         let mask = if prefix == 0 { 0 } else { (!0u32) << (32 - prefix) };
@@ -57,8 +57,8 @@ impl IfaceInfo {
 
     
     
-    fn get_ip_and_prefix(iface: &str) -> (Ipv4Addr, u8) {
-        let cidr             = IfaceInfo::iface_network_cidr(iface).unwrap();
+    fn ip_and_prefix(iface: &str) -> (Ipv4Addr, u8) {
+        let cidr             = IfaceInfo::iface_cidr(iface).unwrap();
         let parts: Vec<&str> = cidr.split('/').collect();
         let ip: Ipv4Addr     = parts[0].parse().unwrap();
         let prefix: u8       = parts[1].parse().unwrap();
@@ -94,7 +94,7 @@ impl IfaceInfo {
 
 
     pub fn check_iface_exists(iface_name: &str) -> Result<String, String> {
-        let interfaces = Self::get_iface_names();
+        let interfaces = Self::iface_names();
     
         if interfaces.iter().any(|iface| iface == iface_name) {
             Ok(iface_name.to_string())
@@ -105,7 +105,7 @@ impl IfaceInfo {
 
 
 
-    pub fn get_iface_index(iface_name: &str) -> i32 {
+    pub fn iface_index(iface_name: &str) -> i32 {
         let ifindex_path = format!("/sys/class/net/{}/ifindex", iface_name);
         
         match fs::read_to_string(&ifindex_path) {
@@ -122,7 +122,7 @@ impl IfaceInfo {
 
 
 
-    unsafe fn get_ifaddrs_ptr() -> *mut ifaddrs {
+    unsafe fn ifaddrs_ptr() -> *mut ifaddrs {
         unsafe {
             let mut ifap: *mut ifaddrs = std::ptr::null_mut();
 
@@ -136,10 +136,10 @@ impl IfaceInfo {
 
 
 
-    pub fn iface_name_from_ip(dst_ip: Ipv4Addr) -> String {
+    pub fn iface_from_ip(dst_ip: Ipv4Addr) -> String {
         let ip = Self::src_ip_from_dst_ip(dst_ip);
         unsafe {
-            let ifap     = Self::get_ifaddrs_ptr();
+            let ifap     = Self::ifaddrs_ptr();
             let mut ptr  = ifap;
 
             while !ptr.is_null() {
@@ -187,15 +187,15 @@ impl IfaceInfo {
 
 
 
-    pub fn default_iface_name() -> String {
-        Self::iface_name_from_ip(Ipv4Addr::new(8, 8, 8, 8))
+    pub fn default_iface() -> String {
+        Self::iface_from_ip(Ipv4Addr::new(8, 8, 8, 8))
     }
 
 
 
     pub fn iface_ip(iface_name: &str) -> Result<Ipv4Addr, String> {
         unsafe {
-            let ifap    = Self::get_ifaddrs_ptr();
+            let ifap    = Self::ifaddrs_ptr();
             let mut cur = ifap;
 
             while !cur.is_null() {
@@ -224,9 +224,9 @@ impl IfaceInfo {
 
 
 
-    pub fn iface_network_cidr(iface_name: &str) -> Result<String, String> {
+    pub fn iface_cidr(iface_name: &str) -> Result<String, String> {
         unsafe {
-            let ifap    = Self::get_ifaddrs_ptr();
+            let ifap    = Self::ifaddrs_ptr();
             let mut cur = ifap;
 
             while !cur.is_null() {

@@ -2,6 +2,15 @@ use std::net::Ipv4Addr;
 use clap::Parser;
 
 
+
+macro_rules! long_help {
+    ($text:expr) => {
+        concat!("\n", $text)
+    };
+}
+
+
+
 #[derive(Parser)]
 #[command(name = "pscan", about = "Port scanner")]
 pub struct PortScanArgs {
@@ -10,11 +19,18 @@ pub struct PortScanArgs {
     pub target_ip: Ipv4Addr,
 
 
+
     /// Scan specific ports or ranges of ports (can be combined).
-    ///
-    /// Examples: Specific: 22,80 | Range: 20-50 | Combined: 22,50-100
-    #[arg(short, long, default_value = "0-100")]
+    #[arg(
+        short, long,
+        value_name = "INTEGER",
+        default_value = "0-100",
+        long_help = long_help!(
+            "Examples: Specific: 22,80 | Range: 20-50 | Combined: 22,50-100"
+        ),
+    )]
     pub ports: String,
+
 
 
     /// Scan the ports in random order
@@ -22,12 +38,17 @@ pub struct PortScanArgs {
     pub random: bool,
 
 
+
     /// Add a delay between packet transmissions.
-    ///
-    /// Examples: 0.5 or 1-2 (seconds).
-    #[arg(short, long, default_value = "0.03")]
+    #[arg(
+        short, long,
+        default_value = "0.03",
+        value_name = "SECONDS",
+        long_help = long_help!("Examples: 0.5 or 1-2 (seconds)"),
+    )]
     pub delay: String,
 
+    
     
     /// Scan UDP ports
     #[arg(short = 'U', long = "UDP")]

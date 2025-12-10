@@ -7,19 +7,25 @@ use libc::{
 use crate::iface::IfaceInfo;
 use crate::utils::abort;
 
+
+
 pub struct Layer2RawSocket {
     file_desc: i32,
     addr: sockaddr_ll,
 }
 
+
 impl Layer2RawSocket {
+
     pub fn new(iface_name: &str) -> Self {
-        let ifindex = IfaceInfo::get_iface_index(iface_name);
+        let ifindex   = IfaceInfo::iface_index(iface_name);
         let file_desc = Self::create_socket(iface_name);
-        let addr = Self::build_sockaddr(ifindex);
+        let addr      = Self::build_sockaddr(ifindex);
 
         Self { file_desc, addr }
     }
+
+
 
     fn create_socket(iface_name: &str) -> i32 {
         unsafe {
@@ -31,13 +37,11 @@ impl Layer2RawSocket {
                 ));
             }
 
-            // Bind to specific interface - CRUCIAL para estabilidade
             if let Err(e) = Self::bind_to_interface(file_desc, iface_name) {
                 let _ = close(file_desc);
                 abort(&format!("Failed to bind socket to interface: {}", e));
             }
 
-            // Configure socket para melhor performance
             if let Err(e) = Self::configure_socket(file_desc) {
                 let _ = close(file_desc);
                 abort(&format!("Failed to configure socket: {}", e));
@@ -47,12 +51,13 @@ impl Layer2RawSocket {
         }
     }
 
+
+
     fn bind_to_interface(file_desc: i32, iface_name: &str) -> io::Result<()> {
         unsafe {
-            let ifname_bytes = iface_name.as_bytes();
+            let ifname_bytes           = iface_name.as_bytes();
             let mut ifreq: libc::ifreq = mem::zeroed();
             
-            // Copiar nome da interface para estrutura ifreq
             for (i, &byte) in ifname_bytes.iter().enumerate() {
                 if i < ifreq.ifr_name.len() {
                     ifreq.ifr_name[i] = byte as libc::c_char;
@@ -74,9 +79,10 @@ impl Layer2RawSocket {
         }
     }
 
+
+
     fn configure_socket(file_desc: i32) -> io::Result<()> {
         unsafe {
-            // Configurar buffer de envio maior
             let buf_size: i32 = 1024 * 1024; // 1MB
             if libc::setsockopt(
                 file_desc,
@@ -93,16 +99,20 @@ impl Layer2RawSocket {
         }
     }
 
+
+
     fn build_sockaddr(ifindex: i32) -> sockaddr_ll {
         unsafe {
             let mut addr: sockaddr_ll = mem::zeroed();
-            addr.sll_family = AF_PACKET as u16;
+            addr.sll_family   = AF_PACKET as u16;
             addr.sll_protocol = htons(ETH_P_ALL as u16);
-            addr.sll_ifindex = ifindex;
-            addr.sll_halen = 6; // Tamanho do endereço MAC
+            addr.sll_ifindex  = ifindex;
+            addr.sll_halen    = 6;
             addr
         }
     }
+
+
 
     #[inline]
     pub fn send(&self, frame: &[u8]) {
@@ -122,7 +132,8 @@ impl Layer2RawSocket {
         }
     }
 
-    // Método para fechamento explícito
+
+
     pub fn close(&mut self) {
         if self.file_desc >= 0 {
             unsafe {
@@ -131,7 +142,10 @@ impl Layer2RawSocket {
             }
         }
     }
+
 }
+
+
 
 impl Drop for Layer2RawSocket {
     fn drop(&mut self) {

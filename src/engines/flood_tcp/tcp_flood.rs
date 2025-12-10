@@ -1,10 +1,10 @@
 use std::{net::Ipv4Addr};
 use crate::engines::TcpArgs;
-use crate::generators::RandValues;
+use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display, get_first_and_last_ip, parse_mac};
+use crate::utils::{abort, inline_display, get_first_and_last_ip, parse_mac, mac_u8_to_string};
 
 
 
@@ -14,14 +14,14 @@ pub struct TcpFlooder {
     iface:     String,
     pkt_data:  PacketData,
     pkts_sent: usize,
-    rng:       RandValues,
+    rand:      RandomValues,
 }
 
 
 impl TcpFlooder {
 
     pub fn new(args: TcpArgs) -> Self {
-        let iface = IfaceInfo::iface_name_from_ip(args.target_ip);
+        let iface               = IfaceInfo::iface_from_ip(args.target_ip);
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
@@ -30,7 +30,7 @@ impl TcpFlooder {
             builder:   PacketBuilder::new(),
             pkt_data:  PacketData::new(),
             pkts_sent: 0,
-            rng:       RandValues::new(Some(first_ip), Some(last_ip)),
+            rand:       RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
@@ -50,6 +50,7 @@ impl TcpFlooder {
         self.pkt_data.dst_port = self.args.port;
         self.pkt_data.dst_ip   = self.args.target_ip;
         self.pkt_data.dst_mac  = self.resolve_mac(Some(self.args.target_mac.clone())).unwrap();
+        self.pkt_data.flag     = if self.args.ack {"ack".to_string()} else {"syn".to_string()};
     }
 
 
@@ -63,7 +64,7 @@ impl TcpFlooder {
 
         let mac_to_parse = match mac.as_str() {
             "gateway" => IfaceInfo::gateway_mac(&self.iface).unwrap().to_string(),
-            "local"   => IfaceInfo::get_mac(&self.iface),
+            "local"   => IfaceInfo::mac(&self.iface),
             _         => mac
         };
 
@@ -77,7 +78,7 @@ impl TcpFlooder {
     
     fn display_pkt_data(&self) {
         let src_mac = match self.pkt_data.src_mac {
-            Some(mac) => Self::format_mac(mac),
+            Some(mac) => mac_u8_to_string(mac),
             None      => "Random".to_string(),
         };
 
@@ -87,17 +88,8 @@ impl TcpFlooder {
         };
 
         println!("SRC >> MAC: {}  IP: {}", src_mac, src_ip);
-        println!("DST >> MAC: {}  IP: {}", Self::format_mac(self.pkt_data.dst_mac), self.pkt_data.dst_ip);
+        println!("DST >> MAC: {}  IP: {}", mac_u8_to_string(self.pkt_data.dst_mac), self.pkt_data.dst_ip);
         println!("IFACE: {}", self.iface);
-    }
-
-
-
-    fn format_mac(mac: [u8; 6]) -> String {
-        format!(
-            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
-        )
     }
 
 
@@ -119,12 +111,13 @@ impl TcpFlooder {
     #[inline]
     fn get_pkt(&mut self) -> &[u8] {
         self.builder.tcp_ether(
-            self.pkt_data.src_mac.unwrap_or_else(|| self.rng.get_random_mac()), 
-            self.pkt_data.src_ip.unwrap_or_else( || self.rng.get_random_ip()), 
-            self.rng.get_random_port(),
+            self.pkt_data.src_mac.unwrap_or_else(|| self.rand.random_mac()), 
+            self.pkt_data.src_ip.unwrap_or_else( || self.rand.random_ip()), 
+            self.rand.random_port(),
             self.pkt_data.dst_mac, 
             self.pkt_data.dst_ip,
-            self.pkt_data.dst_port 
+            self.pkt_data.dst_port,
+            &self.pkt_data.flag
         )
     }
 
@@ -138,6 +131,7 @@ struct PacketData {
     dst_ip:   Ipv4Addr,
     dst_mac:  [u8; 6],
     dst_port: u16,
+    flag:     String,
 }
 
 
@@ -149,6 +143,7 @@ impl PacketData {
             dst_ip:   Ipv4Addr::new(0, 0, 0, 0),
             dst_mac:  [0u8; 6],
             dst_port: 0,
+            flag:     "".to_string(),
         }
     }
 }

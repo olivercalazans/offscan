@@ -3,48 +3,70 @@ use crate::iface::IfaceInfo;
 
 
 
-pub struct NetworkInfo;
+#[derive(Default)]
+pub struct NetworkInfo {
+    iface:       String,
+    state:       String, 
+    if_type:     String, 
+    mac:         String, 
+    ip:          String, 
+    cidr:        String, 
+    host_len:    String, 
+    mtu:         String, 
+    gateway_mac: String, 
+    gateway_ip:  String, 
+}
+
 
 
 impl NetworkInfo {
 
-    pub fn execute() {
-        for (i, iface) in IfaceInfo::get_iface_names().into_iter().enumerate() {
-            let state       = Self::get_state(&iface);
-            let if_type     = Self::get_type(&iface);
-            let mac         = IfaceInfo::get_mac(&iface);
-            let ip          = Self::get_ip(&iface);
-            let cidr        = Self::get_cidr(&iface);
-            let host_len    = Self::get_len_host(&cidr);
-            let mtu         = Self::get_mtu(&iface);
-            let gateway_mac = Self::get_gateway_mac(&iface);
-            let gateway_ip  = Self::get_gateway_ip(&iface);
-
-            println!("#{} Interface: {} - State: {}", i, iface, state);
-            println!("  - Type.......: {}", if_type);
-            println!("  - MAC........: {}", mac);
-            println!("  - IP.........: {}", ip);
-            println!("  - Net Addr...: {}", cidr);
-            println!("  - Len hosts..: {}", host_len);
-            println!("  - MTU........: {}", mtu);
-            println!("  - Gateway MAC: {}", gateway_mac);
-            println!("  - Gateway IP.: {}", gateway_ip);
-            println!("")            
-        }
+    pub fn new() -> Self {
+        Self { ..Default::default() }
     }
 
 
 
-    fn get_state(iface: &str) -> String {
-        IfaceInfo::get_info("operstate", &iface).to_uppercase()
+    pub fn execute(&mut self) {
+        IfaceInfo::iface_names()
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, iface)|{
+                self.set_iface(iface)
+                    .set_state()
+                    .set_type()
+                    .set_mac()
+                    .set_ip()
+                    .set_cidr()
+                    .set_len_host()
+                    .set_mtu()
+                    .set_gateway_mac()
+                    .set_gateway_ip()
+                    .display_info(i);
+            }
+        )
     }
 
 
 
-    fn get_type(iface: &str) -> String {
-        let type_path = format!("/sys/class/net/{}/type", iface);
+    fn set_iface(&mut self, iface: String) -> &mut Self {
+        self.iface = iface;
+        self
+    }
 
-        fs::read_to_string(&type_path)
+
+
+    fn set_state(&mut self) -> &mut Self {
+        self.state = IfaceInfo::get_info("operstate", &self.iface).to_uppercase();
+        self
+    }
+
+    
+    
+    fn set_type(&mut self) -> &mut Self {
+        let type_path = format!("/sys/class/net/{}/type", &self.iface);
+
+        self.if_type = fs::read_to_string(&type_path)
             .map(|content| {
                 match content.trim() {
                     "1"   => "Ethernet".to_string(),
@@ -53,79 +75,103 @@ impl NetworkInfo {
                     code  => format!("Type-{}", code),
                 }
             })
-            .unwrap_or_else(|_| "Unknown".to_string())
+            .unwrap_or_else(|_| "Unknown".to_string());
+        
+        self
+    }
+    
+
+
+    fn set_mac(&mut self) -> &mut Self {
+        self.mac = IfaceInfo::mac(&self.iface);
+        self
     }
 
-
-
-    fn get_ip(iface: &str) -> String {
-        match IfaceInfo::iface_ip(iface) {
+    
+    
+    fn set_ip(&mut self) -> &mut Self {
+        self.ip = match IfaceInfo::iface_ip(&self.iface) {
             Ok(ip) => ip.to_string(),
             Err(_) => "None".to_string(),
-        }
+        };
+
+        self
     }
 
-
-
-    fn get_cidr(iface: &str) -> String {
-        match IfaceInfo::iface_network_cidr(iface) {
+    
+    
+    fn set_cidr(&mut self) -> &mut Self {
+        self.cidr = match IfaceInfo::iface_cidr(&self.iface) {
             Ok(ip) => ip.to_string(),
             Err(_) => "Unknown".to_string(),
-        }
+        };
+
+        self
     }
 
-
-
-    fn get_len_host(cidr: &str) -> String {
-        let parts: Vec<&str> = cidr.split('/').collect();
+    
+    
+    fn set_len_host(&mut self) -> &mut Self {
+        let parts: Vec<&str> = self.cidr.split('/').collect();
         if parts.len() != 2 {
-            return "None".to_string();
+            self.host_len = "None".to_string();
+            return self;
         }
 
         let cidr_value: u8 = match parts[1].parse() {
             Ok(value) => value,
-            Err(_)    => return "Unknown".to_string(),
+            Err(_)    => {
+                self.host_len = "Unknown".to_string();
+                return self;
+            }
         };
 
         if cidr_value > 32 {
-            return "None".to_string();
+            self.host_len = "None".to_string();
+            return self;
         }
 
         let host_bits   = 32 - cidr_value;
         let total_hosts = 2u32.pow(host_bits as u32);
 
         if cidr_value >= 31 {
-            return total_hosts.to_string();
+            self.host_len = total_hosts.to_string();
+            return self;
         }
         
-        (total_hosts - 2).to_string()
+        self.host_len = (total_hosts - 2).to_string();
+
+        self
     }
 
 
 
-    fn get_mtu(iface: &str) -> String {
-        IfaceInfo::get_info("mtu", &iface)
+    fn set_mtu(&mut self) -> &mut Self {
+        self.mtu = IfaceInfo::get_info("mtu", &self.iface);
+        self
     }
 
 
 
-    fn get_gateway_mac(iface: &str) -> String {
-        match IfaceInfo::gateway_mac(iface) {
-            Ok(mac) => { mac },
-            Err(_)  => { "Unknown".to_string() }
-        }
+    fn set_gateway_mac(&mut self) -> &mut Self {
+        self.gateway_mac = match IfaceInfo::gateway_mac(&self.iface) {
+            Ok(mac) => mac,
+            Err(_)  => "Unknown".to_string()
+        };
+        
+        self
     }
 
 
 
-    fn get_gateway_ip(iface: &str) -> String {
+    fn set_gateway_ip(&mut self) -> &mut Self {
         let content = fs::read_to_string("/proc/net/route")
             .unwrap_or_default();
         
         for line in content.lines().skip(1) {
             let parts: Vec<&str> = line.split_whitespace().collect();
 
-            if parts.len() < 8 || parts[0] != iface {
+            if parts.len() < 8 || parts[0] != self.iface {
                 continue;
             }
 
@@ -135,15 +181,17 @@ impl NetworkInfo {
             }
 
             if let Some(gateway) = Self::hex_to_ip(gateway_hex) {
-                return gateway;
+                self.gateway_ip = gateway;
+                return self;
             }
         }
 
-        "Unknown".to_string()
+        self.gateway_ip = "Unknown".to_string();
+        self
     }
 
-
-
+    
+    
     fn hex_to_ip(hex: &str) -> Option<String> {
         if hex.len() != 8 {
             return None;
@@ -154,6 +202,21 @@ impl NetworkInfo {
             .collect::<Option<Vec<_>>>()?;
 
         Some(format!("{}.{}.{}.{}", bytes[3], bytes[2], bytes[1], bytes[0]))
+    }
+
+    
+    
+    fn display_info(&self, index: usize) {
+        println!("#{} Interface: {} - State: {}", index, self.iface, self.state);
+        println!("  - Type.......: {}", self.if_type);
+        println!("  - MAC........: {}", self.mac);
+        println!("  - IP.........: {}", self.ip);
+        println!("  - Net Addr...: {}", self.cidr);
+        println!("  - Len hosts..: {}", self.host_len);
+        println!("  - MTU........: {}", self.mtu);
+        println!("  - Gateway MAC: {}", self.gateway_mac);
+        println!("  - Gateway IP.: {}", self.gateway_ip);
+        println!("")
     }
 
 }

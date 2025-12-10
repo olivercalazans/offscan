@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 use crate::engines::FloodArgs;
-use crate::generators::RandValues;
+use crate::generators::RandomValues;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
 use crate::utils::{inline_display, get_first_and_last_ip};
@@ -10,7 +10,7 @@ use crate::utils::{inline_display, get_first_and_last_ip};
 pub struct PacketFlooder {
     args:      FloodArgs,
     pkts_sent: usize,
-    rng:       RandValues,
+    rand:       RandomValues,
 }
 
 
@@ -23,7 +23,7 @@ impl PacketFlooder {
         Self {
             args,
             pkts_sent: 0,
-            rng:       RandValues::new(Some(first_ip), Some(last_ip)),
+            rand:       RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
@@ -84,11 +84,11 @@ impl PacketFlooder {
 
     #[inline]
     fn get_pkt_info(&mut self) -> (u16, Ipv4Addr, [u8; 6], Ipv4Addr, [u8; 6]) {(
-        self.rng.get_random_port(),
-        self.args.src_ip.as_ref().unwrap_or( &self.rng.get_random_ip()).clone(),
-        self.args.src_mac.as_ref().unwrap_or(&self.rng.get_random_mac()).clone(),
-        self.args.dst_ip.as_ref().unwrap_or( &self.rng.get_random_ip()).clone(),
-        self.args.dst_mac.as_ref().unwrap_or(&self.rng.get_random_mac()).clone()
+        self.rand.random_port(),
+        self.args.src_ip.as_ref().unwrap_or( &self.rand.random_ip()).clone(),
+        self.args.src_mac.as_ref().unwrap_or(&self.rand.random_mac()).clone(),
+        self.args.dst_ip.as_ref().unwrap_or( &self.rand.random_ip()).clone(),
+        self.args.dst_mac.as_ref().unwrap_or(&self.rand.random_mac()).clone()
     )}
 
 
@@ -104,7 +104,7 @@ impl PacketFlooder {
     ) {
         let tcp_pkt = tools.builder.tcp_ether(
             src_mac, src_ip, src_port,
-            dst_mac, dst_ip, 80);
+            dst_mac, dst_ip, 80, "syn");
         tools.socket.send(tcp_pkt);
     }
 
@@ -121,7 +121,8 @@ impl PacketFlooder {
     ) {
         let udp_pkt = tools.builder.udp_ether(
             src_mac, src_ip, src_port,
-            dst_mac, dst_ip, 53
+            dst_mac, dst_ip, 53,
+            &[]
         );
         tools.socket.send(udp_pkt);
     }

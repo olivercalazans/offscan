@@ -3,6 +3,14 @@ use clap::Parser;
 
 
 
+macro_rules! long_help {
+    ($text:expr) => {
+        concat!("\n", $text)
+    };
+}
+
+
+
 #[derive(Parser)]
 #[command(name = "ping", about = "Ping Flooder")]
 pub struct PingArgs {
@@ -11,7 +19,7 @@ pub struct PingArgs {
     pub target_ip: Ipv4Addr,
 
 
-    /// Target MAC address
+    /// Target MAC address. Use 'local' to use the iface MAC
     pub target_mac: String,
 
 
@@ -19,35 +27,20 @@ pub struct PingArgs {
     #[arg(short = 'S', long)]
     pub smurf: bool,
 
-
-    /// IP address for Reflection Attack
-    ///
-    /// Host with this IP will send replies to target
-    /// NOTE: Ignored if --smurf flag is used
-    #[arg(long)]
-    pub reflector_ip: Option<Ipv4Addr>,
-
-
-    /// MAC address for Reflection Attack
-    ///
-    /// Host with this MAC will send replies to target
-    /// Use "local" for interface's MAC address
-    /// NOTE: Requires --mirror-ip to be effective
-    #[arg(long)]
-    pub reflector_mac: Option<String>,
-
     
-    /// Source IP address (spoofing)
-    ///
-    /// NOTE: Ignored if --smurf or --mirror-ip are used
-    #[arg(long)]
+    /// Source IP address (spoofing).
+    #[arg(
+        long,
+        long_help = long_help!("!!! NOTE: Ignored if --smurf is used"),
+    )]
     pub src_ip: Option<Ipv4Addr>,
-
     
-    /// Source MAC address (spoofing)
-    ///
-    /// NOTE: Ignored if --smurf or --mirror-ip are used
-    #[arg(long)]
+
+    /// Source MAC address (spoofing). Use 'local' to use the iface MAC
+    #[arg(
+        long,
+        long_help = long_help!("!!! NOTE: Ignored if --smurf is used"),
+    )]
     pub src_mac: Option<String>,
 
 }

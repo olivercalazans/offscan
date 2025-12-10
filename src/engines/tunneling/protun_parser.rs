@@ -4,6 +4,7 @@ use crate::iface::IfaceInfo;
 use crate::utils::parse_mac;
 
 
+
 #[derive(Parser)]
 #[command(name = "protun", about = "Protocol tunneling")]
 pub struct TunnelArgs {
@@ -12,7 +13,7 @@ pub struct TunnelArgs {
     #[arg(
         short, long, 
         value_parser = IfaceInfo::check_iface_exists,
-        default_value_t = IfaceInfo::default_iface_name()
+        default_value_t = IfaceInfo::default_iface()
     )]
     pub iface: String,
 

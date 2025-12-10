@@ -6,7 +6,8 @@ use crate::pkt_builder::checksum::*;
 pub struct HeaderBuilder;
 
 
-impl HeaderBuilder { 
+impl HeaderBuilder {
+
 
     #[inline]
     pub fn tcp(
@@ -14,14 +15,17 @@ impl HeaderBuilder {
         src_ip:   Ipv4Addr,
         src_port: u16, 
         dst_ip:   Ipv4Addr,
-        dst_port: u16
+        dst_port: u16,
+        flag:     &str,
     ) {
+        let bflag = if flag == "syn" {0x02} else {0x10};
+
         buffer[..2].copy_from_slice(&src_port.to_be_bytes());
         buffer[2..4].copy_from_slice(&dst_port.to_be_bytes());
         buffer[4..8].copy_from_slice(&1u32.to_be_bytes());
         buffer[8..12].copy_from_slice(&0u32.to_be_bytes());
         buffer[12] = 5 << 4;
-        buffer[13] = 0x02;
+        buffer[13] = bflag;
         buffer[14..16].copy_from_slice(&64240u16.to_be_bytes());
         buffer[16..18].copy_from_slice(&0u16.to_be_bytes());
         buffer[18..20].copy_from_slice(&0u16.to_be_bytes());

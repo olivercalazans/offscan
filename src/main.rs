@@ -63,6 +63,7 @@ impl Command {
             "--help" => Self::display_commands(),
             "auth"   => self.execute_auth_flood(),
             "banner" => self.execute_banner_grab(),
+            "dns"    => self.execute_dns_flood(),
             "flood"  => self.execute_flood(),
             "info"   => self.execute_info(),
             "netmap" => self.execute_netmap(),
@@ -88,6 +89,7 @@ impl Command {
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
         println!("\ttcp    -> TCP Flooding");
+        println!("\tudp    -> UDP Flooding");
         println!("\twmap   -> Wifi Mapping");
         println!("");
     }
@@ -134,7 +136,8 @@ impl Command {
 
     fn execute_info(&mut self) {
         NetInfoArgs::parse_from(self.get_arguments());
-        NetworkInfo::execute();
+        let mut info = NetworkInfo::new();
+        info.execute();
     }
 
 
@@ -167,6 +170,14 @@ impl Command {
         let cmd_args = TcpArgs::parse_from(self.get_arguments());
         let mut tcp  = TcpFlooder::new(cmd_args);
         tcp.execute();
+    }
+
+
+
+    fn execute_dns_flood(&mut self) {
+        let cmd_args = DnsArgs::parse_from(self.get_arguments());
+        let mut dns  = DnsFlooder::new(cmd_args);
+        dns.execute();
     }
 
     

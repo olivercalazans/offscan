@@ -11,7 +11,7 @@ pub struct TcpArgs {
     pub target_ip: Ipv4Addr,
 
 
-    /// Use "gateway" if the target isn't in the intranet
+    /// Use "gateway" if the target isn't in the local net
     pub target_mac: String,
 
 

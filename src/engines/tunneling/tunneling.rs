@@ -1,6 +1,6 @@
 use std::{net::Ipv4Addr, thread, time::Duration};
 use crate::engines::TunnelArgs;
-use crate::generators::RandValues;
+use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
@@ -13,7 +13,7 @@ use crate::utils::{abort, parse_mac};
 pub struct ProtocolTunneler {
     args:        TunnelArgs,
     pkt_builder: PacketBuilder,
-    rand:        RandValues,
+    rand:        RandomValues,
     socket:      Layer2RawSocket,
 }
 
@@ -25,7 +25,7 @@ impl ProtocolTunneler {
         Self {
             socket:      Layer2RawSocket::new(&args.iface),
             pkt_builder: PacketBuilder::new(),
-            rand:        RandValues::new(None, None),
+            rand:        RandomValues::new(None, None),
             args,
         }
     }
@@ -112,10 +112,11 @@ impl ProtocolTunneler {
 
     fn send_tcp_over_udp(&mut self, pkt_info: &PacketInfo) {
         let pkt = self.pkt_builder.tcp_over_udp(
-            pkt_info.src_mac, pkt_info.src_ip, self.rand.get_random_port(), self.rand.get_random_port(),
+            pkt_info.src_mac, pkt_info.src_ip, self.rand.random_port(), self.rand.random_port(),
             pkt_info.dst_mac, pkt_info.dst_ip, 53, 80
         );
         self.socket.send(pkt);
+        
         println!(
             "> TCP over UDP packet sent.\n\tFrom IP: {:<15} MAC: {}\n\tTo   IP: {:<15} MAC: {}",
             pkt_info.src_ip, Self::format_mac(pkt_info.src_mac),

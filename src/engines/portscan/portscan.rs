@@ -1,6 +1,6 @@
 use std::{thread, time::Duration, mem, net::Ipv4Addr, collections::BTreeSet};
 use crate::engines::PortScanArgs;
-use crate::generators::{DelayIter, PortIter, RandValues};
+use crate::generators::{DelayIter, PortIter, RandomValues};
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::{PacketBuilder, UdpPayloads};
 use crate::sniffer::PacketSniffer;
@@ -19,11 +19,31 @@ pub struct PortScanner {
 }
 
 
+struct PacketTools {
+    sniffer: PacketSniffer,
+    builder: PacketBuilder,
+    socket:  Layer3RawSocket,
+}
+
+
+struct UdpIterators {
+    ports:  UdpPayloads,
+    delays: DelayIter,
+    ip:     String,
+}
+
+
+struct TcpIterators {
+    ports:  PortIter,
+    delays: DelayIter,
+    ip:     String,
+}
+
 
 impl PortScanner {
 
     pub fn new(args: PortScanArgs) -> Self {
-        let iface = IfaceInfo::iface_name_from_ip(args.target_ip.clone());
+        let iface = IfaceInfo::iface_from_ip(args.target_ip.clone());
         Self {
             my_ip:       IfaceInfo::iface_ip(&iface).unwrap_or_else(|e| abort(e)),
             raw_packets: Vec::new(),
@@ -78,7 +98,7 @@ impl PortScanner {
         iters.ports.by_ref()
             .zip(iters.delays.by_ref())
             .for_each(|(port, delay)| {
-                let src_port = rand.get_random_port();
+                let src_port = rand.random_port();
                 
                 let pkt = tools.builder.tcp_ip(self.my_ip, src_port, self.args.target_ip, port);
                 tools.socket.send_to(pkt, self.args.target_ip);
@@ -122,7 +142,7 @@ impl PortScanner {
         iters.ports.iter()
             .zip(iters.delays.by_ref())
             .for_each(|((port, payload), delay)| {
-                let src_port = rand.get_random_port();
+                let src_port = rand.random_port();
                 
                 let pkt = tools.builder.udp_ip(self.my_ip, src_port, self.args.target_ip, port, payload);
                 tools.socket.send_to(pkt, self.args.target_ip);
@@ -161,8 +181,8 @@ impl PortScanner {
 
 
 
-    fn get_rand() -> RandValues {
-        RandValues::new(None, None)
+    fn get_rand() -> RandomValues {
+        RandomValues::new(None, None)
     }
 
 
@@ -211,28 +231,4 @@ impl PortScanner {
             .join(", ")
     }
 
-}
-
-
-
-struct PacketTools {
-    sniffer: PacketSniffer,
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
-
-
-struct UdpIterators {
-    ports:  UdpPayloads,
-    delays: DelayIter,
-    ip:     String,
-}
-
-
-
-struct TcpIterators {
-    ports:  PortIter,
-    delays: DelayIter,
-    ip:     String,
 }

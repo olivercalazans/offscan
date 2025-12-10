@@ -4,6 +4,14 @@ use crate::utils::parse_mac;
 
 
 
+macro_rules! long_help {
+    ($text:expr) => {
+        concat!("\n", $text)
+    };
+}
+
+
+
 #[derive(Parser)]
 #[command(name = "auth", about = "802.11 Authentication flooder")]
 pub struct AuthArgs {
@@ -18,9 +26,11 @@ pub struct AuthArgs {
 
 
     /// Define the BSSID
-    ///
-    /// BSSID is the unique MAC address of a Wi-Fi access point.
-    #[arg(long, value_parser = parse_mac)]
+    #[arg(
+        long, 
+        value_parser = parse_mac,
+        long_help = long_help!("BSSID is the unique MAC address of a Wi-Fi access point."),
+    )]
     pub bssid: Option<[u8; 6]>,
 
 }

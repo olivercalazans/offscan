@@ -4,6 +4,7 @@ use crate::utils::abort;
 
 pub fn parse_mac(input: &str) -> Result<[u8; 6], String> {
     let parts: Vec<&str> = input.split(':').collect();
+    
     if parts.len() != 6 {
         abort(format!("Invalid MAC: {}", input));
     }
