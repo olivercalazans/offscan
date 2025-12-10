@@ -22,9 +22,7 @@ pub struct NetworkInfo {
 impl NetworkInfo {
 
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self { ..Default::default() }
     }
 
 

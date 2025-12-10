@@ -142,7 +142,7 @@ impl PacketBuilder {
             src_ip, src_port, 
             dst_ip, dst_port, len_payload as u16
         );
-        HeaderBuilder::ip(&mut self.buffer[14..34], len_pkt as u16, 17, src_ip, dst_ip);
+        HeaderBuilder::ip(&mut self.buffer[14..34], 28 + len_payload as u16, 17, src_ip, dst_ip);
         HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
 
         &self.buffer[..len_pkt]

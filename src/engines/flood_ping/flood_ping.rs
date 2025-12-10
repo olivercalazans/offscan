@@ -110,13 +110,13 @@ impl PingFlooder {
     
 
     fn send_endlessly(&mut self) {
-        let l2_socket = Layer2RawSocket::new(&self.iface);
-        let running   = Arc::new(AtomicBool::new(true));
+        let socket  = Layer2RawSocket::new(&self.iface);
+        let running = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
 
         while running.load(Ordering::SeqCst) {
             let pkt = self.get_packet();
-            l2_socket.send(pkt);
+            socket.send(pkt);
             
             self.pkts_sent += 1;
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
