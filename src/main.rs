@@ -82,6 +82,7 @@ impl Command {
         println!("\nAvailable commands:");
         println!("\tauth   -> 802.11 Auth Flooding");
         println!("\tbanner -> Banner Grabbing");
+        println!("\tdns    -> DNS Flooding");
         println!("\tflood  -> Packet Flooding");
         println!("\tinfo   -> Network Information");
         println!("\tnetmap -> Network Mapping");
@@ -89,7 +90,6 @@ impl Command {
         println!("\tpscan  -> Port Scanning");
         println!("\tprotun -> Protocol Tunneling");
         println!("\ttcp    -> TCP Flooding");
-        println!("\tudp    -> UDP Flooding");
         println!("\twmap   -> Wifi Mapping");
         println!("");
     }
