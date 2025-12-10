@@ -47,4 +47,11 @@ impl RandomValues {
         bytes
     }
 
+
+
+    #[inline]
+    pub fn random_u16(&mut self) -> u16 {
+        self.rng.r#gen()
+    }
+
 }

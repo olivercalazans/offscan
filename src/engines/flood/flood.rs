@@ -121,7 +121,8 @@ impl PacketFlooder {
     ) {
         let udp_pkt = tools.builder.udp_ether(
             src_mac, src_ip, src_port,
-            dst_mac, dst_ip, 53
+            dst_mac, dst_ip, 53,
+            &[]
         );
         tools.socket.send(udp_pkt);
     }
