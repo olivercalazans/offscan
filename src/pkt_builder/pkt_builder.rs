@@ -129,13 +129,23 @@ impl PacketBuilder {
         dst_mac:  [u8; 6],
         dst_ip:   Ipv4Addr,
         dst_port: u16,
+        payload:  &[u8],
         ) -> &[u8]
     {
-        HeaderBuilder::udp(&mut self.buffer[34..42], src_ip, src_port, dst_ip, dst_port, 0);
-        HeaderBuilder::ip(&mut self.buffer[14..34], 28, 17, src_ip, dst_ip);
+        let len_payload: usize = payload.len();
+        let len_pkt:     usize = 42 + len_payload;
+
+        self.buffer[42..len_pkt].copy_from_slice(&payload);
+
+        HeaderBuilder::udp(
+            &mut self.buffer[34..len_pkt], 
+            src_ip, src_port, 
+            dst_ip, dst_port, len_payload as u16
+        );
+        HeaderBuilder::ip(&mut self.buffer[14..34], len_pkt as u16, 17, src_ip, dst_ip);
         HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
 
-        &self.buffer[..42]
+        &self.buffer[..len_pkt]
     }
 
 

