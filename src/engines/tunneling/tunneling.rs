@@ -112,7 +112,7 @@ impl ProtocolTunneler {
 
     fn send_tcp_over_udp(&mut self, pkt_info: &PacketInfo) {
         let pkt = self.pkt_builder.tcp_over_udp(
-            pkt_info.src_mac, pkt_info.src_ip, self.rand.get_random_port(), self.rand.get_random_port(),
+            pkt_info.src_mac, pkt_info.src_ip, self.rand.random_port(), self.rand.random_port(),
             pkt_info.dst_mac, pkt_info.dst_ip, 53, 80
         );
         self.socket.send(pkt);

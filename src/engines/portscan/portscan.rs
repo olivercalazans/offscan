@@ -98,7 +98,7 @@ impl PortScanner {
         iters.ports.by_ref()
             .zip(iters.delays.by_ref())
             .for_each(|(port, delay)| {
-                let src_port = rand.get_random_port();
+                let src_port = rand.random_port();
                 
                 let pkt = tools.builder.tcp_ip(self.my_ip, src_port, self.args.target_ip, port);
                 tools.socket.send_to(pkt, self.args.target_ip);
@@ -142,7 +142,7 @@ impl PortScanner {
         iters.ports.iter()
             .zip(iters.delays.by_ref())
             .for_each(|((port, payload), delay)| {
-                let src_port = rand.get_random_port();
+                let src_port = rand.random_port();
                 
                 let pkt = tools.builder.udp_ip(self.my_ip, src_port, self.args.target_ip, port, payload);
                 tools.socket.send_to(pkt, self.args.target_ip);

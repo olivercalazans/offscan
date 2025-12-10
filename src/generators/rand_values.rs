@@ -24,14 +24,14 @@ impl RandomValues {
 
 
     #[inline]
-    pub fn get_random_port(&mut self) -> u16 {
+    pub fn random_port(&mut self) -> u16 {
         self.rng.gen_range(10000..=65535)
     }
 
 
 
     #[inline]
-    pub fn get_random_ip(&mut self) -> Ipv4Addr {
+    pub fn random_ip(&mut self) -> Ipv4Addr {
         let rand_num     = self.rng.gen_range(self.first_ip..=self.last_ip);
         let ip: Ipv4Addr = rand_num.into();
         ip
@@ -40,7 +40,7 @@ impl RandomValues {
 
 
     #[inline]
-    pub fn get_random_mac(&mut self) -> [u8; 6] {
+    pub fn random_mac(&mut self) -> [u8; 6] {
         let mut bytes = [0u8; 6];
         for b in bytes.iter_mut() { *b = self.rng.r#gen(); }
         bytes[0] = (bytes[0] | 0x02) & 0xFE;

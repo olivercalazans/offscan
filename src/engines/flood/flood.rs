@@ -10,7 +10,7 @@ use crate::utils::{inline_display, get_first_and_last_ip};
 pub struct PacketFlooder {
     args:      FloodArgs,
     pkts_sent: usize,
-    rng:       RandomValues,
+    rand:       RandomValues,
 }
 
 
@@ -23,7 +23,7 @@ impl PacketFlooder {
         Self {
             args,
             pkts_sent: 0,
-            rng:       RandomValues::new(Some(first_ip), Some(last_ip)),
+            rand:       RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
@@ -84,11 +84,11 @@ impl PacketFlooder {
 
     #[inline]
     fn get_pkt_info(&mut self) -> (u16, Ipv4Addr, [u8; 6], Ipv4Addr, [u8; 6]) {(
-        self.rng.get_random_port(),
-        self.args.src_ip.as_ref().unwrap_or( &self.rng.get_random_ip()).clone(),
-        self.args.src_mac.as_ref().unwrap_or(&self.rng.get_random_mac()).clone(),
-        self.args.dst_ip.as_ref().unwrap_or( &self.rng.get_random_ip()).clone(),
-        self.args.dst_mac.as_ref().unwrap_or(&self.rng.get_random_mac()).clone()
+        self.rand.random_port(),
+        self.args.src_ip.as_ref().unwrap_or( &self.rand.random_ip()).clone(),
+        self.args.src_mac.as_ref().unwrap_or(&self.rand.random_mac()).clone(),
+        self.args.dst_ip.as_ref().unwrap_or( &self.rand.random_ip()).clone(),
+        self.args.dst_mac.as_ref().unwrap_or(&self.rand.random_mac()).clone()
     )}
 
 

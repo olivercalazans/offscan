@@ -82,7 +82,7 @@ impl AuthenticationFlooder {
 
         let mut sent: usize = 0;
         while running.load(Ordering::SeqCst) {
-            let pkt = builder.auth_802_11(rand.get_random_mac(), bssid);
+            let pkt = builder.auth_802_11(rand.random_mac(), bssid);
             socket.send(pkt);
             sent += 1;
             Self::display_progress(sent);

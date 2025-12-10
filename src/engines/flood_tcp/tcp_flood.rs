@@ -14,7 +14,7 @@ pub struct TcpFlooder {
     iface:     String,
     pkt_data:  PacketData,
     pkts_sent: usize,
-    rng:       RandomValues,
+    rand:      RandomValues,
 }
 
 
@@ -30,7 +30,7 @@ impl TcpFlooder {
             builder:   PacketBuilder::new(),
             pkt_data:  PacketData::new(),
             pkts_sent: 0,
-            rng:       RandomValues::new(Some(first_ip), Some(last_ip)),
+            rand:       RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
@@ -111,9 +111,9 @@ impl TcpFlooder {
     #[inline]
     fn get_pkt(&mut self) -> &[u8] {
         self.builder.tcp_ether(
-            self.pkt_data.src_mac.unwrap_or_else(|| self.rng.get_random_mac()), 
-            self.pkt_data.src_ip.unwrap_or_else( || self.rng.get_random_ip()), 
-            self.rng.get_random_port(),
+            self.pkt_data.src_mac.unwrap_or_else(|| self.rand.random_mac()), 
+            self.pkt_data.src_ip.unwrap_or_else( || self.rand.random_ip()), 
+            self.rand.random_port(),
             self.pkt_data.dst_mac, 
             self.pkt_data.dst_ip,
             self.pkt_data.dst_port,

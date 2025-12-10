@@ -11,12 +11,12 @@ use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, 
 
 
 pub struct PingFlooder {
-    args:       PingArgs,
-    rand:       RandomValues,
-    builder:    PacketBuilder,
-    iface:      String,
-    pkts_sent:  usize,
-    pkt_data:   PacketData,
+    args:      PingArgs,
+    rand:      RandomValues,
+    builder:   PacketBuilder,
+    iface:     String,
+    pkts_sent: usize,
+    pkt_data:  PacketData,
 }
 
 
@@ -130,10 +130,10 @@ impl PingFlooder {
     #[inline]
     fn get_packet(&mut self) -> &[u8] {
         self.builder.icmp_ping_ether(
-            self.pkt_data.src_mac.unwrap_or_else(|| self.rand.get_random_mac()),
-            self.pkt_data.src_ip.unwrap_or_else( || self.rand.get_random_ip()),
-            self.pkt_data.dst_mac.unwrap_or_else(|| self.rand.get_random_mac()),
-            self.pkt_data.dst_ip.unwrap_or_else( || self.rand.get_random_ip())
+            self.pkt_data.src_mac.unwrap_or_else(|| self.rand.random_mac()),
+            self.pkt_data.src_ip.unwrap_or_else( || self.rand.random_ip()),
+            self.pkt_data.dst_mac.unwrap_or_else(|| self.rand.random_mac()),
+            self.pkt_data.dst_ip.unwrap_or_else( || self.rand.random_ip())
         )
     }
 

@@ -179,7 +179,7 @@ impl DnsFlooder {
         self.builder.udp_ether(
             self.pkt_data.src_mac, 
             self.pkt_data.src_ip, 
-            self.rand.get_random_port(),
+            self.rand.random_port(),
             self.pkt_data.dst_mac, 
             self.pkt_data.dst_ip,
             self.pkt_data.dst_port,

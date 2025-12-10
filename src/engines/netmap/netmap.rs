@@ -164,8 +164,8 @@ impl NetworkMapper {
             .for_each(|(dst_ip, delay)| {
                 let pkt = match probe_type {
                     "icmp" => tools.builder.icmp_ping(my_ip, dst_ip),
-                    "tcp"  => tools.builder.tcp_ip(my_ip, rand.get_random_port(), dst_ip, 80),
-                    "udp"  => tools.builder.udp_ip(my_ip, rand.get_random_port(), dst_ip, 53, &[]),
+                    "tcp"  => tools.builder.tcp_ip(my_ip, rand.random_port(), dst_ip, 80),
+                    "udp"  => tools.builder.udp_ip(my_ip, rand.random_port(), dst_ip, 53, &[]),
                     &_     => abort(format!("Unknown protocol type: {}", probe_type)),
                 };
                 tools.socket.send_to(&pkt, dst_ip);
