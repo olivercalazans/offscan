@@ -1,4 +1,4 @@
-use std::fs;
+use std::{ fs, path::Path };
 use crate::iface::IfaceInfo;
 
 
@@ -64,18 +64,28 @@ impl NetworkInfo {
     
     
     fn set_type(&mut self) -> &mut Self {
+        let wireless_path = format!("/sys/class/net/{}/wireless", &self.iface);
+        
+        if Path::new(&wireless_path).exists() {
+            self.if_type = "Wireless".to_string();
+            return self;
+        }
+        
         let type_path = format!("/sys/class/net/{}/type", &self.iface);
-
+        
         self.if_type = fs::read_to_string(&type_path)
             .map(|content| {
                 match content.trim() {
                     "1"   => "Ethernet".to_string(),
                     "772" => "Loopback".to_string(),
-                    "801" => "Wireless".to_string(),
-                    code  => format!("Type-{}", code),
+                    _     => format!("Type-{}", content.trim()),
                 }
             })
             .unwrap_or_else(|_| "Unknown".to_string());
+        
+        if self.if_type == "Ethernet" && self.iface == "lo" {
+            self.if_type = "Loopback".to_string();
+        }
         
         self
     }
