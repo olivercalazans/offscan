@@ -30,7 +30,7 @@ impl TcpFlooder {
             builder:   PacketBuilder::new(),
             pkt_data:  PacketData::new(),
             pkts_sent: 0,
-            rand:       RandomValues::new(Some(first_ip), Some(last_ip)),
+            rand:      RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 

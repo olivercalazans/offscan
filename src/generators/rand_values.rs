@@ -10,7 +10,6 @@ pub struct RandomValues {
 }
 
 
-
 impl RandomValues {
 
     pub fn new(first_ip: Option<u32>, last_ip: Option<u32>) -> Self {
@@ -25,7 +24,7 @@ impl RandomValues {
 
     #[inline]
     pub fn random_port(&mut self) -> u16 {
-        self.rng.gen_range(10000..=65535)
+        self.rng.gen_range(49152..=65535)
     }
 
 

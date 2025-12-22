@@ -25,8 +25,5 @@ pub use netmap::*;
 pub mod portscan;
 pub use portscan::*;
 
-pub mod tunneling;
-pub use tunneling::*;
-
 pub mod wifi_map;
 pub use wifi_map::*;

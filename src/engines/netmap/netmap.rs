@@ -244,24 +244,25 @@ impl NetworkMapper {
 
 
     fn process_raw_packets(&mut self) {
-        let raw_pkts = mem::take(&mut self.raw_pkts);
+        let raw_pkts      = mem::take(&mut self.raw_pkts);
+        let mut dissector = PacketDissector::new(); 
 
         for packet in raw_pkts.into_iter() {
-            let str_ip           = PacketDissector::get_src_ip(&packet);
-            let src_ip: Ipv4Addr = str_ip.parse().unwrap();
+            dissector.update_pkt(packet);
 
-            if self.active_ips.contains_key(&src_ip) { continue }
-            if !self.ip_in_range(src_ip) { continue }
+            let src_ip = match dissector.get_src_ip() {
+                Some(ip) => ip,
+                None     => continue,
+            };
 
-            let mut info: Vec<String> = Vec::new();
+            if self.active_ips.contains_key(&src_ip) || !self.ip_in_range(src_ip) { 
+                continue
+            }
 
-            let mac_addr = PacketDissector::get_src_mac(&packet);
-            info.push(mac_addr);
+            let mac_addr    = dissector.get_src_mac().unwrap_or_else(|| "Unknown".to_string());
+            let device_name = get_host_name(&src_ip.to_string());
 
-            let device_name = get_host_name(&str_ip);
-            info.push(device_name);
-
-            self.active_ips.insert(src_ip, info);
+            self.active_ips.insert(src_ip, vec![mac_addr, device_name]);
         }
     }
 

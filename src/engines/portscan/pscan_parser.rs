@@ -24,12 +24,9 @@ pub struct PortScanArgs {
     #[arg(
         short, long,
         value_name = "INTEGER",
-        default_value = "0-100",
-        long_help = long_help!(
-            "Examples: Specific: 22,80 | Range: 20-50 | Combined: 22,50-100"
-        ),
+        long_help = long_help!("Examples: Specific: 22,80 | Range: 20-50 | Combined: 22,50-100"),
     )]
-    pub ports: String,
+    pub ports: Option<String>,
 
 
 

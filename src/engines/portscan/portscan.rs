@@ -84,7 +84,7 @@ impl PortScanner {
 
 
     fn setup_tcp_iterators(&self) -> TcpIterators {
-        let ports  = PortIter::new(&self.args.ports, self.args.random.clone());
+        let ports  = PortIter::new(self.args.ports.clone(), self.args.random.clone());
         let delays = DelayIter::new(&self.args.delay, ports.len());
         let ip     = self.args.target_ip.to_string();
         TcpIterators { ports, delays, ip }
@@ -197,13 +197,16 @@ impl PortScanner {
 
 
     fn process_raw_packets(&mut self) {
-        let packets = mem::take(&mut self.raw_packets);
+        let packets       = mem::take(&mut self.raw_packets);
+        let mut dissector = PacketDissector::new(); 
 
         for packet in packets.into_iter() {
+            dissector.update_pkt(packet);
+
             let port = if self.args.udp {
-                PacketDissector::get_udp_src_port(&packet)
+                dissector.get_udp_src_port()
             } else {
-                PacketDissector::get_tcp_src_port(&packet)
+                dissector.get_tcp_src_port()
             };
 
             if port.is_some() {
