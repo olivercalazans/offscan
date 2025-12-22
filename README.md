@@ -20,7 +20,6 @@
         <li><strong><em>DNS Amplification Flooding</em></strong></li>
         <li><strong><em>Ping Flooding</em></strong></li>
         <li><strong><em>TCP Flooding</em></strong></li>
-        <li><strong><em>Protocol Tunneling test</em></strong></li>
       </ul>
     </td>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">

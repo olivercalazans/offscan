@@ -1,83 +1,154 @@
-pub struct PacketDissector;
+use std::net::Ipv4Addr;
+
+
+
+pub struct PacketDissector {
+    pkt: Vec<u8>,
+}
 
 
 impl PacketDissector {
 
-    pub fn get_udp_src_port(packet: &[u8]) -> Option<u16> {
-        if packet.len() < 42 {
-            return None;
-        }
-
-        let ethertype = u16::from_be_bytes([packet[12], packet[13]]);
-        if ethertype != 0x0800 {
-            return None;
-        }
-
-        let ip_protocol = packet[23];
-        if ip_protocol != 17 {
-            return None;
-        }
-
-        Some(u16::from_be_bytes([packet[34], packet[35]]))
+    pub fn new() -> Self {
+        Self { pkt: Vec::new() }
     }
 
 
 
-    pub fn get_tcp_src_port(packet: &[u8]) -> Option<u16> {
-        if packet.len() < 38 {
+    #[inline]
+    pub fn update_pkt(&mut self, raw_pkt: Vec<u8>) {
+        self.pkt = raw_pkt;
+    }
+
+
+
+    #[inline]
+    fn is_ipv4(&self) -> bool {
+        if self.pkt.len() < 14 {
+            return false;
+        }
+
+        let ethertype = u16::from_be_bytes([self.pkt[12], self.pkt[13]]);
+
+        ethertype == 0x0800
+    }
+
+
+
+    #[inline]
+    fn ihl(&self) -> Option<u8> {
+        if self.pkt.len() < 15 {
             return None;
         }
 
-        if u16::from_be_bytes([packet[12], packet[13]]) != 0x0800 {
-            return None;
-        }
-
-        let ihl = packet[14] & 0x0f;
+        let ihl = self.pkt[14] & 0x0f;
+        
         if ihl < 5 {
             return None;
         }
-        let ip_header_len    = (ihl as usize) * 4;
-        let ip_payload_start = 14 + ip_header_len;
 
-        if packet[23] != 6 {
-            return None;
-        }
-
-        if packet.len() < ip_payload_start + 2 {
-            return None;
-        }
-
-        Some(u16::from_be_bytes([packet[ip_payload_start], packet[ip_payload_start + 1]]))
+        Some(ihl)
     }
 
 
 
-    pub fn get_src_ip(packet: &[u8]) -> String {
-        if packet.len() < 30 {
-            return "small packet".into();
-        }
-
-        let ethertype = u16::from_be_bytes([packet[12], packet[13]]);
-        if ethertype != 0x0800 {
-            return "not ipv4".into();
-        }
-
-        let src = &packet[26..30];
-        format!("{}.{}.{}.{}", src[0], src[1], src[2], src[3])
+    #[inline]
+    fn ip_header_len(&self) -> Option<usize> {
+        let ihl        = self.ihl()?;
+        let header_len = (ihl as usize) * 4;
+        Some(14 + header_len)
     }
 
 
 
-    pub fn get_src_mac(packet: &[u8]) -> String {
-        if packet.len() < 12 {
-            return "small packet".into();
+    #[inline]
+    fn is_tcp(&self) -> bool {
+        if self.pkt.len() < 24 {
+            return false;
         }
 
-        packet[6..12]
+        self.pkt[23] == 6
+    }
+
+
+
+    #[inline]
+    fn is_udp(&self) -> bool {
+        if self.pkt.len() < 24 {
+            return false;
+        }
+
+        self.pkt[23] == 17 
+    }
+
+
+
+    #[inline]
+    pub fn get_src_mac(&self) -> Option<String> {
+        if self.pkt.len() < 12 {
+            return None;
+        }
+
+        let mac = self.pkt[6..12]
             .iter()
             .map(|b| format!("{:02x}", b))
             .collect::<Vec<_>>()
-            .join(":")
+            .join(":");
+        
+        Some(mac)
+    }
+
+
+
+    #[inline]
+    pub fn get_src_ip(&self) -> Option<Ipv4Addr> {
+        if self.pkt.len() < 30 || !self.is_ipv4() {
+            return None;
+        }
+
+        let src_ip_bytes: [u8; 4] = [
+            self.pkt[26], self.pkt[27], 
+            self.pkt[28], self.pkt[29]
+        ];
+
+        Some(Ipv4Addr::from(src_ip_bytes))
+    }
+
+
+
+    #[inline]
+    pub fn get_tcp_src_port(&self) -> Option<u16> {
+        if self.pkt.len() < 54 || !self.is_ipv4() || !self.is_tcp() {
+            return None;
+        }
+
+        let ip_payload_start = self.ip_header_len()?;
+
+        if self.pkt.len() < ip_payload_start + 2 {
+            return None;
+        }
+
+        Some(u16::from_be_bytes([self.pkt[ip_payload_start], self.pkt[ip_payload_start + 1]]))
+    }
+
+
+
+    #[inline]
+    pub fn get_udp_src_port(&self) -> Option<u16> {
+        if self.pkt.len() < 42 || !self.is_ipv4() || !self.is_udp() {
+            return None;
+        }
+
+        let ip_payload_start = self.ip_header_len()?;
+
+        if self.pkt.len() < ip_payload_start + 2 {
+            return None;
+        }
+
+        Some(u16::from_be_bytes([
+            self.pkt[ip_payload_start],
+            self.pkt[ip_payload_start + 1]
+        ]))
     }
 
 }

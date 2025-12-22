@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::HeaderBuilder;
+use crate::pkt_builder::{IcmpPacket, TcpPacket, UdpPacket};
 
 
 
@@ -25,76 +25,13 @@ impl PacketBuilder {
         dst_port: u16,
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.buffer[20..40], src_ip, src_port, dst_ip, dst_port, "syn");
-        HeaderBuilder::ip(&mut self.buffer[..20], 40, 6, src_ip, dst_ip);
-        
-        &self.buffer[..40]
-    }
-
-
-
-    #[inline]
-    pub fn udp_ip(
-        &mut self,
-        src_ip:   Ipv4Addr,
-        src_port: u16,
-        dst_ip:   Ipv4Addr,
-        dst_port: u16,
-        payload:  &[u8]
-        ) -> &[u8]
-    {
-        let len_payload: usize = payload.len().try_into().unwrap();
-        let len_pkt:     usize = 28 + len_payload;
-        
-        self.buffer[28..len_pkt].copy_from_slice(&payload);
-
-        HeaderBuilder::udp(
-            &mut self.buffer[20..len_pkt],
-            src_ip, src_port,
-            dst_ip, dst_port, len_payload as u16
+        let pkt_len = TcpPacket::tcp_ip(
+            &mut self.buffer, 
+            src_ip, src_port, 
+            dst_ip, dst_port
         );
-        
-        HeaderBuilder::ip(&mut self.buffer[..20], len_pkt as u16, 17, src_ip, dst_ip);
 
-        &self.buffer[..len_pkt]
-    }
-
-
-
-    #[inline]
-    pub fn icmp_ping(
-        &mut self,
-        src_ip: Ipv4Addr,
-        dst_ip: Ipv4Addr,
-        ) -> &[u8]
-    {
-        HeaderBuilder::icmp(&mut self.buffer[20..28]);
-        HeaderBuilder::ip(&mut self.buffer[..20], 28, 1, src_ip, dst_ip);
-
-        &self.buffer[..28]
-    }
-
-
-
-    #[inline]
-    pub fn tcp_over_udp(
-        &mut self,
-        src_mac:      [u8; 6],
-        src_ip:       Ipv4Addr,
-        src_udp_port: u16,
-        src_tcp_port: u16,
-        dst_mac:      [u8; 6],
-        dst_ip:       Ipv4Addr,
-        dst_udp_port: u16,
-        dst_tcp_port: u16
-        ) -> &[u8]
-    {
-        HeaderBuilder::tcp(&mut self.buffer[42..69], src_ip, src_tcp_port, dst_ip, dst_tcp_port, "syn");
-        HeaderBuilder::udp(&mut self.buffer[34..42], src_ip, src_udp_port, dst_ip, dst_udp_port, 0);
-        HeaderBuilder::ip(&mut self.buffer[14..34], 40, 17, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
-
-        &self.buffer[..69]
+        &self.buffer[..pkt_len]
     }
 
 
@@ -111,11 +48,36 @@ impl PacketBuilder {
         flag:     &str,
         ) -> &[u8]
     {
-        HeaderBuilder::tcp(&mut self.buffer[34..54], src_ip, src_port, dst_ip, dst_port, flag);
-        HeaderBuilder::ip(&mut self.buffer[14..34], 40, 6, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
-        
-        &self.buffer[..54]
+        let pkt_len = TcpPacket::tcp_ether(
+            &mut self.buffer,
+            src_mac, src_ip, src_port,
+            dst_mac, dst_ip, dst_port,
+            flag
+        );
+
+        &self.buffer[..pkt_len]
+    }
+
+
+
+    #[inline]
+    pub fn udp_ip(
+        &mut self,
+        src_ip:   Ipv4Addr,
+        src_port: u16,
+        dst_ip:   Ipv4Addr,
+        dst_port: u16,
+        payload:  &[u8]
+        ) -> &[u8]
+    {
+        let pkt_len = UdpPacket::udp_ip(
+            &mut self.buffer, 
+            src_ip, src_port, 
+            dst_ip, dst_port, 
+            payload
+        );
+
+        &self.buffer[..pkt_len]
     }
 
 
@@ -132,20 +94,27 @@ impl PacketBuilder {
         payload:  &[u8],
         ) -> &[u8]
     {
-        let len_payload: usize = payload.len();
-        let len_pkt:     usize = 42 + len_payload;
-
-        self.buffer[42..len_pkt].copy_from_slice(&payload);
-
-        HeaderBuilder::udp(
-            &mut self.buffer[34..len_pkt], 
-            src_ip, src_port, 
-            dst_ip, dst_port, len_payload as u16
+        let pkt_len = UdpPacket::udp_ether(
+            &mut self.buffer,
+            src_mac, src_ip, src_port,
+            dst_mac, dst_ip, dst_port,
+            payload
         );
-        HeaderBuilder::ip(&mut self.buffer[14..34], 28 + len_payload as u16, 17, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
 
-        &self.buffer[..len_pkt]
+        &self.buffer[..pkt_len]
+    }
+
+
+
+    #[inline]
+    pub fn icmp_ping(
+        &mut self,
+        src_ip: Ipv4Addr,
+        dst_ip: Ipv4Addr,
+        ) -> &[u8]
+    {
+        let pkt_len = IcmpPacket::icmp_ping(&mut self.buffer, src_ip, dst_ip);
+        &self.buffer[..pkt_len]
     }
 
 
@@ -159,28 +128,13 @@ impl PacketBuilder {
         dst_ip:  Ipv4Addr,
         ) -> &[u8]
     {
-        HeaderBuilder::icmp(&mut self.buffer[34..42]);
-        HeaderBuilder::ip(&mut self.buffer[14..34], 28, 1, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut self.buffer[..14], src_mac, dst_mac);
+        let pkt_len = IcmpPacket::icmp_ping_ether(
+            &mut self.buffer,
+            src_mac, src_ip,
+            dst_mac, dst_ip
+        );
 
-        &self.buffer[..42]
-    }
-
-
-
-    #[inline]
-    pub fn auth_802_11(
-        &mut self,
-        src_mac: [u8; 6],
-        dst_mac: [u8; 6]
-        ) -> &[u8]
-    {
-        HeaderBuilder::auth_802_11(&mut self.buffer, src_mac, dst_mac);
-
-        self.buffer[24..26].copy_from_slice(&0u16.to_le_bytes());
-        self.buffer[26..28].copy_from_slice(&1u16.to_le_bytes());
-        self.buffer[28..30].copy_from_slice(&0u16.to_le_bytes());
-        &self.buffer[..30]
+        &self.buffer[..pkt_len]
     }
 
 }

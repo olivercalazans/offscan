@@ -33,7 +33,7 @@ struct PacketData {
 impl PingFlooder {
 
     pub fn new(args: PingArgs) -> Self {
-        let iface               = IfaceInfo::iface_from_ip(args.target_ip);
+        let iface               = IfaceInfo::iface_from_ip(args.dst_ip);
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
@@ -56,25 +56,6 @@ impl PingFlooder {
 
 
     fn set_pkt_info_for(&mut self) {
-        if self.args.smurf {
-            self.smurf_attack();
-        } else {
-            self.direct_attack();
-        }
-    }
-
-
-
-    fn smurf_attack(&mut self) {
-        self.pkt_data.src_ip  = Some(self.args.target_ip);
-        self.pkt_data.src_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
-        self.pkt_data.dst_ip  = Some(IfaceInfo::broadcast_ip(&self.iface));
-        self.pkt_data.dst_mac = Some([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
-    }
-
-
-
-    fn direct_attack(&mut self) {
         self.pkt_data.src_ip  = self.args.src_ip;
         self.pkt_data.src_mac = if self.args.src_mac.is_none() {
                 None
@@ -82,8 +63,8 @@ impl PingFlooder {
                 self.resolve_mac(self.args.src_mac.clone())
             };
 
-        self.pkt_data.dst_ip  = Some(self.args.target_ip);
-        self.pkt_data.dst_mac = self.resolve_mac(Some(self.args.target_mac.clone()));
+        self.pkt_data.dst_ip  = Some(self.args.dst_ip);
+        self.pkt_data.dst_mac = self.resolve_mac(Some(self.args.dst_mac.clone()));
     }
 
 

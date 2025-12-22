@@ -3,44 +3,25 @@ use clap::Parser;
 
 
 
-macro_rules! long_help {
-    ($text:expr) => {
-        concat!("\n", $text)
-    };
-}
-
-
-
 #[derive(Parser)]
 #[command(name = "ping", about = "Ping Flooder")]
 pub struct PingArgs {
 
-    /// Target IP address to flood
-    pub target_ip: Ipv4Addr,
+    /// Destination IP address to flood
+    pub dst_ip: Ipv4Addr,
 
 
-    /// Target MAC address. Use 'local' to use the iface MAC
-    pub target_mac: String,
-
-
-    /// Use Smurf attack (sends ping broadcasts)
-    #[arg(short = 'S', long)]
-    pub smurf: bool,
+    /// Destination MAC address. Use 'local' to use the iface MAC
+    pub dst_mac: String,
 
     
-    /// Source IP address (spoofing).
-    #[arg(
-        long,
-        long_help = long_help!("!!! NOTE: Ignored if --smurf is used"),
-    )]
+    /// Source IP address. Default: Random
+    #[arg(long)]
     pub src_ip: Option<Ipv4Addr>,
     
 
-    /// Source MAC address (spoofing). Use 'local' to use the iface MAC
-    #[arg(
-        long,
-        long_help = long_help!("!!! NOTE: Ignored if --smurf is used"),
-    )]
+    /// Source MAC address. Default: Random. Use 'local' to use the iface MAC
+    #[arg(long)]
     pub src_mac: Option<String>,
 
 }
