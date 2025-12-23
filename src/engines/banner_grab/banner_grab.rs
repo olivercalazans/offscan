@@ -197,3 +197,18 @@ impl BannerGrabber {
         }
     }
 }
+
+
+
+
+impl crate::EngineTrait for BannerGrabber {
+    type Args = BannerArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        BannerGrabber::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

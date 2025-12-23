@@ -235,3 +235,17 @@ impl PortScanner {
     }
 
 }
+
+
+
+impl crate::EngineTrait for PortScanner {
+    type Args = PortScanArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        PortScanner::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

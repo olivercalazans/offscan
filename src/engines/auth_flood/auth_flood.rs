@@ -95,3 +95,17 @@ impl AuthenticationFlooder {
     }
 
 }
+
+
+
+impl crate::EngineTrait for AuthenticationFlooder {
+    type Args = AuthArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        AuthenticationFlooder::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

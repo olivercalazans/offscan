@@ -167,3 +167,17 @@ impl WifiMapper {
     }
 
 }
+
+
+
+impl crate::EngineTrait for WifiMapper {
+    type Args = WmapArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        WifiMapper::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

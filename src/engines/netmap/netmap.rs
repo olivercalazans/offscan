@@ -304,3 +304,17 @@ impl NetworkMapper {
     }
 
 }
+
+
+
+impl crate::EngineTrait for NetworkMapper {
+    type Args = NetMapArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        NetworkMapper::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

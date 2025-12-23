@@ -7,9 +7,7 @@ pub mod sniffer;
 pub mod sockets;
 pub mod utils;
 
-
 use std::{env, mem};
-use clap::Parser;
 use crate::engines::*;
 use crate::utils::abort;
 
@@ -22,24 +20,32 @@ fn main() {
 
 
 
-#[derive(Default)]
 struct Command {
     arguments: Vec<String>,
-    command:   String,
+    command: String,
 }
 
 
 impl Command {
 
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            arguments: Vec::new(),
+            command: String::new(),
+        }
     }
 
 
 
     pub fn run(&mut self) {
         self.validate_input();
-        self.execute_function();
+        
+        if self.command == "-h" || self.command == "--help" {
+            self.display_commands();
+            return;
+        }
+
+        self.execute_command();
     }
 
 
@@ -51,131 +57,69 @@ impl Command {
             abort("No input found");
         }
 
-        self.command   = input[0].clone();
+        self.command = input[0].clone();
         self.arguments = input;
     }
 
-
-
-    fn execute_function(&mut self) {
-        match self.command.as_str() {
-            "-h"     => Self::display_commands(),
-            "--help" => Self::display_commands(),
-            "auth"   => self.execute_auth_flood(),
-            "banner" => self.execute_banner_grab(),
-            "dns"    => self.execute_dns_flood(),
-            "flood"  => self.execute_flood(),
-            "info"   => self.execute_info(),
-            "netmap" => self.execute_netmap(),
-            "ping"   => self.execute_ping(),
-            "pscan"  => self.execute_pscan(),
-            "tcp"    => self.execute_tcp_flood(),
-            "wmap"   => self.execute_wmap(),
-            _        => abort(format!("No command '{}'", self.command)),
-        }
-    }
-
-
     
-    fn display_commands() {
+
+    fn display_commands(&self) {
         println!("\nAvailable commands:");
-        println!("\tauth   -> 802.11 Auth Flooding");
-        println!("\tbanner -> Banner Grabbing");
-        println!("\tdns    -> DNS Flooding");
-        println!("\tflood  -> Packet Flooding");
-        println!("\tinfo   -> Network Information");
-        println!("\tnetmap -> Network Mapping");
-        println!("\tping   -> Ping Flooding");
-        println!("\tpscan  -> Port Scanning");
-        println!("\ttcp    -> TCP Flooding");
-        println!("\twmap   -> Wifi Mapping");
+        
+        for (name, description, _) in Self::get_command_registry() {
+            println!("\t{:<6} -> {}", name, description);
+        }
         println!("");
     }
 
-
-
-    fn get_arguments(&mut self) -> Vec<String> {
-        mem::take(&mut self.arguments)
-    }
-
-
-
-    fn execute_auth_flood(&mut self) {
-        let cmd_args = AuthArgs::parse_from(self.get_arguments());
-        let mut auth = AuthenticationFlooder::new(cmd_args);
-        auth.execute();
-    }
-
-
-
-    fn execute_banner_grab(&mut self) {
-        let cmd_args   = BannerArgs::parse_from(self.get_arguments());
-        let mut banner = BannerGrabber::new(cmd_args);
-        banner.execute();
-    }
-
-
-
-    fn execute_ping(&mut self) {
-        let cmd_args = PingArgs::parse_from(self.get_arguments());
-        let mut ping = PingFlooder::new(cmd_args);
-        ping.execute();
-    }
-
-
     
-    fn execute_flood(&mut self) {
-        let cmd_args  = FloodArgs::parse_from(self.get_arguments());
-        let mut flood = PacketFlooder::new(cmd_args);
-        flood.execute();
-    }
-
-
-
-    fn execute_info(&mut self) {
-        NetInfoArgs::parse_from(self.get_arguments());
-        let mut info = NetworkInfo::new();
-        info.execute();
-    }
-
-
     
-    fn execute_netmap(&mut self) {
-        let cmd_args   = NetMapArgs::parse_from(self.get_arguments());
-        let mut mapper = NetworkMapper::new(cmd_args);
-        mapper.execute();
-    }
-
-
-    
-    fn execute_pscan(&mut self) {
-        let cmd_args    = PortScanArgs::parse_from(self.get_arguments());
-        let mut scanner = PortScanner::new(cmd_args);
-        scanner.execute();
-    }
-
-
-
-    fn execute_tcp_flood(&mut self) {
-        let cmd_args = TcpArgs::parse_from(self.get_arguments());
-        let mut tcp  = TcpFlooder::new(cmd_args);
-        tcp.execute();
-    }
-
-
-
-    fn execute_dns_flood(&mut self) {
-        let cmd_args = DnsArgs::parse_from(self.get_arguments());
-        let mut dns  = DnsFlooder::new(cmd_args);
-        dns.execute();
+    fn get_command_registry() -> Vec<(&'static str, &'static str, Box<dyn Fn(Vec<String>)>)> {
+        vec![
+            ("auth",   "802.11 Auth Flooding", Box::new(execute::<AuthArgs,     AuthenticationFlooder>)),
+            ("banner", "Banner Grabbing",      Box::new(execute::<BannerArgs,   BannerGrabber>)),
+            ("dns",    "DNS Flooding",         Box::new(execute::<DnsArgs,      DnsFlooder>)),
+            ("flood",  "Packet Flooding",      Box::new(execute::<FloodArgs,    PacketFlooder>)),
+            ("info",   "Network Information",  Box::new(execute::<NetInfoArgs,  NetworkInfo>)),
+            ("netmap", "Network Mapping",      Box::new(execute::<NetMapArgs,   NetworkMapper>)),
+            ("ping",   "Ping Flooding",        Box::new(execute::<PingArgs,     PingFlooder>)),
+            ("pscan",  "Port Scanning",        Box::new(execute::<PortScanArgs, PortScanner>)),
+            ("tcp",    "TCP Flooding",         Box::new(execute::<TcpArgs,      TcpFlooder>)),
+            ("wmap",   "Wifi Mapping",         Box::new(execute::<WmapArgs,     WifiMapper>)),
+        ]
     }
 
     
-
-    fn execute_wmap(&mut self) {
-        let cmd_args = WmapArgs::parse_from(self.get_arguments());
-        let mut wmap = WifiMapper::new(cmd_args);
-        wmap.execute();
+    
+    fn execute_command(&mut self) {
+        for (name, _, executor) in Self::get_command_registry() {
+            if name == self.command {
+                executor(mem::take(&mut self.arguments));
+                return;
+            }
+        }
+        
+        abort(format!("No command '{}'", self.command));
     }
+}
 
+
+
+fn execute<P, E>(args: Vec<String>)
+where
+    P: clap::Parser,
+    E: EngineTrait<Args = P>,
+{
+    let cmd_args = P::parse_from(args);
+    let mut cmd  = E::new(cmd_args);
+    cmd.execute();
+}
+
+
+
+pub trait EngineTrait {
+    type Args: clap::Parser;
+    
+    fn new(args: Self::Args) -> Self;
+    fn execute(&mut self);
 }
