@@ -1,10 +1,14 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{net::Ipv4Addr};
 use crate::engines::TcpArgs;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display, get_first_and_last_ip, parse_mac, mac_u8_to_string};
+use crate::utils::{
+    abort, inline_display, get_first_and_last_ip, parse_mac, mac_u8_to_string, CtrlCHandler
+};
 
 
 
@@ -95,15 +99,19 @@ impl TcpFlooder {
 
 
     fn send_endlessly(&mut self) {
-        let socket = Layer2RawSocket::new(&self.iface);
+        let socket  = Layer2RawSocket::new(&self.iface);
+        let running = Arc::new(AtomicBool::new(true));
+        CtrlCHandler::setup(running.clone());
 
-        loop {
+        while running.load(Ordering::SeqCst) {
             let pkt = self.get_pkt();
             socket.send(pkt);
 
             self.pkts_sent += 1;
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
         }
+
+        println!("\nFlood interrupted");
     }
 
 

@@ -1,3 +1,6 @@
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::net::Ipv4Addr;
 use crate::engines::FloodArgs;
 use crate::generators::RandomValues;
@@ -62,8 +65,10 @@ impl PacketFlooder {
 
     fn send_endlessly(&mut self) {
         let mut tools = Self::setup_tools(&self.args.iface);
+        let running   = Arc::new(AtomicBool::new(true));
+        CtrlCHandler::setup(running.clone());
 
-        loop {
+        while running.load(Ordering::SeqCst) {
             let (src_port, src_ip, src_mac, dst_ip, dst_mac) = self.get_pkt_info();
 
             if self.args.tcp {
