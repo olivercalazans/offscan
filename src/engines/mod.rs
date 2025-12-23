@@ -4,6 +4,9 @@ pub use auth_flood::*;
 pub mod banner_grab;
 pub use banner_grab::*;
 
+pub mod deauth;
+pub use deauth::*;
+
 pub mod flood_dns;
 pub use flood_dns::*;
 
