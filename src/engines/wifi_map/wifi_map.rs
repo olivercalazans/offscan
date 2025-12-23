@@ -51,9 +51,7 @@ impl WifiMapper {
     
 
 
-    fn get_beacons(&mut self) {
-        InterfaceManager::enable_monitor_mode(&self.args.iface);
-        
+    fn get_beacons(&mut self) {        
         let mut sniffer = PacketSniffer::new(
             self.args.iface.clone(),
             "type mgt and subtype beacon".to_string()
@@ -64,8 +62,6 @@ impl WifiMapper {
         sniffer.start();
         self.change_channels();
         sniffer.stop();
-
-        InterfaceManager::disable_monitor_mode(&self.args.iface);
 
         self.raw_beacons = sniffer.get_packets();
     }

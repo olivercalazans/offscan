@@ -6,7 +6,7 @@ use crate::engines::FloodArgs;
 use crate::generators::RandomValues;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{inline_display, get_first_and_last_ip};
+use crate::utils::{inline_display, get_first_and_last_ip, CtrlCHandler};
 
 
 
