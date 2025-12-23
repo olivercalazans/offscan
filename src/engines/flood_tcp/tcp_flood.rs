@@ -147,3 +147,17 @@ impl PacketData {
         }
     }
 }
+
+
+
+impl crate::EngineTrait for TcpFlooder {
+    type Args = TcpArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        TcpFlooder::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

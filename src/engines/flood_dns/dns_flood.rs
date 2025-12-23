@@ -214,3 +214,17 @@ impl DnsFlooder {
     }
 
 }
+
+
+
+impl crate::EngineTrait for DnsFlooder {
+    type Args = DnsArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        DnsFlooder::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

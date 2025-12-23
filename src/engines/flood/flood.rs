@@ -14,6 +14,11 @@ pub struct PacketFlooder {
 }
 
 
+struct PktTools {
+    builder: PacketBuilder,
+    socket:  Layer2RawSocket
+}
+
 
 impl PacketFlooder {
 
@@ -148,7 +153,14 @@ impl PacketFlooder {
 
 
 
-struct PktTools {
-    builder: PacketBuilder,
-    socket:  Layer2RawSocket
+impl crate::EngineTrait for PacketFlooder {
+    type Args = FloodArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        PacketFlooder::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
 }

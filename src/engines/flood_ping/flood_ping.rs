@@ -119,3 +119,17 @@ impl PingFlooder {
     }
 
 }
+
+
+
+impl crate::EngineTrait for PingFlooder {
+    type Args = PingArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        PingFlooder::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
+}

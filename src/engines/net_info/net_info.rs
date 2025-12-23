@@ -1,5 +1,6 @@
 use std::{ fs, path::Path };
 use crate::iface::IfaceInfo;
+use crate::engines::NetInfoArgs;
 
 
 
@@ -21,7 +22,7 @@ pub struct NetworkInfo {
 
 impl NetworkInfo {
 
-    pub fn new() -> Self {
+    pub fn new(_args: NetInfoArgs) -> Self {
         Self { ..Default::default() }
     }
 
@@ -229,4 +230,18 @@ impl NetworkInfo {
         println!("")
     }
 
+}
+
+
+
+impl crate::EngineTrait for NetworkInfo {
+    type Args = NetInfoArgs;
+    
+    fn new(args: Self::Args) -> Self {
+        NetworkInfo::new(args)
+    }
+    
+    fn execute(&mut self) {
+        self.execute();
+    }
 }
