@@ -10,13 +10,13 @@ impl UdpPacket {
 
     #[inline]
     pub fn udp_ip(
-        buffer:   &mut [u8; 347],
-        src_ip:   Ipv4Addr,
-        src_port: u16,
-        dst_ip:   Ipv4Addr,
-        dst_port: u16,
-        payload:  &[u8]
-        ) -> usize 
+        buffer   : &mut [u8; 347],
+        src_ip   : Ipv4Addr,
+        src_port : u16,
+        dst_ip   : Ipv4Addr,
+        dst_port : u16,
+        payload  : &[u8]
+    ) -> usize 
     {
         let len_payload: usize = payload.len().try_into().unwrap();
         let len_pkt:     usize = 28 + len_payload;
@@ -38,15 +38,15 @@ impl UdpPacket {
 
     #[inline]
     pub fn udp_ether(
-        buffer:   &mut [u8; 347],
-        src_mac:  [u8; 6],
-        src_ip:   Ipv4Addr,
-        src_port: u16,
-        dst_mac:  [u8; 6],
-        dst_ip:   Ipv4Addr,
-        dst_port: u16,
-        payload:  &[u8],
-        ) -> usize
+        buffer   : &mut [u8; 347],
+        src_mac  : [u8; 6],
+        src_ip   : Ipv4Addr,
+        src_port : u16,
+        dst_mac  : [u8; 6],
+        dst_ip   : Ipv4Addr,
+        dst_port : u16,
+        payload  : &[u8],
+    ) -> usize
     {
         let len_payload: usize = payload.len();
         let len_pkt:     usize = 42 + len_payload;

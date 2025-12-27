@@ -11,33 +11,13 @@ use crate::utils::{inline_display, get_host_name, abort};
 
 
 pub struct PortScanner {
-    args:        PortScanArgs,
-    iface:       String,
-    my_ip:       Ipv4Addr,
-    raw_packets: Vec<Vec<u8>>,
-    open_ports:  BTreeSet<u16>,
+    args        : PortScanArgs,
+    iface       : String,
+    my_ip       : Ipv4Addr,
+    raw_packets : Vec<Vec<u8>>,
+    open_ports  : BTreeSet<u16>,
 }
 
-
-struct PacketTools {
-    sniffer: PacketSniffer,
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
-
-struct UdpIterators {
-    ports:  UdpPayloads,
-    delays: DelayIter,
-    ip:     String,
-}
-
-
-struct TcpIterators {
-    ports:  PortIter,
-    delays: DelayIter,
-    ip:     String,
-}
 
 
 impl PortScanner {
@@ -45,9 +25,9 @@ impl PortScanner {
     pub fn new(args: PortScanArgs) -> Self {
         let iface = IfaceInfo::iface_from_ip(args.target_ip.clone());
         Self {
-            my_ip:       IfaceInfo::iface_ip(&iface).unwrap_or_else(|e| abort(e)),
-            raw_packets: Vec::new(),
-            open_ports:  BTreeSet::new(),
+            my_ip       : IfaceInfo::iface_ip(&iface).unwrap_or_else(|e| abort(e)),
+            raw_packets : Vec::new(),
+            open_ports  : BTreeSet::new(),
             args,
             iface,
         }
@@ -157,9 +137,9 @@ impl PortScanner {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            sniffer: PacketSniffer::new(self.iface.clone(), self.get_bpf_filter()),
-            builder: PacketBuilder::new(),
-            socket:  Layer3RawSocket::new(&self.iface),
+            sniffer : PacketSniffer::new(self.iface.clone(), self.get_bpf_filter()),
+            builder : PacketBuilder::new(),
+            socket  : Layer3RawSocket::new(&self.iface),
         }
     }
 
@@ -248,4 +228,26 @@ impl crate::EngineTrait for PortScanner {
     fn execute(&mut self) {
         self.execute();
     }
+}
+
+
+
+struct PacketTools {
+    sniffer : PacketSniffer,
+    builder : PacketBuilder,
+    socket  : Layer3RawSocket,
+}
+
+
+struct UdpIterators {
+    ports  : UdpPayloads,
+    delays : DelayIter,
+    ip     : String,
+}
+
+
+struct TcpIterators {
+    ports  : PortIter,
+    delays : DelayIter,
+    ip     : String,
 }

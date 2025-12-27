@@ -19,20 +19,17 @@ fn main() {
 }
 
 
-
+#[derive(Default)]
 struct Command {
-    arguments: Vec<String>,
-    command: String,
+    arguments : Vec<String>,
+    command   : String,
 }
 
 
 impl Command {
 
     pub fn new() -> Self {
-        Self {
-            arguments: Vec::new(),
-            command: String::new(),
-        }
+        Self { ..Default::default() }
     }
 
 
@@ -76,16 +73,17 @@ impl Command {
     
     fn get_command_registry() -> Vec<(&'static str, &'static str, Box<dyn Fn(Vec<String>)>)> {
         vec![
-            ("auth",   "802.11 Auth Flooding", Box::new(execute::<AuthArgs,     AuthenticationFlooder>)),
-            ("banner", "Banner Grabbing",      Box::new(execute::<BannerArgs,   BannerGrabber>)),
-            ("dns",    "DNS Flooding",         Box::new(execute::<DnsArgs,      DnsFlooder>)),
-            ("flood",  "Packet Flooding",      Box::new(execute::<FloodArgs,    PacketFlooder>)),
-            ("info",   "Network Information",  Box::new(execute::<NetInfoArgs,  NetworkInfo>)),
-            ("netmap", "Network Mapping",      Box::new(execute::<NetMapArgs,   NetworkMapper>)),
-            ("ping",   "Ping Flooding",        Box::new(execute::<PingArgs,     PingFlooder>)),
-            ("pscan",  "Port Scanning",        Box::new(execute::<PortScanArgs, PortScanner>)),
-            ("tcp",    "TCP Flooding",         Box::new(execute::<TcpArgs,      TcpFlooder>)),
-            ("wmap",   "Wifi Mapping",         Box::new(execute::<WmapArgs,     WifiMapper>)),
+            ("auth",   "802.11 Auth Flooding",    Box::new(execute::<AuthArgs,     AuthenticationFlooder>)),
+            ("banner", "Banner Grabbing",         Box::new(execute::<BannerArgs,   BannerGrabber>)),
+            ("deauth", "Deauthentication attack", Box::new(execute::<DeauthArgs,   Deauthentication>)),
+            ("dns",    "DNS Flooding",            Box::new(execute::<DnsArgs,      DnsFlooder>)),
+            ("flood",  "Packet Flooding",         Box::new(execute::<FloodArgs,    PacketFlooder>)),
+            ("info",   "Network Information",     Box::new(execute::<NetInfoArgs,  NetworkInfo>)),
+            ("netmap", "Network Mapping",         Box::new(execute::<NetMapArgs,   NetworkMapper>)),
+            ("ping",   "Ping Flooding",           Box::new(execute::<PingArgs,     PingFlooder>)),
+            ("pscan",  "Port Scanning",           Box::new(execute::<PortScanArgs, PortScanner>)),
+            ("tcp",    "TCP Flooding",            Box::new(execute::<TcpArgs,      TcpFlooder>)),
+            ("wmap",   "Wifi Mapping",            Box::new(execute::<WmapArgs,     WifiMapper>)),
         ]
     }
 

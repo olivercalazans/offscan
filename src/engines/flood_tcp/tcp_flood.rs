@@ -1,20 +1,24 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::{net::Ipv4Addr};
 use crate::engines::TcpArgs;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::pkt_builder::PacketBuilder;
 use crate::sockets::Layer2RawSocket;
-use crate::utils::{abort, inline_display, get_first_and_last_ip, parse_mac, mac_u8_to_string};
+use crate::utils::{
+    abort, inline_display, get_first_and_last_ip, parse_mac, mac_u8_to_string, CtrlCHandler
+};
 
 
 
 pub struct TcpFlooder {
-    args:      TcpArgs,
-    builder:   PacketBuilder,
-    iface:     String,
-    pkt_data:  PacketData,
-    pkts_sent: usize,
-    rand:      RandomValues,
+    args      : TcpArgs,
+    builder   : PacketBuilder,
+    iface     : String,
+    pkt_data  : PacketData,
+    pkts_sent : usize,
+    rand      : RandomValues,
 }
 
 
@@ -27,10 +31,10 @@ impl TcpFlooder {
         Self {
             args,
             iface,
-            builder:   PacketBuilder::new(),
-            pkt_data:  PacketData::new(),
-            pkts_sent: 0,
-            rand:      RandomValues::new(Some(first_ip), Some(last_ip)),
+            builder   : PacketBuilder::new(),
+            pkt_data  : PacketData::new(),
+            pkts_sent : 0,
+            rand      : RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
@@ -95,15 +99,19 @@ impl TcpFlooder {
 
 
     fn send_endlessly(&mut self) {
-        let socket = Layer2RawSocket::new(&self.iface);
+        let socket  = Layer2RawSocket::new(&self.iface);
+        let running = Arc::new(AtomicBool::new(true));
+        CtrlCHandler::setup(running.clone());
 
-        loop {
+        while running.load(Ordering::SeqCst) {
             let pkt = self.get_pkt();
             socket.send(pkt);
 
             self.pkts_sent += 1;
             inline_display(&format!("Packets sent: {}", &self.pkts_sent));
         }
+
+        println!("\nFlood interrupted");
     }
 
 
@@ -125,31 +133,6 @@ impl TcpFlooder {
 
 
 
-struct PacketData {
-    src_ip:   Option<Ipv4Addr>,
-    src_mac:  Option<[u8; 6]>,
-    dst_ip:   Ipv4Addr,
-    dst_mac:  [u8; 6],
-    dst_port: u16,
-    flag:     String,
-}
-
-
-impl PacketData {
-    fn new() -> Self {
-        Self {
-            src_ip:   None,
-            src_mac:  None,
-            dst_ip:   Ipv4Addr::new(0, 0, 0, 0),
-            dst_mac:  [0u8; 6],
-            dst_port: 0,
-            flag:     "".to_string(),
-        }
-    }
-}
-
-
-
 impl crate::EngineTrait for TcpFlooder {
     type Args = TcpArgs;
     
@@ -159,5 +142,30 @@ impl crate::EngineTrait for TcpFlooder {
     
     fn execute(&mut self) {
         self.execute();
+    }
+}
+
+
+
+struct PacketData {
+    src_ip   : Option<Ipv4Addr>,
+    src_mac  : Option<[u8; 6]>,
+    dst_ip   : Ipv4Addr,
+    dst_mac  : [u8; 6],
+    dst_port : u16,
+    flag     : String,
+}
+
+
+impl PacketData {
+    fn new() -> Self {
+        Self {
+            src_ip   : None,
+            src_mac  : None,
+            dst_ip   : Ipv4Addr::new(0, 0, 0, 0),
+            dst_mac  : [0u8; 6],
+            dst_port : 0,
+            flag     : "".to_string(),
+        }
     }
 }

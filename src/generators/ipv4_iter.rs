@@ -4,12 +4,11 @@ use crate::utils::abort;
 
 
 pub struct Ipv4Iter {
-    current: u32,
-    end:     u32,
-    start:   u32,
-    total:   u64,
+    current : u32,
+    end     : u32,
+    start   : u32,
+    total   : u64,
 }
-
 
 
 impl Ipv4Iter {

@@ -6,28 +6,11 @@ use crate::sniffer::PacketSniffer;
 
 
 
-#[derive(Debug)]
-struct Info {
-    macs:    HashSet<String>,
-    channel: String,
-}
-
-
-impl Info {
-    fn new(mac: String, channel: String) -> Self {
-        let mut macs = HashSet::new();
-        macs.insert(mac);
-
-        Self { macs, channel }
-    }
-}
-
-
 
 pub struct WifiMapper {
-    args:        WmapArgs,
-    raw_beacons: Vec<Vec<u8>>,
-    wifis:       BTreeMap<String, Info>,
+    args        : WmapArgs,
+    raw_beacons : Vec<Vec<u8>>,
+    wifis       : BTreeMap<String, Info>,
 }
 
 
@@ -35,8 +18,8 @@ impl WifiMapper {
     
     pub fn new(args: WmapArgs) -> Self {
         Self {
-            raw_beacons: Vec::new(),
-            wifis:       BTreeMap::new(),
+            raw_beacons : Vec::new(),
+            wifis       : BTreeMap::new(),
             args,
         }
     }
@@ -51,9 +34,7 @@ impl WifiMapper {
     
 
 
-    fn get_beacons(&mut self) {
-        InterfaceManager::enable_monitor_mode(&self.args.iface);
-        
+    fn get_beacons(&mut self) {        
         let mut sniffer = PacketSniffer::new(
             self.args.iface.clone(),
             "type mgt and subtype beacon".to_string()
@@ -64,8 +45,6 @@ impl WifiMapper {
         sniffer.start();
         self.change_channels();
         sniffer.stop();
-
-        InterfaceManager::disable_monitor_mode(&self.args.iface);
 
         self.raw_beacons = sniffer.get_packets();
     }
@@ -162,7 +141,8 @@ impl WifiMapper {
             println!("{:<width$}  {}",
                      "",
                      mac,
-                     width = max_len);
+                     width = max_len
+                    );
         }
     }
 
@@ -179,5 +159,23 @@ impl crate::EngineTrait for WifiMapper {
     
     fn execute(&mut self) {
         self.execute();
+    }
+}
+
+
+
+#[derive(Debug)]
+struct Info {
+    macs    : HashSet<String>,
+    channel : String,
+}
+
+
+impl Info {
+    fn new(mac: String, channel: String) -> Self {
+        let mut macs = HashSet::new();
+        macs.insert(mac);
+
+        Self { macs, channel }
     }
 }

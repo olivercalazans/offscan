@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::engines::AuthArgs;
 use crate::dissectors::BeaconDissector;
 use crate::generators::RandomValues;
-use crate::pkt_builder::Frame802_11;
+use crate::pkt_builder::FrameBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer2RawSocket;
 use crate::utils::{abort, inline_display, CtrlCHandler, parse_mac};
@@ -70,14 +70,14 @@ impl AuthenticationFlooder {
 
     fn send_endlessly(&self, bssid: [u8; 6]) {
         let mut rand    = RandomValues::new(None, None);
-        let mut builder = Frame802_11::new();
+        let mut builder = FrameBuilder::new();
         let socket      = Layer2RawSocket::new(&self.args.iface);        
         let running     = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
 
         let mut sent: usize = 0;
         while running.load(Ordering::SeqCst) {
-            let pkt = builder.auth_802_11(rand.random_mac(), bssid);
+            let pkt = builder.auth(rand.random_mac(), bssid);
             socket.send(pkt);
             sent += 1;
             Self::display_progress(sent);
