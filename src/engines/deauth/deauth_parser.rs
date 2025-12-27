@@ -17,18 +17,18 @@ pub struct DeauthArgs {
     pub target_mac: [u8; 6],
 
 
-    /// AP MAC
-    #[arg(short, long, value_parser = parse_mac)]
-    pub ap_mac: [u8; 6],
-
-
     /// BSSID
     #[arg(short, long, value_parser = parse_mac)]
     pub bssid: [u8; 6],
 
 
     /// Delay between frame sendings (milliseconds)
-    #[arg(short, long, default_value_t = 200)]
+    #[arg(short, long, default_value_t = 30)]
     pub delay: u64,
+
+
+    /// Channel
+    #[arg(short, long)]
+    pub channel: u32,
 
 }
