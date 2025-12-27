@@ -19,20 +19,17 @@ fn main() {
 }
 
 
-
+#[derive(Default)]
 struct Command {
-    arguments: Vec<String>,
-    command: String,
+    arguments : Vec<String>,
+    command   : String,
 }
 
 
 impl Command {
 
     pub fn new() -> Self {
-        Self {
-            arguments: Vec::new(),
-            command: String::new(),
-        }
+        Self { ..Default::default() }
     }
 
 

@@ -10,8 +10,8 @@ use crate::utils::abort;
 
 
 pub struct Layer2RawSocket {
-    file_desc: i32,
-    addr: sockaddr_ll,
+    file_desc : i32,
+    addr      : sockaddr_ll,
 }
 
 

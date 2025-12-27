@@ -6,11 +6,11 @@ use crate::engines::BannerArgs;
 
 
 pub struct BannerGrabber {
-    target_ip: String,
-    result:    BTreeMap<u16, String>,
-    refused:   u32,
-    timeout:   u32,
-    errors:    u32,
+    target_ip : String,
+    result    : BTreeMap<u16, String>,
+    refused   : u32,
+    timeout   : u32,
+    errors    : u32,
 }
 
 
@@ -19,11 +19,11 @@ impl BannerGrabber {
 
     pub fn new(args: BannerArgs) -> Self {
         Self { 
-            target_ip: args.target_ip.to_string(),
-            result:    BTreeMap::new(),
-            refused:   0,
-            timeout:   0,
-            errors:    0,
+            target_ip : args.target_ip.to_string(),
+            result    : BTreeMap::new(),
+            refused   : 0,
+            timeout   : 0,
+            errors    : 0,
         }
     }
 

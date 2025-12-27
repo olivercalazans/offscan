@@ -4,11 +4,11 @@ use pcap::{Device, Capture};
 
 
 pub struct PacketSniffer {
-    filter:   String,
-    handle:   Option<thread::JoinHandle<()>>,
-    iface:    String,
-    raw_pkts: Arc<Mutex<Vec<Vec<u8>>>>,
-    running:  Arc<AtomicBool>,
+    filter   : String,
+    handle   : Option<thread::JoinHandle<()>>,
+    iface    : String,
+    raw_pkts : Arc<Mutex<Vec<Vec<u8>>>>,
+    running  : Arc<AtomicBool>,
 }
 
 
@@ -19,9 +19,9 @@ impl PacketSniffer {
         Self {
             filter,
             iface,
-            handle:   None,
-            raw_pkts: Arc::new(Mutex::new(Vec::new())),
-            running:  Arc::new(AtomicBool::new(false)),
+            handle   : None,
+            raw_pkts : Arc::new(Mutex::new(Vec::new())),
+            running  : Arc::new(AtomicBool::new(false)),
         }
     }
 

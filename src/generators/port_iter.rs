@@ -5,8 +5,8 @@ use crate::utils::abort;
 
 
 pub struct PortIter {
-    ports: Vec<u16>,
-    index: usize,
+    ports : Vec<u16>,
+    index : usize,
 }
 
 

@@ -6,16 +6,16 @@ use crate::engines::NetInfoArgs;
 
 #[derive(Default)]
 pub struct NetworkInfo {
-    iface:       String,
-    state:       String, 
-    if_type:     String, 
-    mac:         String, 
-    ip:          String, 
-    cidr:        String, 
-    host_len:    String, 
-    mtu:         String, 
-    gateway_mac: String, 
-    gateway_ip:  String, 
+    iface       : String,
+    state       : String, 
+    if_type     : String, 
+    mac         : String, 
+    ip          : String, 
+    cidr        : String, 
+    host_len    : String, 
+    mtu         : String, 
+    gateway_mac : String, 
+    gateway_ip  : String, 
 }
 
 

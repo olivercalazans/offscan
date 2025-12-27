@@ -11,9 +11,9 @@ pub enum DelayMode {
 
 
 pub struct DelayIter {
-    mode: DelayMode,
-    remaining: usize,
-    total: usize,
+    mode      : DelayMode,
+    remaining : usize,
+    total     : usize,
 }
 
 
@@ -42,8 +42,8 @@ impl DelayIter {
 
         Self {
             mode,
-            remaining: quantity,
-            total: quantity,
+            remaining : quantity,
+            total     : quantity,
         }
     }
 

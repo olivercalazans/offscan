@@ -35,8 +35,8 @@ impl FrameBuilder {
     #[inline]
     pub fn auth(
         &mut self, 
-        src_mac: [u8; 6], 
-        dst_mac: [u8; 6]
+        src_mac : [u8; 6], 
+        dst_mac : [u8; 6]
     ) -> &[u8] 
     { 
         Ieee80211Header::auth(&mut self.buffer, src_mac, dst_mac);

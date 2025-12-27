@@ -4,9 +4,9 @@ use rand::{Rng, rngs::ThreadRng};
 
 
 pub struct RandomValues {
-    rng: ThreadRng,
-    first_ip: u32,
-    last_ip:  u32,
+    rng      : ThreadRng,
+    first_ip : u32,
+    last_ip  : u32,
 }
 
 
@@ -14,9 +14,9 @@ impl RandomValues {
 
     pub fn new(first_ip: Option<u32>, last_ip: Option<u32>) -> Self {
         Self { 
-            rng:      rand::thread_rng(),
-            first_ip: first_ip.unwrap_or_else(|| 0),
-            last_ip:  last_ip.unwrap_or_else(|| 0),
+            rng      : rand::thread_rng(),
+            first_ip : first_ip.unwrap_or_else(|| 0),
+            last_ip  : last_ip.unwrap_or_else(|| 0),
         }
     }
 

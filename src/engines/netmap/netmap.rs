@@ -12,36 +12,24 @@ use crate::utils::{abort, get_host_name, get_first_and_last_ip, parse_ip};
 
 
 pub struct NetworkMapper {
-    args:        NetMapArgs,
-    active_ips:  BTreeMap<Ipv4Addr, Vec<String>>,
-    my_ip:       Ipv4Addr,
-    raw_pkts:    Vec<Vec<u8>>,
-    start_bound: Option<u32>,
-    end_bound:   Option<u32>,
+    args        : NetMapArgs,
+    active_ips  : BTreeMap<Ipv4Addr, Vec<String>>,
+    my_ip       : Ipv4Addr,
+    raw_pkts    : Vec<Vec<u8>>,
+    start_bound : Option<u32>,
+    end_bound   : Option<u32>,
 }
-
-
-struct Iterators {
-    ips:    Ipv4Iter,
-    delays: DelayIter,
-}
-
-struct PacketTools {
-    builder: PacketBuilder,
-    socket:  Layer3RawSocket,
-}
-
 
 
 impl NetworkMapper {
 
     pub fn new(args:NetMapArgs) -> Self {
         Self {
-            active_ips:  BTreeMap::new(),
-            my_ip:       IfaceInfo::iface_ip(&args.iface).unwrap_or_else(|e| abort(e)),
-            raw_pkts:    Vec::new(),
-            start_bound: None,
-            end_bound:   None,
+            active_ips  : BTreeMap::new(),
+            my_ip       : IfaceInfo::iface_ip(&args.iface).unwrap_or_else(|e| abort(e)),
+            raw_pkts    : Vec::new(),
+            start_bound : None,
+            end_bound   : None,
             args,
         }
     }
@@ -144,18 +132,18 @@ impl NetworkMapper {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            builder: PacketBuilder::new(),
-            socket:  Layer3RawSocket::new(&self.args.iface),
+            builder : PacketBuilder::new(),
+            socket  : Layer3RawSocket::new(&self.args.iface),
         }
     }
 
 
 
     fn send_probes(
-        probe_type: &str,
-        my_ip:      Ipv4Addr,
-        mut iters:  Iterators,
-        mut tools:  PacketTools
+        probe_type : &str,
+        my_ip      : Ipv4Addr,
+        mut iters  : Iterators,
+        mut tools  : PacketTools
     ) {
         let mut rand = RandomValues::new(None, None);
 
@@ -317,4 +305,16 @@ impl crate::EngineTrait for NetworkMapper {
     fn execute(&mut self) {
         self.execute();
     }
+}
+
+
+
+struct Iterators {
+    ips    : Ipv4Iter,
+    delays : DelayIter,
+}
+
+struct PacketTools {
+    builder : PacketBuilder,
+    socket  : Layer3RawSocket,
 }

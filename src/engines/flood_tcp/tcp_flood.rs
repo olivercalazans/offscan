@@ -13,12 +13,12 @@ use crate::utils::{
 
 
 pub struct TcpFlooder {
-    args:      TcpArgs,
-    builder:   PacketBuilder,
-    iface:     String,
-    pkt_data:  PacketData,
-    pkts_sent: usize,
-    rand:      RandomValues,
+    args      : TcpArgs,
+    builder   : PacketBuilder,
+    iface     : String,
+    pkt_data  : PacketData,
+    pkts_sent : usize,
+    rand      : RandomValues,
 }
 
 
@@ -31,10 +31,10 @@ impl TcpFlooder {
         Self {
             args,
             iface,
-            builder:   PacketBuilder::new(),
-            pkt_data:  PacketData::new(),
-            pkts_sent: 0,
-            rand:      RandomValues::new(Some(first_ip), Some(last_ip)),
+            builder   : PacketBuilder::new(),
+            pkt_data  : PacketData::new(),
+            pkts_sent : 0,
+            rand      : RandomValues::new(Some(first_ip), Some(last_ip)),
         }
     }
 
@@ -133,31 +133,6 @@ impl TcpFlooder {
 
 
 
-struct PacketData {
-    src_ip:   Option<Ipv4Addr>,
-    src_mac:  Option<[u8; 6]>,
-    dst_ip:   Ipv4Addr,
-    dst_mac:  [u8; 6],
-    dst_port: u16,
-    flag:     String,
-}
-
-
-impl PacketData {
-    fn new() -> Self {
-        Self {
-            src_ip:   None,
-            src_mac:  None,
-            dst_ip:   Ipv4Addr::new(0, 0, 0, 0),
-            dst_mac:  [0u8; 6],
-            dst_port: 0,
-            flag:     "".to_string(),
-        }
-    }
-}
-
-
-
 impl crate::EngineTrait for TcpFlooder {
     type Args = TcpArgs;
     
@@ -167,5 +142,30 @@ impl crate::EngineTrait for TcpFlooder {
     
     fn execute(&mut self) {
         self.execute();
+    }
+}
+
+
+
+struct PacketData {
+    src_ip   : Option<Ipv4Addr>,
+    src_mac  : Option<[u8; 6]>,
+    dst_ip   : Ipv4Addr,
+    dst_mac  : [u8; 6],
+    dst_port : u16,
+    flag     : String,
+}
+
+
+impl PacketData {
+    fn new() -> Self {
+        Self {
+            src_ip   : None,
+            src_mac  : None,
+            dst_ip   : Ipv4Addr::new(0, 0, 0, 0),
+            dst_mac  : [0u8; 6],
+            dst_port : 0,
+            flag     : "".to_string(),
+        }
     }
 }

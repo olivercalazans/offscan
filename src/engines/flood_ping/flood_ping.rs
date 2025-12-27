@@ -11,23 +11,13 @@ use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, 
 
 
 pub struct PingFlooder {
-    args:      PingArgs,
-    rand:      RandomValues,
-    builder:   PacketBuilder,
-    iface:     String,
-    pkts_sent: usize,
-    pkt_data:  PacketData,
+    args      : PingArgs,
+    rand      : RandomValues,
+    builder   : PacketBuilder,
+    iface     : String,
+    pkts_sent : usize,
+    pkt_data  : PacketData,
 }
-
-
-#[derive(Default)]
-struct PacketData {
-    src_ip:  Option<Ipv4Addr>,
-    src_mac: Option<[u8; 6]>,
-    dst_ip:  Option<Ipv4Addr>,
-    dst_mac: Option<[u8; 6]>,
-}
-
 
 
 impl PingFlooder {
@@ -37,10 +27,10 @@ impl PingFlooder {
         let (first_ip, last_ip) = get_first_and_last_ip(&iface);
 
         Self {
-            rand:      RandomValues::new(Some(first_ip), Some(last_ip)),
-            builder:   PacketBuilder::new(),
-            pkts_sent: 0,
-            pkt_data:  Default::default(),
+            rand      : RandomValues::new(Some(first_ip), Some(last_ip)),
+            builder   : PacketBuilder::new(),
+            pkts_sent : 0,
+            pkt_data  : Default::default(),
             iface,
             args,
         }
@@ -132,4 +122,14 @@ impl crate::EngineTrait for PingFlooder {
     fn execute(&mut self) {
         self.execute();
     }
+}
+
+
+
+#[derive(Default)]
+struct PacketData {
+    src_ip  : Option<Ipv4Addr>,
+    src_mac : Option<[u8; 6]>,
+    dst_ip  : Option<Ipv4Addr>,
+    dst_mac : Option<[u8; 6]>,
 }

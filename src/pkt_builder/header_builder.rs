@@ -11,12 +11,12 @@ impl HeaderBuilder {
 
     #[inline]
     pub fn tcp(
-        buffer:   &mut [u8],
-        src_ip:   Ipv4Addr,
-        src_port: u16, 
-        dst_ip:   Ipv4Addr,
-        dst_port: u16,
-        flag:     &str,
+        buffer   : &mut [u8],
+        src_ip   : Ipv4Addr,
+        src_port : u16, 
+        dst_ip   : Ipv4Addr,
+        dst_port : u16,
+        flag     : &str,
     ) {
         let bflag = if flag == "syn" {0x02} else {0x10};
 
@@ -38,12 +38,12 @@ impl HeaderBuilder {
 
     #[inline]
     pub fn udp(
-        buffer:      &mut [u8],
-        src_ip:      Ipv4Addr,
-        src_port:    u16,
-        dst_ip:      Ipv4Addr,
-        dst_port:    u16,
-        len_payload: u16
+        buffer      : &mut [u8],
+        src_ip      : Ipv4Addr,
+        src_port    : u16,
+        dst_ip      : Ipv4Addr,
+        dst_port    : u16,
+        len_payload : u16
     ) {
         let len = 8 + len_payload;
 
@@ -76,11 +76,11 @@ impl HeaderBuilder {
 
     #[inline]
     pub fn ip(
-        buffer:   &mut [u8],
-        len:      u16,
-        protocol: u8,
-        src_ip:   Ipv4Addr,
-        dst_ip:   Ipv4Addr
+        buffer   : &mut [u8],
+        len      : u16,
+        protocol : u8,
+        src_ip   : Ipv4Addr,
+        dst_ip   : Ipv4Addr
     ) {
         buffer[0] = (4 << 4) | 5;
         buffer[1] = 0;
@@ -101,9 +101,9 @@ impl HeaderBuilder {
 
     #[inline]
     pub fn ether(
-        buffer:  &mut [u8],
-        src_mac: [u8; 6],
-        dst_mac: [u8; 6]
+        buffer  : &mut [u8],
+        src_mac : [u8; 6],
+        dst_mac : [u8; 6]
     ) {
         buffer[0..6].copy_from_slice(&dst_mac);
         buffer[6..12].copy_from_slice(&src_mac);

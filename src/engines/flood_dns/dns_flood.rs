@@ -11,21 +11,11 @@ use crate::utils::{ inline_display, parse_mac, mac_u8_to_string, CtrlCHandler };
 
 
 pub struct DnsFlooder {
-    builder:   PacketBuilder,
-    iface:     String,
-    pkts_sent: usize,
-    pkt_data:  PacketData,
-    rand:      RandomValues,
-}
-
-
-struct PacketData {
-    src_ip:   Ipv4Addr,
-    src_mac:  [u8; 6],
-    dst_port: u16,
-    dst_ip:   Ipv4Addr,
-    dst_mac:  [u8; 6],
-    payload:  Vec<u8>,
+    builder   : PacketBuilder,
+    iface     : String,
+    pkts_sent : usize,
+    pkt_data  : PacketData,
+    rand      : RandomValues,
 }
 
 
@@ -35,10 +25,10 @@ impl DnsFlooder {
         let iface = IfaceInfo::default_iface();
 
         Self {
-            builder:   PacketBuilder::new(),
-            pkts_sent: 0,
-            pkt_data:  Self::set_pkt_data(args, &iface),
-            rand:      RandomValues::new(None, None),
+            builder   : PacketBuilder::new(),
+            pkts_sent : 0,
+            pkt_data  : Self::set_pkt_data(args, &iface),
+            rand      : RandomValues::new(None, None),
             iface,   
         }
     }
@@ -227,4 +217,15 @@ impl crate::EngineTrait for DnsFlooder {
     fn execute(&mut self) {
         self.execute();
     }
+}
+
+
+
+struct PacketData {
+    src_ip   : Ipv4Addr,
+    src_mac  : [u8; 6],
+    dst_port : u16,
+    dst_ip   : Ipv4Addr,
+    dst_mac  : [u8; 6],
+    payload  : Vec<u8>,
 }
