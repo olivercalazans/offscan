@@ -75,7 +75,6 @@ impl Command {
         vec![
             ("banner", "Banner Grabbing",         Box::new(execute::<BannerArgs,   BannerGrabber>)),
             ("deauth", "Deauthentication attack", Box::new(execute::<DeauthArgs,   Deauthentication>)),
-            ("dns",    "DNS Flooding",            Box::new(execute::<DnsArgs,      DnsFlooder>)),
             ("flood",  "Packet Flooding",         Box::new(execute::<FloodArgs,    PacketFlooder>)),
             ("info",   "Network Information",     Box::new(execute::<NetInfoArgs,  NetworkInfo>)),
             ("netmap", "Network Mapping",         Box::new(execute::<NetMapArgs,   NetworkMapper>)),
