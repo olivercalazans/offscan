@@ -55,6 +55,10 @@ You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/o
 > - A C compiler and linker (`build-essential` has everyting) — required to build and link Rust binaries.
 > - `libpcap-dev` — required for network packet capture.
 > - `iw` command — required for wireless interface controll.
+>
+> ``` bash
+> sudo apt install build-essential libpcap-dev iw
+> ```
 >   
 > Make sure these are installed before building.
 
