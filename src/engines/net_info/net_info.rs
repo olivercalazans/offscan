@@ -1,4 +1,4 @@
-use std::{ fs, path::Path };
+use std::fs;
 use crate::iface::IfaceInfo;
 use crate::engines::NetInfoArgs;
 
@@ -29,7 +29,7 @@ impl NetworkInfo {
 
 
     pub fn execute(&mut self) {
-        IfaceInfo::iface_names()
+        IfaceInfo::ifaces()
             .into_iter()
             .enumerate()
             .for_each(|(i, iface)|{
@@ -64,10 +64,8 @@ impl NetworkInfo {
 
     
     
-    fn set_type(&mut self) -> &mut Self {
-        let wireless_path = format!("/sys/class/net/{}/wireless", &self.iface);
-        
-        if Path::new(&wireless_path).exists() {
+    fn set_type(&mut self) -> &mut Self {        
+        if IfaceInfo::is_wireless(&self.iface) {
             self.if_type = "Wireless".to_string();
             return self;
         }
@@ -101,7 +99,7 @@ impl NetworkInfo {
     
     
     fn set_ip(&mut self) -> &mut Self {
-        self.ip = match IfaceInfo::iface_ip(&self.iface) {
+        self.ip = match IfaceInfo::ip(&self.iface) {
             Ok(ip) => ip.to_string(),
             Err(_) => "None".to_string(),
         };
@@ -112,7 +110,7 @@ impl NetworkInfo {
     
     
     fn set_cidr(&mut self) -> &mut Self {
-        self.cidr = match IfaceInfo::iface_cidr(&self.iface) {
+        self.cidr = match IfaceInfo::cidr(&self.iface) {
             Ok(ip) => ip.to_string(),
             Err(_) => "Unknown".to_string(),
         };

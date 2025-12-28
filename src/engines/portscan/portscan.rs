@@ -25,7 +25,7 @@ impl PortScanner {
     pub fn new(args: PortScanArgs) -> Self {
         let iface = IfaceInfo::iface_from_ip(args.target_ip.clone());
         Self {
-            my_ip       : IfaceInfo::iface_ip(&iface).unwrap_or_else(|e| abort(e)),
+            my_ip       : IfaceInfo::ip(&iface).unwrap_or_else(|e| abort(e)),
             raw_packets : Vec::new(),
             open_ports  : BTreeSet::new(),
             args,

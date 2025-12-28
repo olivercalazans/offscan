@@ -8,7 +8,7 @@ use crate::utils::parse_mac;
 pub struct DeauthArgs {
 
     /// Define a network interface to send the frames
-    #[arg(short, long, value_parser = IfaceInfo::check_iface_exists)]
+    #[arg(short, long, value_parser = IfaceInfo::exists)]
     pub iface: String,
 
 

@@ -17,17 +17,17 @@ pub struct Layer2RawSocket {
 
 impl Layer2RawSocket {
 
-    pub fn new(iface_name: &str) -> Self {
-        let ifindex   = IfaceInfo::iface_index(iface_name);
-        let file_desc = Self::create_socket(iface_name);
-        let addr      = Self::build_sockaddr(ifindex);
+    pub fn new(iface: &str) -> Self {
+        let if_index  = IfaceInfo::index(iface);
+        let file_desc = Self::create_socket(iface);
+        let addr      = Self::build_sockaddr(if_index);
 
         Self { file_desc, addr }
     }
 
 
 
-    fn create_socket(iface_name: &str) -> i32 {
+    fn create_socket(iface: &str) -> i32 {
         unsafe {
             let file_desc = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL as u16) as i32);
             if file_desc < 0 {
@@ -37,7 +37,7 @@ impl Layer2RawSocket {
                 ));
             }
 
-            if let Err(e) = Self::bind_to_interface(file_desc, iface_name) {
+            if let Err(e) = Self::bind_to_interface(file_desc, iface) {
                 let _ = close(file_desc);
                 abort(&format!("Failed to bind socket to interface: {}", e));
             }
@@ -53,9 +53,9 @@ impl Layer2RawSocket {
 
 
 
-    fn bind_to_interface(file_desc: i32, iface_name: &str) -> io::Result<()> {
+    fn bind_to_interface(file_desc: i32, iface: &str) -> io::Result<()> {
         unsafe {
-            let ifname_bytes           = iface_name.as_bytes();
+            let ifname_bytes           = iface.as_bytes();
             let mut ifreq: libc::ifreq = mem::zeroed();
             
             for (i, &byte) in ifname_bytes.iter().enumerate() {
@@ -83,12 +83,12 @@ impl Layer2RawSocket {
 
     fn configure_socket(file_desc: i32) -> io::Result<()> {
         unsafe {
-            let buf_size: i32 = 1024 * 1024; // 1MB
+            let buffer_size: i32 = 1024 * 1024; // 1MB
             if libc::setsockopt(
                 file_desc,
                 SOL_SOCKET,
                 libc::SO_SNDBUF,
-                &buf_size as *const _ as *const libc::c_void,
+                &buffer_size as *const _ as *const libc::c_void,
                 mem::size_of::<i32>() as libc::socklen_t,
             ) < 0
             {
@@ -101,12 +101,12 @@ impl Layer2RawSocket {
 
 
 
-    fn build_sockaddr(ifindex: i32) -> sockaddr_ll {
+    fn build_sockaddr(if_index: i32) -> sockaddr_ll {
         unsafe {
             let mut addr: sockaddr_ll = mem::zeroed();
             addr.sll_family   = AF_PACKET as u16;
             addr.sll_protocol = htons(ETH_P_ALL as u16);
-            addr.sll_ifindex  = ifindex;
+            addr.sll_ifindex  = if_index;
             addr.sll_halen    = 6;
             addr
         }

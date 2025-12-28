@@ -35,7 +35,7 @@ pub struct NetMapArgs {
     #[arg(
         short, long,
         value_name = "INTERFACE",
-        value_parser = IfaceInfo::check_iface_exists,
+        value_parser = IfaceInfo::exists,
         default_value_t = IfaceInfo::default_iface(),
         long_help = long_help!(
             "Define a network interface to send the packets.\n\
