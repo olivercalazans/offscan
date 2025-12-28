@@ -17,7 +17,6 @@
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
       <ul style="list-style-type: none; padding-left: 0; margin: 0;">
         <li><strong><em>Deauthentication Attack</em></strong></li>
-        <li><strong><em>DNS Amplification Flooding</em></strong></li>
         <li><strong><em>Ping Flooding</em></strong></li>
         <li><strong><em>TCP Flooding</em></strong></li>
       </ul>
@@ -55,6 +54,10 @@ You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/o
 > - A C compiler and linker (`build-essential` has everyting) — required to build and link Rust binaries.
 > - `libpcap-dev` — required for network packet capture.
 > - `iw` command — required for wireless interface controll.
+>
+> ``` bash
+> sudo apt install build-essential libpcap-dev iw
+> ```
 >   
 > Make sure these are installed before building.
 

@@ -26,7 +26,7 @@ impl NetworkMapper {
     pub fn new(args:NetMapArgs) -> Self {
         Self {
             active_ips  : BTreeMap::new(),
-            my_ip       : IfaceInfo::iface_ip(&args.iface).unwrap_or_else(|e| abort(e)),
+            my_ip       : IfaceInfo::ip(&args.iface).unwrap_or_else(|e| abort(e)),
             raw_pkts    : Vec::new(),
             start_bound : None,
             end_bound   : None,
@@ -125,7 +125,7 @@ impl NetworkMapper {
 
 
     fn get_cidr(&self) -> String {
-        IfaceInfo::iface_cidr(&self.args.iface).unwrap_or_else(|e| abort(e))
+        IfaceInfo::cidr(&self.args.iface).unwrap_or_else(|e| abort(e))
     }
 
 
