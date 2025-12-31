@@ -1,5 +1,10 @@
-use std::process::{Command, Stdio};
+use std::ffi::CString;
 
+
+
+unsafe extern "C" {
+    fn set_wifi_channel(interface_name: *const libc::c_char, channel: libc::c_int) -> libc::c_int;
+}
 
 
 pub struct InterfaceManager;
@@ -8,14 +13,14 @@ pub struct InterfaceManager;
 impl InterfaceManager {
 
     pub fn set_channel(iface: &str, channel: u32) -> bool {
-        let output = Command::new("sudo")
-            .args(&["iw", "dev", iface, "set", "channel", &channel.to_string()])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
+        let c_iface   = CString::new(iface).expect("CString::new failed");
+        let c_channel = channel as i32;
 
-        if output.is_err() {
-            return false;
+        unsafe {
+            let result = set_wifi_channel(c_iface.as_ptr(), c_channel);
+            if result != 0 {
+                return false;
+            }
         }
 
         true
