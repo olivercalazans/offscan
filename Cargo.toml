@@ -2,6 +2,7 @@
 name = "offscan"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 
 [profile.release]
@@ -9,7 +10,11 @@ opt-level = 3
 lto = "fat"
 codegen-units = 1
 debug = false
-strip = "symbols"    
+strip = "symbols"
+
+
+[build-dependencies]
+cc = "1.0"
 
 
 [dependencies]

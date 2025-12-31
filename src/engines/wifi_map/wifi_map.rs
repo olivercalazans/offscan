@@ -115,21 +115,12 @@ impl WifiMapper {
 
     fn display_header(max_len: usize) {
         println!("\n{:<width$}  {:<17}  {}", "SSID", "MAC", "Channel", width = max_len);
-        Self::display_line(max_len);
-    }
-
-
-    
-    fn display_line(max_len: usize) {
         println!("{}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7));
     }
 
 
-
     fn display_wifi_info(name: &str, info: &Info, max_len: usize) {
         let macs: Vec<&String> = info.macs.iter().collect();
-
-        Self::display_line(max_len);
         
         println!("{:<width$}  {}  {}",
                  name, 
