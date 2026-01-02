@@ -73,7 +73,6 @@ impl Command {
     
     fn get_command_registry() -> Vec<(&'static str, &'static str, Box<dyn Fn(Vec<String>)>)> {
         vec![
-            ("banner", "Banner Grabbing",         Box::new(execute::<BannerArgs,   BannerGrabber>)),
             ("deauth", "Deauthentication attack", Box::new(execute::<DeauthArgs,   Deauthentication>)),
             ("flood",  "Packet Flooding",         Box::new(execute::<FloodArgs,    PacketFlooder>)),
             ("info",   "Network Information",     Box::new(execute::<NetInfoArgs,  NetworkInfo>)),

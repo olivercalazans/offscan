@@ -1,6 +1,3 @@
-pub mod banner_grab;
-pub use banner_grab::*;
-
 pub mod deauth;
 pub use deauth::*;
 
