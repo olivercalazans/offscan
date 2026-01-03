@@ -29,6 +29,6 @@ pub struct DeauthArgs {
 
     /// Channel
     #[arg(short, long)]
-    pub channel: u32,
+    pub channel: i32,
 
 }
