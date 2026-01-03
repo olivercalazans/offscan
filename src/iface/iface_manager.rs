@@ -7,10 +7,10 @@ unsafe extern "C" {
 }
 
 
-pub struct InterfaceManager;
+pub struct IfaceManager;
 
 
-impl InterfaceManager {
+impl IfaceManager {
 
     pub fn set_channel(iface: &str, channel: u32) -> bool {
         let c_iface   = CString::new(iface).expect("CString::new failed");

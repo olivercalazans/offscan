@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::DeauthArgs;
-use crate::iface::InterfaceManager;
+use crate::iface::IfaceManager;
 use crate::pkt_builder::FrameBuilder;
 use crate::sockets::Layer2RawSocket;
 use crate::utils::{ CtrlCHandler, inline_display, abort };
@@ -49,7 +49,7 @@ impl Deauthentication {
 
 
     fn set_channel(&self) {
-        let done = InterfaceManager::set_channel(&self.args.iface, self.args.channel);
+        let done = IfaceManager::set_channel(&self.args.iface, self.args.channel);
 
         if !done {
             abort(

@@ -1,7 +1,7 @@
 use std::{thread, time::Duration, collections::{HashSet, BTreeMap}, mem};
 use crate::engines::WmapArgs;
 use crate::dissectors::BeaconDissector;
-use crate::iface::InterfaceManager;
+use crate::iface::IfaceManager;
 use crate::sniffer::PacketSniffer;
 
 
@@ -58,7 +58,7 @@ impl WifiMapper {
         ];
 
         for channel in CHANNELS {
-            let done = InterfaceManager::set_channel(&self.args.iface, channel);
+            let done = IfaceManager::set_channel(&self.args.iface, channel);
 
             if !done {
                 println!("Uneable to set channel {}", channel);
