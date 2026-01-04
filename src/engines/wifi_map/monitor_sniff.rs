@@ -9,6 +9,7 @@ use crate::utils::inline_display;
 
 pub struct MonitorSniff<'a> {
     iface     : String,
+    
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
 }
 
@@ -47,41 +48,43 @@ impl<'a> MonitorSniff<'a> {
 
 
     fn sniff_2g_channels(&self) {
-        const CHANNELS: [i32; 14] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-
-        for channel in CHANNELS {
-            self.set_channel(channel, "2.4");
-        }
+        let channels: Vec<i32> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+        self.sniff_channels(channels, "2.4");
     }
 
 
 
     fn sniff_5g_channels(&self) {
-        const CHANNELS: [i32; 25] = [
+        let channels: Vec<i32> = vec![
             36,  40,  44,  48,  52,  56,  60,  64,  100, 104,
             108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
             149, 153, 157, 161, 165
         ];
 
-
-        for channel in CHANNELS {
-            self.set_channel(channel, "5");
-        }
+        self.sniff_channels(channels, "5");
     }
 
 
 
     #[inline]
-    fn set_channel(&self, channel: i32, frequency: &str) {
-        let done = IfaceManager::set_channel(&self.iface, channel);
+    fn sniff_channels(&self, channels: Vec<i32>, frequency: &str) {
+        let mut err: Vec<i32> = Vec::new();
 
-        if !done {
-            println!("\nUneable to set channel {}", channel);
-            return;
+        for channel in channels {
+            let done = IfaceManager::set_channel(&self.iface, channel);
+
+            if !done {
+                err.push(channel);
+                continue;
+            }
+
+            inline_display(&format!("Sniffing channel {} ({}G)", channel, frequency));
+            thread::sleep(Duration::from_millis(300));
         }
 
-        inline_display(&format!("Sniffing channel {} ({}G)", channel, frequency));
-        thread::sleep(Duration::from_millis(300));
+        if err.len() > 0 {
+            println!("[!] Uneable to sniff these channels ({}G):\n{:?}", frequency, err);
+        }
     }
 
 
