@@ -1,0 +1,139 @@
+use std::collections::BTreeMap;
+use crate::engines::WifiData;
+use crate::utils::{mac_u8_to_string, abort};
+
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct WifiInfo {
+    bssid     : [u8; 6],
+    ssid      : [i8; 33],
+    frequency : u32,
+}
+
+
+unsafe extern "C" {
+    fn scan_wifi(
+        ifname  : *const i8,
+        results : *mut *mut WifiInfo,
+        count   : *mut i32,
+    ) -> i32;
+
+    fn free_scan_results(results: *mut WifiInfo);
+}
+
+
+
+
+pub struct SysSniff<'a> {
+    iface     : String,
+    wifis_buf : &'a mut BTreeMap<String, WifiData>,
+}
+
+
+impl<'a> SysSniff<'a> {
+
+    pub fn new(iface: String, wifis_buf: &'a mut BTreeMap<String, WifiData>) -> Self {
+        Self { iface, wifis_buf, }
+    }
+
+
+
+    pub fn execute_sys_sniff(&mut self) {
+        println!("Getting data from the system");
+
+        let sys_info = self.call_c_module();
+        self.process_info(sys_info);
+    }
+
+
+
+    fn call_c_module(&mut self) -> Vec<WifiInfo>{
+        unsafe {
+            let iface = std::ffi::CString::new(self.iface.clone()).unwrap();
+
+            let mut ptr: *mut WifiInfo = std::ptr::null_mut();
+            let mut count: i32 = 0;
+
+            let ret = scan_wifi(
+                iface.as_ptr(),
+                &mut ptr,
+                &mut count,
+            );
+
+            if ret != 0 {
+                abort(format!("Erro no scan: {}", ret));
+            }
+
+            let slice    = std::slice::from_raw_parts(ptr, count as usize);
+            let sys_info = slice.iter().copied().map(Into::into).collect();
+
+            free_scan_results(ptr);
+
+            sys_info
+        }
+    }
+
+
+
+    fn process_info(&mut self, sys_info: Vec<WifiInfo>) {
+        for info in sys_info.into_iter() {
+            let ssid      = Self::ssid_to_string(&info.ssid);
+            let bssid     = mac_u8_to_string(&info.bssid);
+            let channel   = Self::freq_to_channel(info.frequency);
+            let frequency = Self::get_frequency(channel);
+
+            self.add_info(ssid, bssid, channel, frequency)
+        }
+    }
+
+
+
+    fn ssid_to_string(ssid: &[i8]) -> String {
+        let bytes: Vec<u8> = ssid
+            .iter()
+            .take_while(|&&b| b != 0)
+            .map(|&b| b as u8)
+            .collect();
+
+        String::from_utf8_lossy(&bytes).to_string()
+    }
+
+
+
+    fn freq_to_channel(freq: u32) -> u8 {
+        match freq {
+            2412..=2472 => ((freq - 2407) / 5) as u8,
+            2484        => 14,
+            5000..=5900 => ((freq - 5000) / 5) as u8,
+            _           => 0,
+        }
+    }
+
+
+
+    fn get_frequency(channel: u8) -> String {
+        if channel <= 14 {"2.4".to_string()} else {"5".to_string()}
+    }
+
+
+
+    #[inline]
+    fn add_info(
+        &mut self, 
+        ssid      : String, 
+        bssid     : String, 
+        channel   : u8, 
+        frequency : String
+    ) {
+        self.wifis_buf
+            .entry(ssid)
+            .and_modify(|existing_info| {
+                existing_info.bssids.insert(bssid.clone());
+            })
+            .or_insert_with(|| {
+                WifiData::new(bssid, channel, frequency.to_string())
+            });
+    }
+
+}
