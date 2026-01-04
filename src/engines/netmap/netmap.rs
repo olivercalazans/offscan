@@ -76,6 +76,32 @@ impl NetworkMapper {
     }
 
 
+    fn generate_cidr(start: Ipv4Addr, end: Ipv4Addr) -> String {
+        let start_u32 = u32::from(start);
+        let end_u32   = u32::from(end);
+        
+        let xor = start_u32 ^ end_u32;
+        
+        let leading_zeros = if xor == 0 {
+            32
+        } else {
+            xor.leading_zeros()
+        };
+
+        let prefix_len = leading_zeros as u8;
+
+        let mask = if prefix_len == 0 {
+            0
+        } else {
+            !0u32 << (32 - prefix_len)
+        };
+
+        let network_addr = start_u32 & mask;
+
+        format!("{}/{}", Ipv4Addr::from(network_addr), prefix_len)
+    }
+
+
 
     fn create_proto_thread(&mut self) {
         let mut threads = vec![];

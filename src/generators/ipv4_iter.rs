@@ -11,21 +11,38 @@ pub struct Ipv4Iter {
 }
 
 
+#[derive(Default)]
+struct TempData {
+    range               : String,
+    cidr_has_usable_ips : bool,
+    usable_start        : u32,
+    usable_end          : u32,
+    start_part          : String,
+    end_part            : String,
+    start_ip            : Option<u32>,
+    end_ip              : Option<u32>,
+    start_in_cidr       : bool,
+    end_in_cidr         : bool,
+}
+
+
 impl Ipv4Iter {
     
-    pub fn new(cidr: &str, range_str: Option<&str>) -> Self {
+    pub fn new(cidr: &str, range: Option<&str>) -> Self {
+        let mut data = TempData::default();
+
         let (network_u32, broadcast_u32) = Self::parse_cidr(cidr);
         
-        let usable_start = network_u32.saturating_add(1);
-        let usable_end   = broadcast_u32.saturating_sub(1);
+        data.usable_start        = network_u32.saturating_add(1);
+        data.usable_end          = broadcast_u32.saturating_sub(1);
+        data.cidr_has_usable_ips = data.usable_start <= data.usable_end;
         
-        let cidr_has_usable_ips = usable_start <= usable_end;
-        
-        let (start_range, end_range) = if let Some(range) = range_str {
-            Self::parse_range(range, cidr_has_usable_ips, usable_start, usable_end)
+        let (start_range, end_range) = if let Some(range_str) = range {
+            data.range = range_str.trim().to_string();
+            Self::parse_range(&mut data)
         } else {
-            if cidr_has_usable_ips {
-                (usable_start, usable_end)
+            if data.cidr_has_usable_ips {
+                (data.usable_start, data.usable_end)
             } else {
                 (network_u32, network_u32)
             }
@@ -38,103 +55,10 @@ impl Ipv4Iter {
         let total = (end_range - start_range + 1) as u64;
 
         Ipv4Iter {
-            current: start_range,
-            end:     end_range,
-            start:   start_range,
+            current : start_range,
+            end     : end_range,
+            start   : start_range,
             total,
-        }
-    }
-
-
-
-    fn parse_range(
-        range_str:           &str, 
-        cidr_has_usable_ips: bool,
-        usable_start:        u32, 
-        usable_end:          u32
-        ) -> (u32, u32)
-    {
-        let range_str = range_str.trim();
-        
-        if range_str.is_empty() {
-            abort("Range string cannot be empty");
-        }
-        
-        if range_str.contains('*') {
-            let parts: Vec<&str> = range_str.split('*').collect();
-            
-            if parts.len() != 2 {
-                abort(&format!("Invalid range format: {}", range_str));
-            }
-            
-            let start_str = parts[0].trim();
-            let end_str   = parts[1].trim();
-            
-            let mut start_ip = None;
-            let mut end_ip   = None;
-            let mut start_is_in_cidr = false;
-            let mut end_is_in_cidr   = false;
-            
-            if !start_str.is_empty() {
-                let ip: Ipv4Addr = start_str.parse().unwrap_or_else(|e| {
-                    abort(&format!("Invalid start IP '{}': {}", start_str, e));
-                });
-                let ip_u32       = u32::from_be_bytes(ip.octets());
-                start_ip         = Some(ip_u32);
-                start_is_in_cidr = cidr_has_usable_ips && ip_u32 >= usable_start && ip_u32 <= usable_end;
-            }
-            
-            if !end_str.is_empty() {
-                let ip: Ipv4Addr = end_str.parse().unwrap_or_else(|e| {
-                    abort(&format!("Invalid end IP '{}': {}", end_str, e));
-                });
-
-                let ip_u32     = u32::from_be_bytes(ip.octets());
-                end_ip         = Some(ip_u32);
-                end_is_in_cidr = cidr_has_usable_ips && ip_u32 >= usable_start && ip_u32 <= usable_end;
-            }
-            
-            match (start_str.is_empty(), end_str.is_empty()) {
-                (false, false) => {
-                    (start_ip.unwrap(), end_ip.unwrap())
-                }
-
-                (false, true) => {
-                    if !start_is_in_cidr {
-                        abort(&format!(
-                            "Start IP {} is outside CIDR range. When using 'IP*', the IP must be within the CIDR.",
-                            Ipv4Addr::from(start_ip.unwrap().to_be_bytes())
-                        ));
-                    }
-                    (start_ip.unwrap(), usable_end)
-                }
-
-                (true, false) => {
-                    if !end_is_in_cidr {
-                        abort(&format!(
-                            "End IP {} is outside CIDR range. When using '*IP', the IP must be within the CIDR.",
-                            Ipv4Addr::from(end_ip.unwrap().to_be_bytes())
-                        ));
-                    }
-                    (usable_start, end_ip.unwrap())
-                }
-
-                (true, true) => {
-                    if cidr_has_usable_ips {
-                        (usable_start, usable_end)
-                    } else {
-                        (usable_start, usable_start)
-                    }
-                }
-            }
-        } else {
-            let ip: Ipv4Addr = range_str.parse().unwrap_or_else(|e| {
-                abort(&format!("Invalid IP address '{}': {}", range_str, e));
-            });
-
-            let ip_u32 = u32::from_be_bytes(ip.octets());
-            
-            (ip_u32, ip_u32)
         }
     }
 
@@ -146,12 +70,14 @@ impl Ipv4Iter {
             abort(&format!("Invalid CIDR: {}", cidr));
         }
 
-        let ip: Ipv4Addr = parts[0].parse().unwrap_or_else(|e| {
-            abort(&format!("Invalid IP in CIDR '{}': {}", cidr, e));
+        let ip: Ipv4Addr = parts[0].parse()
+            .unwrap_or_else(|e| {
+                abort(&format!("Invalid IP in CIDR '{}': {}", cidr, e));
         });
 
-        let prefix: u8 = parts[1].parse::<u8>().unwrap_or_else(|e| {
-            abort(&format!("Invalid prefix in CIDR '{}': {}", cidr, e));
+        let prefix: u8 = parts[1].parse::<u8>()
+            .unwrap_or_else(|e| {
+                abort(&format!("Invalid prefix in CIDR '{}': {}", cidr, e));
         });
         
         if prefix > 32 {
@@ -169,6 +95,153 @@ impl Ipv4Iter {
         let broadcast_u32 = network_u32 | !network_mask;
 
         (network_u32, broadcast_u32)
+    }
+
+
+
+    fn parse_range(data: &mut TempData) -> (u32, u32) {
+        Self::validate_non_empty_range(data);
+
+        if data.range.contains('*') {
+            Self::parse_wildcard_range(data)
+        } else {
+            Self::parse_single_ip_range(data)
+        }
+    }
+
+
+
+    fn validate_non_empty_range(data: &TempData) {
+        if data.range.is_empty() {
+            abort("Range string cannot be empty");
+        }
+    }
+
+
+
+    fn parse_single_ip_range(data: &TempData) -> (u32, u32) {
+        let ip     = Self::parse_ip_address(&data.range);
+        let ip_u32 = u32::from_be_bytes(ip.octets());
+        (ip_u32, ip_u32)
+    }
+
+    
+    
+    fn parse_wildcard_range(data: &mut TempData) -> (u32, u32) {
+        let (start_part, end_part) = Self::split_wildcard_parts(data);
+        data.start_part            = start_part.clone();
+        data.end_part              = end_part.clone();
+
+        let (start_ip, start_in_cidr) = Self::parse_ip_part(data, &start_part);
+        data.start_ip                 = start_ip;
+        data.start_in_cidr            = start_in_cidr;
+
+        let (end_ip, end_in_cidr) = Self::parse_ip_part(data, &end_part);
+        data.end_ip               = end_ip;
+        data.end_in_cidr          = end_in_cidr;
+
+        Self::determine_range_bounds(data)
+    }
+
+    
+    
+    fn split_wildcard_parts(data: &TempData) -> (String, String) {
+        let parts: Vec<&str> = data.range.split('*').collect();
+
+        if parts.len() != 2 {
+            abort(&format!("Invalid range format: {}", data.range));
+        }
+
+        (parts[0].trim().to_string(), parts[1].trim().to_string())
+    }
+
+    
+    
+    fn parse_ip_part(data: &TempData, ip_str: &str) -> (Option<u32>, bool) {
+        if ip_str.is_empty() {
+            return (None, false);
+        }
+
+        let ip      = Self::parse_ip_address(ip_str);
+        let ip_u32  = u32::from_be_bytes(ip.octets());
+        let in_cidr = 
+            data.cidr_has_usable_ips && 
+            ip_u32 >= data.usable_start && 
+            ip_u32 <= data.usable_end;
+
+        (Some(ip_u32), in_cidr)
+    }
+
+    
+    
+    fn parse_ip_address(ip_str: &str) -> Ipv4Addr {
+        ip_str.parse().unwrap_or_else(|e| {
+            abort(&format!("Invalid IP address '{}': {}", ip_str, e));
+        })
+    }
+
+
+
+    fn determine_range_bounds(data: &mut TempData) -> (u32, u32) {
+        match (data.start_part.is_empty(), data.end_part.is_empty()) {
+            (false, false) => { Self::get_start_and_end_ip(data) },
+            (false, true)  => { Self::get_start_ip_and_usable_end(data) },
+            (true,  false) => { Self::get_usable_start_and_end_ip(data) },
+            (true,  true)  => { Self::get_usable_start_and_end(data) },
+        }
+    }
+
+
+
+    fn get_start_and_end_ip(data: &TempData) -> (u32, u32) {
+        let start_ip = data.start_ip.clone();
+        let end_ip   = data.end_ip.clone();
+
+        (start_ip.unwrap(), end_ip.unwrap())
+    }
+
+
+
+    fn get_start_ip_and_usable_end(data: &mut TempData) -> (u32, u32) {
+        let ip = data.start_ip.clone();
+
+        if !data.start_in_cidr {
+            let ip_u32 = ip.unwrap();
+            
+            abort(&format!(
+                "Start IP {} is outside CIDR range. When using 'IP*', the IP must be within the CIDR",
+                Ipv4Addr::from(ip_u32.to_be_bytes())
+            ));
+        }
+        
+        (ip.unwrap(), data.usable_end.clone())
+    }
+
+
+
+    fn get_usable_start_and_end_ip(data: &TempData) -> (u32, u32) {
+        let ip = data.end_ip.clone();
+
+        if !data.end_in_cidr {
+            let ip_u32 = ip.unwrap();
+            
+            abort(&format!(
+                "End IP {} is outside CIDR range. When using '*IP', the IP must be within the CIDR.",
+                Ipv4Addr::from(ip_u32.to_be_bytes())
+            ));
+        }
+        
+        (data.usable_start.clone(), ip.unwrap())
+    }
+
+
+
+    fn get_usable_start_and_end(data: &TempData) -> (u32, u32) {
+        if data.cidr_has_usable_ips {
+            return (data.usable_start.clone(), data.usable_end.clone());
+        }
+        
+        (data.usable_start.clone(), data.usable_start.clone())
     }
 
 
