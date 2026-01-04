@@ -6,30 +6,34 @@ use crate::pkt_builder::PacketBuilder;
 use crate::sniffer::PacketSniffer;
 use crate::sockets::Layer3RawSocket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{abort, get_host_name, get_first_and_last_ip, parse_ip};
+use crate::utils::{abort, get_host_name};
 
 
 
 
 pub struct NetworkMapper {
-    args        : NetMapArgs,
-    active_ips  : BTreeMap<Ipv4Addr, Vec<String>>,
-    my_ip       : Ipv4Addr,
-    raw_pkts    : Vec<Vec<u8>>,
-    start_bound : Option<u32>,
-    end_bound   : Option<u32>,
+    args         : NetMapArgs,
+    active_ips   : BTreeMap<Ipv4Addr, Vec<String>>,
+    ips          : Ipv4Iter,
+    my_ip        : Ipv4Addr,
+    raw_pkts     : Vec<Vec<u8>>,
+    start_ip_u32 : u32,
+    end_ip_u32   : u32,
 }
 
 
 impl NetworkMapper {
 
     pub fn new(args:NetMapArgs) -> Self {
+        let cidr = IfaceInfo::cidr(&args.iface).unwrap_or_else(|e| abort(e));
+
         Self {
-            active_ips  : BTreeMap::new(),
-            my_ip       : IfaceInfo::ip(&args.iface).unwrap_or_else(|e| abort(e)),
-            raw_pkts    : Vec::new(),
-            start_bound : None,
-            end_bound   : None,
+            active_ips   : BTreeMap::new(),
+            ips          : Ipv4Iter::new(&cidr, args.range.as_deref()),
+            my_ip        : IfaceInfo::ip(&args.iface).unwrap_or_else(|e| abort(e)),
+            raw_pkts     : Vec::new(),
+            start_ip_u32 : 0,
+            end_ip_u32   : 0,
             args,
         }
     }
@@ -37,11 +41,18 @@ impl NetworkMapper {
 
 
     pub fn execute(&mut self) {
+        self.set_start_and_final_ips();
         self.validate_protocol_flags();
         self.send_and_receive();
-        self.parse_range_to_bounds();
         self.process_raw_packets();
         self.display_result();
+    }
+
+
+
+    fn set_start_and_final_ips(&mut self) {
+        self.start_ip_u32 = self.ips.start_u32;
+        self.end_ip_u32   = self.ips.end_u32;
     }
 
 
@@ -72,15 +83,13 @@ impl NetworkMapper {
 
 
     fn get_bpf_filter(&self) -> String {
-        format!("ip and dst host {}", self.my_ip)
+        format!("ip and src net {}", self.cidr_for_bpf_filter())
     }
 
 
-    fn generate_cidr(start: Ipv4Addr, end: Ipv4Addr) -> String {
-        let start_u32 = u32::from(start);
-        let end_u32   = u32::from(end);
-        
-        let xor = start_u32 ^ end_u32;
+
+    fn cidr_for_bpf_filter(&self) -> String {        
+        let xor = self.start_ip_u32 ^ self.end_ip_u32;
         
         let leading_zeros = if xor == 0 {
             32
@@ -96,7 +105,7 @@ impl NetworkMapper {
             !0u32 << (32 - prefix_len)
         };
 
-        let network_addr = start_u32 & mask;
+        let network_addr = self.start_ip_u32 & mask;
 
         format!("{}/{}", Ipv4Addr::from(network_addr), prefix_len)
     }
@@ -140,18 +149,11 @@ impl NetworkMapper {
 
 
     fn setup_iterators(&self) -> Iterators {
-        let cidr   = self.get_cidr();
-        let ips    = Ipv4Iter::new(&cidr, self.args.range.as_deref());
+        let ips    = self.ips.clone();
         let len    = ips.total() as usize;
         let delays = DelayIter::new(&self.args.delay, len);
         
         Iterators {ips, delays}
-    }
-
-
-
-    fn get_cidr(&self) -> String {
-        IfaceInfo::cidr(&self.args.iface).unwrap_or_else(|e| abort(e))
     }
 
 
@@ -190,73 +192,6 @@ impl NetworkMapper {
 
 
 
-    fn parse_range_to_bounds(&mut self) {
-        let (start, end) = match &self.args.range {
-            None => {
-                let (first, last) = get_first_and_last_ip(&self.args.iface);
-                (Some(first), Some(last))
-            }
-            Some(s) => {
-                if s.contains('*') {
-                    self.get_specific_range_with_cidr(s)
-                } else {
-                    let ip: Ipv4Addr = s.parse().unwrap_or_else(|e| {
-                        abort(&format!("Invalid IP address '{}': {}", s, e));
-                    });
-                    let ip_u32 = u32::from_be_bytes(ip.octets());
-                    (Some(ip_u32), Some(ip_u32))
-                }
-            }
-        };
-
-        self.start_bound = start;
-        self.end_bound   = end;
-    }
-
-
-
-
-    fn get_specific_range_with_cidr(&self, range_str: &str) -> (Option<u32>, Option<u32>) {
-        let parts: Vec<&str> = range_str.split('*').collect();
-        
-        if parts.len() != 2 {
-            abort(&format!("Invalid range format: {}", range_str));
-        }
-    
-        let start_str = parts[0].trim();
-        let end_str   = parts[1].trim();
-    
-        let (cidr_first, cidr_last) = get_first_and_last_ip(&self.args.iface);
-    
-        let start = if start_str.is_empty() {
-            Some(cidr_first)
-        } else {
-            let ip = parse_ip(start_str);
-            Some(u32::from_be_bytes(ip.octets()))
-        };
-    
-        let end = if end_str.is_empty() {
-            Some(cidr_last)
-        } else {
-            let ip = parse_ip(end_str);
-            Some(u32::from_be_bytes(ip.octets()))
-        };
-    
-        if let (Some(start_val), Some(end_val)) = (start, end) {
-            if start_val > end_val {
-                abort(&format!(
-                    "Start IP ({}) cannot be greater than end IP ({})",
-                    Ipv4Addr::from(start_val.to_be_bytes()),
-                    Ipv4Addr::from(end_val.to_be_bytes())
-                ));
-            }
-        }
-    
-        (start, end)
-    }
-
-
-
     fn process_raw_packets(&mut self) {
         let raw_pkts      = mem::take(&mut self.raw_pkts);
         let mut dissector = PacketDissector::new(); 
@@ -269,7 +204,7 @@ impl NetworkMapper {
                 None     => continue,
             };
 
-            if self.active_ips.contains_key(&src_ip) || !self.ip_in_range(src_ip) { 
+            if self.active_ips.contains_key(&src_ip) || !self.is_in_range(src_ip) { 
                 continue
             }
 
@@ -283,20 +218,10 @@ impl NetworkMapper {
 
 
     #[inline]
-    fn ip_in_range(&self, ip: Ipv4Addr) -> bool {
+    fn is_in_range(&self, ip: Ipv4Addr) -> bool {
         let ip_u32 = u32::from_be_bytes(ip.octets());
         
-        let lower_ok = match self.start_bound {
-            Some(start) => ip_u32 >= start,
-            None        => true,
-        };
-
-        let upper_ok = match self.end_bound {
-            Some(end) => ip_u32 <= end,
-            None      => true,
-        };
-
-        lower_ok && upper_ok
+        ip_u32 >= self.start_ip_u32 || ip_u32 <= self.end_ip_u32
     }
 
 

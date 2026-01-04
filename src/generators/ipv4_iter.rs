@@ -3,11 +3,14 @@ use crate::utils::abort;
 
 
 
+#[derive(Clone)]
 pub struct Ipv4Iter {
     current : u32,
     end     : u32,
     start   : u32,
     total   : u64,
+    pub start_u32 : u32,
+    pub end_u32   : u32,
 }
 
 
@@ -55,9 +58,11 @@ impl Ipv4Iter {
         let total = (end_range - start_range + 1) as u64;
 
         Ipv4Iter {
-            current : start_range,
-            end     : end_range,
-            start   : start_range,
+            current   : start_range,
+            end       : end_range,
+            start     : start_range,
+            start_u32 : start_range,
+            end_u32   : end_range,
             total,
         }
     }
