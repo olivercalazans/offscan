@@ -82,7 +82,7 @@ impl TcpFlooder {
     
     fn display_pkt_data(&self) {
         let src_mac = match self.pkt_data.src_mac {
-            Some(mac) => mac_u8_to_string(mac),
+            Some(mac) => mac_u8_to_string(&mac),
             None      => "Random".to_string(),
         };
 
@@ -92,7 +92,7 @@ impl TcpFlooder {
         };
 
         println!("SRC >> MAC: {}  IP: {}", src_mac, src_ip);
-        println!("DST >> MAC: {}  IP: {}", mac_u8_to_string(self.pkt_data.dst_mac), self.pkt_data.dst_ip);
+        println!("DST >> MAC: {}  IP: {}", mac_u8_to_string(&self.pkt_data.dst_mac), self.pkt_data.dst_ip);
         println!("IFACE: {}", self.iface);
     }
 
