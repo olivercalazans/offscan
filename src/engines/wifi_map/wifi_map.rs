@@ -1,129 +1,48 @@
-use std::{thread, time::Duration, collections::{HashSet, BTreeMap}, mem};
-use crate::engines::WmapArgs;
-use crate::dissectors::BeaconDissector;
-use crate::iface::IfaceManager;
-use crate::sniffer::PacketSniffer;
-use crate::utils::inline_display;
-
+use std::{collections::BTreeMap, mem};
+use crate::engines::{WmapArgs, WifiData, SysSniff, MonitorSniff};
 
 
 
 pub struct WifiMapper {
-    args        : WmapArgs,
-    raw_beacons : Vec<Vec<u8>>,
-    wifis       : BTreeMap<String, Info>,
+    args  : WmapArgs,
+    wifis : BTreeMap<String, WifiData>,
 }
 
 
 impl WifiMapper {
     
     pub fn new(args: WmapArgs) -> Self {
-        Self {
-            raw_beacons : Vec::new(),
-            wifis       : BTreeMap::new(),
-            args,
-        }
+        Self { args, wifis : BTreeMap::new(), }
     }
 
 
 
     pub fn execute(&mut self) {
-        self.get_beacons();
-        self.process_beacons();
+        match self.args.monitor {
+            true  => self.monitor_sniff(),
+            false => self.sys_sniff(),
+        }
+
         self.display_results();
     }
-    
-
-
-    fn get_beacons(&mut self) {        
-        let mut sniffer = PacketSniffer::new(
-            self.args.iface.clone(),
-            "type mgt and subtype beacon".to_string()
-        );
-
-        println!("Sniffing beacons");
-        
-        sniffer.start();
-        self.sniff_2g_channels();
-        self.sniff_5g_channels();
-        sniffer.stop();
-
-        self.raw_beacons = sniffer.get_packets();
-    }    
 
 
 
-    fn sniff_2g_channels(&self) {
-        const CHANNELS: [i32; 14] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-
-        for channel in CHANNELS {
-            self.set_channel(channel, "2.4");
-        }
+    fn monitor_sniff(&mut self) {
+        let mut mon_sniff = MonitorSniff::new(self.args.iface.clone(), &mut self.wifis);
+        mon_sniff.execute_monitor_sniff();
     }
 
 
 
-    fn sniff_5g_channels(&self) {
-        const CHANNELS: [i32; 25] = [
-            36,  40,  44,  48,  52,  56,  60,  64,  100, 104,
-            108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
-            149, 153, 157, 161, 165
-        ];
-
-
-        for channel in CHANNELS {
-            self.set_channel(channel, "5");
-        }
+    fn sys_sniff(&mut self) {
+        let mut sys_sniff = SysSniff::new(self.args.iface.clone(), &mut self.wifis);
+        sys_sniff.execute_sys_sniff();
     }
 
 
 
-    #[inline]
-    fn set_channel(&self, channel: i32, frequency: &str) {
-        let done = IfaceManager::set_channel(&self.args.iface, channel);
-
-        if !done {
-            println!("Uneable to set channel {}", channel);
-            return;
-        }
-
-        inline_display(&format!("Sniffing channel {} ({}G)", channel, frequency));
-        thread::sleep(Duration::from_millis(300));
-    }
-
-
-
-    fn process_beacons(&mut self) {
-        let beacons = mem::take(&mut self.raw_beacons);
-
-        for b in beacons.into_iter() {
-            if let Some(info) = BeaconDissector::parse_beacon(&b) {
-                self.add_info(info);
-            }
-        }
-    }
-
-
-
-    fn add_info(&mut self, info: Vec<String>) {
-        let ssid         = info[0].clone();
-        let mac          = info[1].clone();
-        let channel: u32 = info[2].parse().unwrap_or_else(|_| 0);
-        let frequency    = if channel <= 14 {"2.4"} else {"5"};
-
-        self.wifis
-            .entry(ssid)
-            .and_modify(|existing_info| {
-                existing_info.macs.insert(mac.clone());
-            })
-            .or_insert_with(|| {
-                Info::new(mac, channel, frequency.to_string())
-            });
-    }
-
-
-
-    fn display_results(&mut self) {
+     fn display_results(&mut self) {
         let max_len = self.wifis.keys().map(String::len).max().unwrap_or(4);
         let wifis   = mem::take(&mut self.wifis);
 
@@ -146,8 +65,8 @@ impl WifiMapper {
 
 
 
-    fn display_wifi_info(name: &str, info: &Info, max_len: usize) {
-        let macs: Vec<&String> = info.macs.iter().collect();
+    fn display_wifi_info(name: &str, info: &WifiData, max_len: usize) {
+        let macs: Vec<&String> = info.bssids.iter().collect();
         
         println!(
             "{:<width$}  {}  {:<7}  {}G",
@@ -176,28 +95,5 @@ impl crate::EngineTrait for WifiMapper {
     
     fn execute(&mut self) {
         self.execute();
-    }
-}
-
-
-
-#[derive(Debug)]
-struct Info {
-    macs      : HashSet<String>,
-    channel   : u32,
-    frequency : String
-}
-
-
-impl Info {
-    fn new(
-        mac       : String, 
-        channel   : u32, 
-        frequency : String
-    ) -> Self {
-        let mut macs = HashSet::new();
-        macs.insert(mac);
-
-        Self { macs, channel, frequency }
     }
 }

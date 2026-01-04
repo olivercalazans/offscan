@@ -105,20 +105,14 @@ impl Ipv4Iter {
 
 
     fn parse_range(data: &mut TempData) -> (u32, u32) {
-        Self::validate_non_empty_range(data);
+        if data.range.is_empty() {
+            abort("Range string cannot be empty");
+        }
 
         if data.range.contains('*') {
             Self::parse_wildcard_range(data)
         } else {
             Self::parse_single_ip_range(data)
-        }
-    }
-
-
-
-    fn validate_non_empty_range(data: &TempData) {
-        if data.range.is_empty() {
-            abort("Range string cannot be empty");
         }
     }
 

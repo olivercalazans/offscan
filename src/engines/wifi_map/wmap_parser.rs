@@ -12,8 +12,8 @@ pub struct WmapArgs {
     pub iface: String,
 
 
-    /// Set a time to wait before close the beacons capture
-    #[arg(short, long, default_value_t = 2)]
-    pub time: u64,
+    /// Sniff beacons from the interface on monitor mode
+    #[arg(short = 'M', long)]
+    pub monitor: bool,
 
 }

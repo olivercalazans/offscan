@@ -1,3 +1,6 @@
+use crate::utils::mac_u8_to_string;
+
+
 pub struct BeaconDissector;
 
 
@@ -133,11 +136,7 @@ impl BeaconDissector {
         }
 
         let bssid_bytes = &frame[16..22];
-        format!(
-            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
-            bssid_bytes[0], bssid_bytes[1], bssid_bytes[2],
-            bssid_bytes[3], bssid_bytes[4], bssid_bytes[5]
-        )
+        mac_u8_to_string(bssid_bytes)
     }
 
 
