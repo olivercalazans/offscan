@@ -1,12 +1,12 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::HeaderBuilder;
+use crate::builders::packets::Headers;
 
 
 
-pub struct IcmpPacket;
+pub struct IcmpPktBuilder;
 
 
-impl IcmpPacket {
+impl IcmpPktBuilder {
 
      #[inline]
     pub fn icmp_ping(
@@ -15,8 +15,8 @@ impl IcmpPacket {
         dst_ip : Ipv4Addr,
     ) -> usize
     {
-        HeaderBuilder::icmp(&mut buffer[20..28]);
-        HeaderBuilder::ip(&mut buffer[..20], 28, 1, src_ip, dst_ip);
+        Headers::icmp(&mut buffer[20..28]);
+        Headers::ip(&mut buffer[..20], 28, 1, src_ip, dst_ip);
 
         28
     }
@@ -33,9 +33,9 @@ impl IcmpPacket {
         dst_ip  : Ipv4Addr,
     ) -> usize
     {
-        HeaderBuilder::icmp(&mut buffer[34..42]);
-        HeaderBuilder::ip(&mut buffer[14..34], 28, 1, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut buffer[..14], src_mac, dst_mac);
+        Headers::icmp(&mut buffer[34..42]);
+        Headers::ip(&mut buffer[14..34], 28, 1, src_ip, dst_ip);
+        Headers::ether(&mut buffer[..14], src_mac, dst_mac);
 
         42
     }

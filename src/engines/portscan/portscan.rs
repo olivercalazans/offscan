@@ -2,9 +2,9 @@ use std::{thread, time::Duration, mem, net::Ipv4Addr, collections::BTreeSet};
 use crate::engines::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandomValues};
 use crate::iface::IfaceInfo;
-use crate::pkt_builder::{PacketBuilder, UdpPayloads};
-use crate::sniffer::PacketSniffer;
-use crate::sockets::Layer3RawSocket;
+use crate::builders::{Packets, UdpPayloads};
+use crate::sniffer::Sniffer;
+use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
 use crate::utils::{inline_display, get_host_name, abort};
 
@@ -137,9 +137,9 @@ impl PortScanner {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            sniffer : PacketSniffer::new(self.iface.clone(), self.get_bpf_filter()),
-            builder : PacketBuilder::new(),
-            socket  : Layer3RawSocket::new(&self.iface),
+            sniffer : Sniffer::new(self.iface.clone(), self.get_bpf_filter()),
+            builder : Packets::new(),
+            socket  : Layer3Socket::new(&self.iface),
         }
     }
 
@@ -233,9 +233,9 @@ impl crate::EngineTrait for PortScanner {
 
 
 struct PacketTools {
-    sniffer : PacketSniffer,
-    builder : PacketBuilder,
-    socket  : Layer3RawSocket,
+    sniffer : Sniffer,
+    builder : Packets,
+    socket  : Layer3Socket,
 }
 
 

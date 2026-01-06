@@ -3,8 +3,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::DeauthArgs;
 use crate::iface::IfaceManager;
-use crate::pkt_builder::FrameBuilder;
-use crate::sockets::Layer2RawSocket;
+use crate::builders::Frames;
+use crate::sockets::Layer2Socket;
 use crate::utils::{ CtrlCHandler, inline_display, abort };
 
 
@@ -12,10 +12,10 @@ use crate::utils::{ CtrlCHandler, inline_display, abort };
 
 pub struct Deauthentication {
     args        : DeauthArgs,
-    builder     : FrameBuilder,
+    builder     : Frames,
     frames_sent : usize,
     seq_num     : u16,
-    socket      : Layer2RawSocket,
+    socket      : Layer2Socket,
 }
 
 
@@ -23,10 +23,10 @@ impl Deauthentication {
 
     pub fn new(args: DeauthArgs) -> Self {
         Self { 
-            builder     : FrameBuilder::new(),
+            builder     : Frames::new(),
             frames_sent : 0,
             seq_num     : 1,
-            socket      : Layer2RawSocket::new(&args.iface),
+            socket      : Layer2Socket::new(&args.iface),
             args,
         }
     }

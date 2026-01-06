@@ -2,10 +2,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::net::Ipv4Addr;
 use crate::engines::PingArgs;
+use crate::builders::Packets;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
-use crate::pkt_builder::PacketBuilder;
-use crate::sockets::Layer2RawSocket;
+use crate::sockets::Layer2Socket;
 use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, parse_mac };
 
 
@@ -13,7 +13,7 @@ use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, 
 pub struct PingFlooder {
     args      : PingArgs,
     rand      : RandomValues,
-    builder   : PacketBuilder,
+    builder   : Packets,
     iface     : String,
     pkts_sent : usize,
     pkt_data  : PacketData,
@@ -28,7 +28,7 @@ impl PingFlooder {
 
         Self {
             rand      : RandomValues::new(Some(first_ip), Some(last_ip)),
-            builder   : PacketBuilder::new(),
+            builder   : Packets::new(),
             pkts_sent : 0,
             pkt_data  : Default::default(),
             iface,
@@ -81,7 +81,7 @@ impl PingFlooder {
     
 
     fn send_endlessly(&mut self) {
-        let socket  = Layer2RawSocket::new(&self.iface);
+        let socket  = Layer2Socket::new(&self.iface);
         let running = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
 

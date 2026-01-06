@@ -1,14 +1,14 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::{IcmpPacket, TcpPacket, UdpPacket};
+use crate::builders::packets::{IcmpPktBuilder, TcpPktBuilder, UdpPktBuilder};
 
 
 
-pub struct PacketBuilder {
+pub struct Packets {
     buffer: [u8; 347],
 }
 
 
-impl PacketBuilder {
+impl Packets {
 
     pub fn new() -> Self {
         Self { buffer: [0; 347] }
@@ -25,7 +25,7 @@ impl PacketBuilder {
         dst_port : u16,
     ) -> &[u8]
     {
-        let pkt_len = TcpPacket::tcp_ip(
+        let pkt_len = TcpPktBuilder::tcp_ip(
             &mut self.buffer, 
             src_ip, src_port, 
             dst_ip, dst_port
@@ -48,7 +48,7 @@ impl PacketBuilder {
         flag     : &str,
     ) -> &[u8]
     {
-        let pkt_len = TcpPacket::tcp_ether(
+        let pkt_len = TcpPktBuilder::tcp_ether(
             &mut self.buffer,
             src_mac, src_ip, src_port,
             dst_mac, dst_ip, dst_port,
@@ -70,7 +70,7 @@ impl PacketBuilder {
         payload  : &[u8]
     ) -> &[u8]
     {
-        let pkt_len = UdpPacket::udp_ip(
+        let pkt_len = UdpPktBuilder::udp_ip(
             &mut self.buffer, 
             src_ip, src_port, 
             dst_ip, dst_port, 
@@ -94,7 +94,7 @@ impl PacketBuilder {
         payload  : &[u8],
     ) -> &[u8]
     {
-        let pkt_len = UdpPacket::udp_ether(
+        let pkt_len = UdpPktBuilder::udp_ether(
             &mut self.buffer,
             src_mac, src_ip, src_port,
             dst_mac, dst_ip, dst_port,
@@ -113,7 +113,7 @@ impl PacketBuilder {
         dst_ip : Ipv4Addr,
     ) -> &[u8]
     {
-        let pkt_len = IcmpPacket::icmp_ping(&mut self.buffer, src_ip, dst_ip);
+        let pkt_len = IcmpPktBuilder::icmp_ping(&mut self.buffer, src_ip, dst_ip);
         &self.buffer[..pkt_len]
     }
 
@@ -128,7 +128,7 @@ impl PacketBuilder {
         dst_ip  : Ipv4Addr,
     ) -> &[u8]
     {
-        let pkt_len = IcmpPacket::icmp_ping_ether(
+        let pkt_len = IcmpPktBuilder::icmp_ping_ether(
             &mut self.buffer,
             src_mac, src_ip,
             dst_mac, dst_ip

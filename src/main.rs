@@ -2,7 +2,7 @@ pub mod dissectors;
 pub mod engines;
 pub mod generators;
 pub mod iface;
-pub mod pkt_builder;
+pub mod builders;
 pub mod sniffer;
 pub mod sockets;
 pub mod utils;

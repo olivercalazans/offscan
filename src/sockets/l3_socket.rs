@@ -7,13 +7,13 @@ use crate::utils::abort;
 
 
 
-pub struct Layer3RawSocket {
+pub struct Layer3Socket {
     file_desc: i32,
 }
 
 
 
-impl Layer3RawSocket {
+impl Layer3Socket {
 
     pub fn new(iface_name: &str) -> Self {
             let file_desc = Self::create_socket();
@@ -118,7 +118,7 @@ impl Layer3RawSocket {
 
 
 
-impl Drop for Layer3RawSocket {
+impl Drop for Layer3Socket {
 
     fn drop(&mut self) {
         unsafe {

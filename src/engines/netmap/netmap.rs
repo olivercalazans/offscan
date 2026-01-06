@@ -2,9 +2,9 @@ use std::{thread, time::Duration, collections::BTreeMap, mem, net::Ipv4Addr};
 use crate::engines::NetMapArgs;
 use crate::generators::{Ipv4Iter, DelayIter, RandomValues};
 use crate::iface::IfaceInfo;
-use crate::pkt_builder::PacketBuilder;
-use crate::sniffer::PacketSniffer;
-use crate::sockets::Layer3RawSocket;
+use crate::builders::Packets;
+use crate::sniffer::Sniffer;
+use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
 use crate::utils::{abort, get_host_name};
 
@@ -68,7 +68,7 @@ impl NetworkMapper {
 
 
     fn send_and_receive(&mut self) {    
-        let mut sniffer = PacketSniffer::new(self.args.iface.clone(), self.get_bpf_filter());   
+        let mut sniffer = Sniffer::new(self.args.iface.clone(), self.get_bpf_filter());   
         
         sniffer.start();
         
@@ -160,8 +160,8 @@ impl NetworkMapper {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            builder : PacketBuilder::new(),
-            socket  : Layer3RawSocket::new(&self.args.iface),
+            builder : Packets::new(),
+            socket  : Layer3Socket::new(&self.args.iface),
         }
     }
 
@@ -266,6 +266,6 @@ struct Iterators {
 }
 
 struct PacketTools {
-    builder : PacketBuilder,
-    socket  : Layer3RawSocket,
+    builder : Packets,
+    socket  : Layer3Socket,
 }

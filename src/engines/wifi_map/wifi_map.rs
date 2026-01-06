@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, mem};
-use crate::engines::{WmapArgs, WifiData, SysSniff, MonitorSniff};
+use crate::engines::{WmapArgs, SysSniff, MonitorSniff};
+use crate::engines::wifi_map::WifiData;
 
 
 
