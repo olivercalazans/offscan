@@ -1,12 +1,12 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::HeaderBuilder;
+use crate::builders::packets::Headers;
 
 
 
-pub struct TcpPacket;
+pub struct TcpPktBuilder;
 
 
-impl TcpPacket {
+impl TcpPktBuilder {
 
     #[inline]
     pub fn tcp_ip(
@@ -17,8 +17,8 @@ impl TcpPacket {
         dst_port : u16,
     ) -> usize 
     {
-        HeaderBuilder::tcp(&mut buffer[20..40], src_ip, src_port, dst_ip, dst_port, "syn");
-        HeaderBuilder::ip(&mut buffer[..20], 40, 6, src_ip, dst_ip);
+        Headers::tcp(&mut buffer[20..40], src_ip, src_port, dst_ip, dst_port, "syn");
+        Headers::ip(&mut buffer[..20], 40, 6, src_ip, dst_ip);
         
         40
     }
@@ -37,11 +37,11 @@ impl TcpPacket {
         flag     : &str,
     ) -> usize
     {
-        HeaderBuilder::tcp(&mut buffer[34..54], src_ip, src_port, dst_ip, dst_port, flag);
-        HeaderBuilder::ip(&mut buffer[14..34], 40, 6, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut buffer[..14], src_mac, dst_mac);
+        Headers::tcp(&mut buffer[34..54], src_ip, src_port, dst_ip, dst_port, flag);
+        Headers::ip(&mut buffer[14..34], 40, 6, src_ip, dst_ip);
+        Headers::ether(&mut buffer[..14], src_mac, dst_mac);
         
         54
     }
-
+    
 }

@@ -9,13 +9,13 @@ use crate::utils::abort;
 
 
 
-pub struct Layer2RawSocket {
+pub struct Layer2Socket {
     file_desc : i32,
     addr      : sockaddr_ll,
 }
 
 
-impl Layer2RawSocket {
+impl Layer2Socket {
 
     pub fn new(iface: &str) -> Self {
         let if_index  = IfaceInfo::index(iface);
@@ -147,7 +147,7 @@ impl Layer2RawSocket {
 
 
 
-impl Drop for Layer2RawSocket {
+impl Drop for Layer2Socket {
     fn drop(&mut self) {
         self.close();
     }

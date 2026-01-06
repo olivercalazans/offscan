@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
-use crate::engines::WifiData;
+use crate::engines::wifi_map::WifiData;
 use crate::utils::{mac_u8_to_string, abort};
 
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct WifiInfo {
+pub struct Info {
     bssid     : [u8; 6],
     ssid      : [i8; 33],
     frequency : u32,
@@ -15,11 +15,11 @@ pub struct WifiInfo {
 unsafe extern "C" {
     fn scan_wifi(
         ifname  : *const i8,
-        results : *mut *mut WifiInfo,
+        results : *mut *mut Info,
         count   : *mut i32,
     ) -> i32;
 
-    fn free_scan_results(results: *mut WifiInfo);
+    fn free_scan_results(results: *mut Info);
 }
 
 
@@ -33,7 +33,10 @@ pub struct SysSniff<'a> {
 
 impl<'a> SysSniff<'a> {
 
-    pub fn new(iface: String, wifis_buf: &'a mut BTreeMap<String, WifiData>) -> Self {
+    pub fn new(
+        iface     : String, 
+        wifis_buf : &'a mut BTreeMap<String, WifiData>
+    ) -> Self {
         Self { iface, wifis_buf, }
     }
 
@@ -48,11 +51,11 @@ impl<'a> SysSniff<'a> {
 
 
 
-    fn call_c_module(&mut self) -> Vec<WifiInfo>{
+    fn call_c_module(&mut self) -> Vec<Info>{
         unsafe {
             let iface = std::ffi::CString::new(self.iface.clone()).unwrap();
 
-            let mut ptr: *mut WifiInfo = std::ptr::null_mut();
+            let mut ptr: *mut Info = std::ptr::null_mut();
             let mut count: i32 = 0;
 
             let ret = scan_wifi(
@@ -76,7 +79,7 @@ impl<'a> SysSniff<'a> {
 
 
 
-    fn process_info(&mut self, sys_info: Vec<WifiInfo>) {
+    fn process_info(&mut self, sys_info: Vec<Info>) {
         for info in sys_info.into_iter() {
             let ssid      = Self::ssid_to_string(&info.ssid);
             let bssid     = mac_u8_to_string(&info.bssid);

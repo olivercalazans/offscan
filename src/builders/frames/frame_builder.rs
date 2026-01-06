@@ -1,13 +1,13 @@
-use crate::pkt_builder::{RadiotapHeader, Ieee80211Header};
+use crate::builders::frames::{RadiotapHeader, Ieee80211Header};
 
 
 
-pub struct FrameBuilder {
+pub struct Frames {
     buffer: [u8; 38],
 }
 
 
-impl FrameBuilder {
+impl Frames {
 
     pub fn new() -> Self {
         Self { buffer: [0; 38], }

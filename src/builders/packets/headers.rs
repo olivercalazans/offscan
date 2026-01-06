@@ -1,12 +1,12 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::checksum::*;
+use crate::builders::packets::Checksum;
 
 
 
-pub struct HeaderBuilder;
+pub struct Headers;
 
 
-impl HeaderBuilder {
+impl Headers {
 
 
     #[inline]
@@ -30,7 +30,7 @@ impl HeaderBuilder {
         buffer[16..18].copy_from_slice(&0u16.to_be_bytes());
         buffer[18..20].copy_from_slice(&0u16.to_be_bytes());
 
-        let cksum = tcp_udp_checksum(&buffer[..20], &src_ip, &dst_ip, 6);
+        let cksum = Checksum::tcp_udp_checksum(&buffer[..20], &src_ip, &dst_ip, 6);
         buffer[16..18].copy_from_slice(&cksum.to_be_bytes());
     }
 
@@ -52,7 +52,7 @@ impl HeaderBuilder {
         buffer[4..6].copy_from_slice(&len.to_be_bytes());
         buffer[6..8].copy_from_slice(&0u16.to_be_bytes());
         
-        let cksum = tcp_udp_checksum(&buffer[..len as usize], &src_ip, &dst_ip, 17);
+        let cksum = Checksum::tcp_udp_checksum(&buffer[..len as usize], &src_ip, &dst_ip, 17);
         buffer[6..8].copy_from_slice(&cksum.to_be_bytes());
     }
 
@@ -68,7 +68,7 @@ impl HeaderBuilder {
         buffer[4..6].copy_from_slice(&0x1234u16.to_be_bytes()); 
         buffer[6..8].copy_from_slice(&1u16.to_be_bytes());
 
-        let cksum = icmp_checksum(&buffer[..8]);
+        let cksum = Checksum::icmp_checksum(&buffer[..8]);
         buffer[2..4].copy_from_slice(&cksum.to_be_bytes());
     }
 
@@ -93,7 +93,7 @@ impl HeaderBuilder {
         buffer[12..16].copy_from_slice(&src_ip.octets());
         buffer[16..20].copy_from_slice(&dst_ip.octets());
 
-        let cksum = ipv4_checksum(&buffer);
+        let cksum = Checksum::ipv4_checksum(&buffer);
         buffer[10..12].copy_from_slice(&cksum.to_be_bytes());
     }
 

@@ -1,12 +1,12 @@
 use std::net::Ipv4Addr;
-use crate::pkt_builder::HeaderBuilder;
+use crate::builders::packets::Headers;
 
 
 
-pub struct UdpPacket;
+pub struct UdpPktBuilder;
 
 
-impl UdpPacket {
+impl UdpPktBuilder {
 
     #[inline]
     pub fn udp_ip(
@@ -23,13 +23,13 @@ impl UdpPacket {
         
         buffer[28..len_pkt].copy_from_slice(&payload);
 
-        HeaderBuilder::udp(
+        Headers::udp(
             &mut buffer[20..len_pkt],
             src_ip, src_port,
             dst_ip, dst_port, len_payload as u16
         );
         
-        HeaderBuilder::ip(&mut buffer[..20], len_pkt as u16, 17, src_ip, dst_ip);
+        Headers::ip(&mut buffer[..20], len_pkt as u16, 17, src_ip, dst_ip);
 
         len_pkt
     }
@@ -53,13 +53,13 @@ impl UdpPacket {
 
         buffer[42..len_pkt].copy_from_slice(&payload);
 
-        HeaderBuilder::udp(
+        Headers::udp(
             &mut buffer[34..len_pkt], 
             src_ip, src_port, 
             dst_ip, dst_port, len_payload as u16
         );
-        HeaderBuilder::ip(&mut buffer[14..34], 28 + len_payload as u16, 17, src_ip, dst_ip);
-        HeaderBuilder::ether(&mut buffer[..14], src_mac, dst_mac);
+        Headers::ip(&mut buffer[14..34], 28 + len_payload as u16, 17, src_ip, dst_ip);
+        Headers::ether(&mut buffer[..14], src_mac, dst_mac);
 
         len_pkt
     }

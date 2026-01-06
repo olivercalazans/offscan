@@ -3,7 +3,7 @@ use pcap::{Device, Capture};
 
 
 
-pub struct PacketSniffer {
+pub struct Sniffer {
     filter   : String,
     handle   : Option<thread::JoinHandle<()>>,
     iface    : String,
@@ -13,7 +13,7 @@ pub struct PacketSniffer {
 
 
 
-impl PacketSniffer {
+impl Sniffer {
 
     pub fn new(iface: String, filter: String) -> Self {
         Self {

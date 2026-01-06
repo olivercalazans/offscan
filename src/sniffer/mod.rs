@@ -1,2 +1,2 @@
-pub mod pkt_sniffer;
-pub use pkt_sniffer::PacketSniffer;
+pub mod sniffer;
+pub use sniffer::Sniffer;
