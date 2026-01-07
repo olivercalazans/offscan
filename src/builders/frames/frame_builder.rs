@@ -1,4 +1,4 @@
-use crate::builders::frames::{RadiotapHeader, Ieee80211Header};
+use crate::builders::frames::{Radiotap, Ieee80211};
 
 
 
@@ -24,8 +24,8 @@ impl Frames {
         seq_num : u16,
     ) -> &[u8] 
     {
-        RadiotapHeader::build_header(&mut self.buffer);
-        Ieee80211Header::deauth(&mut self.buffer, src_mac, dst_mac, bssid, seq_num);
+        Radiotap::build_header(&mut self.buffer[..12]);
+        Ieee80211::deauth(&mut self.buffer[12..38], src_mac, dst_mac, bssid, seq_num);
 
         &self.buffer[..38]
     }

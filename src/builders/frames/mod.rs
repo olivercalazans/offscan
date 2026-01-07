@@ -1,8 +1,8 @@
 pub mod frame_builder;
 pub use frame_builder::Frames;
 
-mod ieee80211_header;
-use ieee80211_header::Ieee80211Header;
+mod ieee80211;
+use ieee80211::Ieee80211;
 
-mod radiotap_header;
-use radiotap_header::RadiotapHeader;
+mod radiotap;
+use radiotap::Radiotap;

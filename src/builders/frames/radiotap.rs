@@ -1,7 +1,7 @@
-pub struct RadiotapHeader;
+pub struct Radiotap;
 
 
-impl RadiotapHeader {
+impl Radiotap {
 
     pub fn build_header(buffer: &mut [u8]) {
         buffer[0]  = 0x00; // Header revision
