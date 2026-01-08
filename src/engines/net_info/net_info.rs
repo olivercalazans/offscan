@@ -218,8 +218,16 @@ impl NetworkInfo {
 
 
     fn set_broadcast(&mut self) -> &mut Self {
-        let broadcast  = IfaceInfo::broadcast_ip(&self.iface);
-        self.broadcast = broadcast.to_string();
+        if &self.if_type == "Loopback" {
+            self.broadcast = "None".to_string();
+            return self
+        }
+        
+        self.broadcast = match IfaceInfo::broadcast_ip(&self.iface) {
+            Err(_) => "None".to_string(),
+            Ok(ip) => ip.to_string(),
+        };
+
         self
     }
 
