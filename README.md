@@ -33,11 +33,6 @@
 
 <br>
 
-> [!WARNING]
-> The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
-
-<br>
-
 
 ## Dependencies
 
@@ -60,9 +55,30 @@ You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/o
 >   
 > Make sure these are installed before building.
 
+> [!WARNING]
+> The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
+
+
+<br>
+
+## Legal and ethical use warning
+> [!CAUTION] 
+> **This is an offensive security tool for authorized testing and education.**
+> 
+> **PROHIBITED:**
+> - Testing without **explicit written permission**
+> - Any illegal activity (CFAA, CMA, etc. apply)
+> - Unauthorized access or disruption
+> 
+> **YOU AGREE TO:**
+> 1. Use only with **proper authorization**
+> 2. Comply with **all applicable laws**
+> 3. Assume **full liability** for misuse
+> 
+> **The Developer assume NO liability. See [LEGAL.md](LEGAL.md) for full policy.**
+
 <br>
 
 
-
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for deta
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
