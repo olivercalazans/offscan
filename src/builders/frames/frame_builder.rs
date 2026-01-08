@@ -2,7 +2,7 @@ use crate::builders::frames::{Radiotap, Ieee80211};
 
 
 
-pub struct Frames {
+pub(crate) struct Frames {
     buffer: [u8; 38],
 }
 
@@ -29,5 +29,6 @@ impl Frames {
 
         &self.buffer[..38]
     }
+
 
 }

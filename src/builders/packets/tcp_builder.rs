@@ -3,7 +3,7 @@ use crate::builders::packets::Headers;
 
 
 
-pub struct TcpPktBuilder;
+pub(super) struct TcpPktBuilder;
 
 
 impl TcpPktBuilder {

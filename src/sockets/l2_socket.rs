@@ -9,7 +9,7 @@ use crate::utils::abort;
 
 
 
-pub struct Layer2Socket {
+pub(crate) struct Layer2Socket {
     file_desc : i32,
     addr      : sockaddr_ll,
 }

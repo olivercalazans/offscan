@@ -7,7 +7,7 @@ use crate::utils::inline_display;
 
 
 
-pub struct MonitorSniff<'a> {
+pub(super) struct MonitorSniff<'a> {
     iface     : String,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
 }

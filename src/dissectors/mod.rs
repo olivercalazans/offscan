@@ -1,5 +1,5 @@
-pub mod beacon_dissector;
-pub use beacon_dissector::BeaconDissector;
+pub(crate) mod beacon_dissector;
+pub(crate) use beacon_dissector::BeaconDissector;
 
-pub mod pkt_dissector;
-pub use pkt_dissector::PacketDissector;
+pub(crate) mod pkt_dissector;
+pub(crate) use pkt_dissector::PacketDissector;

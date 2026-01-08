@@ -3,7 +3,7 @@ use crate::builders::packets::Headers;
 
 
 
-pub struct IcmpPktBuilder;
+pub(super) struct IcmpPktBuilder;
 
 
 impl IcmpPktBuilder {

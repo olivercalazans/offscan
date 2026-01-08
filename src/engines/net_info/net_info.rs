@@ -15,7 +15,8 @@ pub struct NetworkInfo {
     host_len    : String, 
     mtu         : String, 
     gateway_mac : String, 
-    gateway_ip  : String, 
+    gateway_ip  : String,
+    broadcast   : String,
 }
 
 
@@ -43,6 +44,7 @@ impl NetworkInfo {
                     .set_mtu()
                     .set_gateway_mac()
                     .set_gateway_ip()
+                    .set_broadcast()
                     .display_info(i);
             }
         )
@@ -213,6 +215,14 @@ impl NetworkInfo {
         Some(format!("{}.{}.{}.{}", bytes[3], bytes[2], bytes[1], bytes[0]))
     }
 
+
+
+    fn set_broadcast(&mut self) -> &mut Self {
+        let broadcast  = IfaceInfo::broadcast_ip(&self.iface);
+        self.broadcast = broadcast.to_string();
+        self
+    }
+
     
     
     fn display_info(&self, index: usize) {
@@ -225,6 +235,7 @@ impl NetworkInfo {
         println!("  - MTU........: {}", self.mtu);
         println!("  - Gateway MAC: {}", self.gateway_mac);
         println!("  - Gateway IP.: {}", self.gateway_ip);
+        println!("  - Broadcast..: {}", self.broadcast);
         println!("")
     }
 

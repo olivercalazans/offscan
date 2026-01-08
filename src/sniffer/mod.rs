@@ -1,2 +1,2 @@
-pub mod sniffer;
-pub use sniffer::Sniffer;
+pub(crate) mod sniffer;
+pub(crate) use sniffer::Sniffer;

@@ -5,7 +5,7 @@ use crate::utils::abort;
 
 
 
-pub fn get_first_and_last_ip(iface: &str) -> (u32, u32) {
+pub(crate) fn get_first_and_last_ip(iface: &str) -> (u32, u32) {
     let cidr         = IfaceInfo::cidr(iface).unwrap_or_else(|e| abort(e));
     let mut ip_range = Ipv4Iter::new(&cidr, None);
     let first_ip     = ip_range.next().expect("No IPs in range");

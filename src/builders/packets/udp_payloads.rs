@@ -2,7 +2,7 @@ use std::{collections::HashMap, net::Ipv4Addr};
 
 
 
-pub struct UdpPayloads {
+pub(crate) struct UdpPayloads {
     payloads: HashMap<u16, Vec<u8>>,
 }
 
@@ -198,25 +198,11 @@ impl UdpPayloads {
 
         UdpPayloads { payloads }
     }
-    
-
-
-    pub fn get_payload_or_empty(&self, port: u16) -> &Vec<u8> {
-        self.payloads.get(&port).unwrap_or_else(|| {
-            self.payloads.get(&0).expect("Empty payload should exist")
-        })
-    }
 
 
 
     pub fn len(&self) -> usize {
         self.payloads.len() - 1
-    }
-
-
-
-    pub fn get(&self, port: u16) -> Option<&Vec<u8>> {
-        self.payloads.get(&port)
     }
 
 

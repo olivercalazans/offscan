@@ -3,7 +3,7 @@ use crate::builders::packets::{IcmpPktBuilder, TcpPktBuilder, UdpPktBuilder};
 
 
 
-pub struct Packets {
+pub(crate) struct Packets {
     buffer: [u8; 347],
 }
 
@@ -82,6 +82,7 @@ impl Packets {
 
 
 
+    #[allow(dead_code)]
     #[inline]
     pub fn udp_ether(
         &mut self,

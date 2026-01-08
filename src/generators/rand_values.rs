@@ -3,7 +3,7 @@ use rand::{Rng, rngs::ThreadRng};
 
 
 
-pub struct RandomValues {
+pub(crate) struct RandomValues {
     rng      : ThreadRng,
     first_ip : u32,
     last_ip  : u32,
@@ -44,13 +44,6 @@ impl RandomValues {
         for b in bytes.iter_mut() { *b = self.rng.r#gen(); }
         bytes[0] = (bytes[0] | 0x02) & 0xFE;
         bytes
-    }
-
-
-
-    #[inline]
-    pub fn random_u16(&mut self) -> u16 {
-        self.rng.r#gen()
     }
 
 }

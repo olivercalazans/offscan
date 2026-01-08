@@ -1,11 +1,11 @@
-pub mod dissectors;
+mod dissectors;
+mod generators;
+mod iface;
+mod builders;
+mod sniffer;
+mod sockets;
+mod utils;
 pub mod engines;
-pub mod generators;
-pub mod iface;
-pub mod builders;
-pub mod sniffer;
-pub mod sockets;
-pub mod utils;
 
 use std::{env, mem};
 use crate::engines::*;

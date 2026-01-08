@@ -3,7 +3,7 @@ use pcap::{Device, Capture};
 
 
 
-pub struct Sniffer {
+pub(crate) struct Sniffer {
     filter   : String,
     handle   : Option<thread::JoinHandle<()>>,
     iface    : String,
