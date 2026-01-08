@@ -42,18 +42,16 @@ If you don't have Cargo installed, follow the steps on the [official Rust instal
 All Rust dependencies are managed automatically by Cargo — no manual installation required.  
 You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/offscan/blob/main/Cargo.toml) file.
 
-> [!IMPORTANT]
-> In addition to Cargo-managed crates, this project requires some **system-level dependencies**:
->
-> - A C compiler and linker (`build-essential` has everyting) — required to build and link Rust binaries.
-> - `libpcap-dev` — required for network packet capture.
-> - `libnl-3-dev` and `libnl-genl-3-dev` — required for wireless interface controll.
->
-> ``` bash
-> sudo apt install build-essential libpcap-dev libnl-3-dev libnl-genl-3-dev
-> ```
->   
-> Make sure these are installed before building.
+In addition to Cargo-managed crates, this project requires some **system-level dependencies**:
+- A C compiler and linker (`build-essential` has everyting) — required to build and link Rust binaries.
+- `libpcap-dev` — required for network packet capture.
+- `libnl-3-dev` and `libnl-genl-3-dev` — required for wireless interface controll.
+  
+``` bash
+sudo apt install build-essential libpcap-dev libnl-3-dev libnl-genl-3-dev
+```
+   
+ Make sure these are installed before building.
 
 > [!WARNING]
 > The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
