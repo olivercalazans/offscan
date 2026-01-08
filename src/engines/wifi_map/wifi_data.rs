@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 
 
-pub struct WifiData {
+pub(super) struct WifiData {
     pub bssids    : HashSet<String>,
     pub channel   : u8,
     pub frequency : String

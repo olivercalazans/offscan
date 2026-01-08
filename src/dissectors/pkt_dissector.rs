@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 
 
 
-pub struct PacketDissector {
+pub(crate) struct PacketDissector {
     pkt: Vec<u8>,
 }
 

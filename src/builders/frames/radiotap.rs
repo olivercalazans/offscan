@@ -1,4 +1,4 @@
-pub struct Radiotap;
+pub(super) struct Radiotap;
 
 
 impl Radiotap {

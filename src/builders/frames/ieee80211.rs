@@ -1,4 +1,4 @@
-pub struct Ieee80211;
+pub(super) struct Ieee80211;
 
 
 impl Ieee80211 {
@@ -26,5 +26,6 @@ impl Ieee80211 {
         buffer[24] = 0x0007;
         buffer[25] = 0x00;
     }
+    
 
 }

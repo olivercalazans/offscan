@@ -8,7 +8,7 @@ unsafe extern "C" {
 }
 
 
-pub struct IfaceManager;
+pub(crate) struct IfaceManager;
 
 
 impl IfaceManager {

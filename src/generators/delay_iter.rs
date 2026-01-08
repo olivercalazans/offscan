@@ -3,17 +3,16 @@ use crate::utils::abort;
 
 
 
-pub enum DelayMode {
+enum DelayMode {
     Fixed(f32),
     Random { min: f32, max: f32 },
 }
 
 
 
-pub struct DelayIter {
+pub(crate) struct DelayIter {
     mode      : DelayMode,
     remaining : usize,
-    total     : usize,
 }
 
 
@@ -40,11 +39,7 @@ impl DelayIter {
             DelayMode::Fixed(value)
         };
 
-        Self {
-            mode,
-            remaining : quantity,
-            total     : quantity,
-        }
+        Self { mode, remaining: quantity, }
     }
 
 
@@ -53,12 +48,6 @@ impl DelayIter {
         number_str.parse().unwrap_or_else(|_| {
             abort(format!("Invalid number: {}", number_str));
         })
-    }
-
-
-
-    pub fn reset(&mut self) {
-        self.remaining = self.total;
     }
 
 }

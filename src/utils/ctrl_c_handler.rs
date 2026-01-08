@@ -5,7 +5,7 @@ use libc;
 
 
 
-pub struct CtrlCHandler;
+pub(crate) struct CtrlCHandler;
 
 
 impl CtrlCHandler {

@@ -2,7 +2,7 @@ use std::net::Ipv4Addr;
 
 
 
-pub struct Checksum;
+pub(super) struct Checksum;
 
 
 impl Checksum {

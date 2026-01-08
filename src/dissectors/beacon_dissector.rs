@@ -1,7 +1,7 @@
 use crate::utils::mac_u8_to_string;
 
 
-pub struct BeaconDissector;
+pub(crate) struct BeaconDissector;
 
 
 impl BeaconDissector {

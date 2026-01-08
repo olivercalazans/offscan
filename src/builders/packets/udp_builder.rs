@@ -3,7 +3,7 @@ use crate::builders::packets::Headers;
 
 
 
-pub struct UdpPktBuilder;
+pub(super) struct UdpPktBuilder;
 
 
 impl UdpPktBuilder {
@@ -36,6 +36,7 @@ impl UdpPktBuilder {
 
 
 
+    #[allow(dead_code)]
     #[inline]
     pub fn udp_ether(
         buffer   : &mut [u8; 347],
@@ -56,7 +57,8 @@ impl UdpPktBuilder {
         Headers::udp(
             &mut buffer[34..len_pkt], 
             src_ip, src_port, 
-            dst_ip, dst_port, len_payload as u16
+            dst_ip, dst_port,
+            len_payload as u16
         );
         Headers::ip(&mut buffer[14..34], 28 + len_payload as u16, 17, src_ip, dst_ip);
         Headers::ether(&mut buffer[..14], src_mac, dst_mac);

@@ -7,7 +7,7 @@ use crate::utils::abort;
 
 
 
-pub struct Layer3Socket {
+pub(crate) struct Layer3Socket {
     file_desc: i32,
 }
 

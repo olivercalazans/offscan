@@ -2,7 +2,7 @@ use std::io::{self, Write};
 
 
 
-pub fn abort(error: impl Into<String>) -> ! {
+pub(crate) fn abort(error: impl Into<String>) -> ! {
     eprintln!("[ ERROR ] {}", error.into());
     std::process::exit(1);
 }
@@ -10,7 +10,7 @@ pub fn abort(error: impl Into<String>) -> ! {
 
 
 #[inline]
-pub fn inline_display(message: &str) {
+pub(crate) fn inline_display(message: &str) {
     print!("\r{}", message);
     io::stdout().flush().unwrap();
 }

@@ -4,10 +4,9 @@ use crate::utils::abort;
 
 
 #[derive(Clone)]
-pub struct Ipv4Iter {
+pub(crate) struct Ipv4Iter {
     current : u32,
     end     : u32,
-    start   : u32,
     total   : u64,
     pub start_u32 : u32,
     pub end_u32   : u32,
@@ -60,7 +59,6 @@ impl Ipv4Iter {
         Ipv4Iter {
             current   : start_range,
             end       : end_range,
-            start     : start_range,
             start_u32 : start_range,
             end_u32   : end_range,
             total,
@@ -241,12 +239,6 @@ impl Ipv4Iter {
         }
         
         (data.usable_start.clone(), data.usable_start.clone())
-    }
-
-
-
-    pub fn reset(&mut self) {
-        self.current = self.start;
     }
 
 

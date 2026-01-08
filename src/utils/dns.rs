@@ -8,7 +8,7 @@ use libc::{
 
 
 
-pub fn get_host_name(ip: &str) -> String {
+pub(crate) fn get_host_name(ip: &str) -> String {
     unsafe {
         let mut hints: addrinfo = std::mem::zeroed();
         hints.ai_family         = AF_UNSPEC;

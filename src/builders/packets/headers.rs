@@ -3,7 +3,7 @@ use crate::builders::packets::Checksum;
 
 
 
-pub struct Headers;
+pub(super) struct Headers;
 
 
 impl Headers {

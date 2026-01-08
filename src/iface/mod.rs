@@ -1,5 +1,5 @@
-pub mod iface_info;
-pub use iface_info::IfaceInfo;
+pub(crate) mod iface_info;
+pub(crate) use iface_info::IfaceInfo;
 
-pub mod iface_manager;
-pub use iface_manager::IfaceManager;
+pub(crate) mod iface_manager;
+pub(crate) use iface_manager::IfaceManager;

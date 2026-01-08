@@ -1,12 +1,12 @@
-use std::net::{Ipv4Addr, SocketAddrV4, UdpSocket};
-use std::ffi::{CStr};
+use std::net::{ Ipv4Addr, SocketAddrV4, UdpSocket };
+use std::ffi::CStr;
 use std::{ fs, path::Path };
-use libc::{getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in};
+use libc::{ getifaddrs, freeifaddrs, ifaddrs, AF_INET, sockaddr_in };
 use crate::utils::abort;
 
 
 
-pub struct IfaceInfo;
+pub(crate) struct IfaceInfo;
 
 
 impl IfaceInfo {
@@ -54,23 +54,24 @@ impl IfaceInfo {
 
 
 
-    pub fn broadcast_ip(iface: &str) -> Ipv4Addr {
-        let (ip, prefix) = Self::ip_and_prefix(iface);
+    pub fn broadcast_ip(iface: &str) -> Result<Ipv4Addr, String> {
+        let (ip, prefix) = Self::ipaddr_and_u8(iface)?;
         let ip_u32       = u32::from(ip);
         
         let mask = if prefix == 0 { 0 } else { (!0u32) << (32 - prefix) };
         let broadcast_u32 = ip_u32 | !mask;
-        Ipv4Addr::from(broadcast_u32)
+        
+        Ok(Ipv4Addr::from(broadcast_u32))
     }
 
     
     
-    fn ip_and_prefix(iface: &str) -> (Ipv4Addr, u8) {
-        let cidr             = IfaceInfo::cidr(iface).unwrap();
+    fn ipaddr_and_u8(iface: &str) -> Result<(Ipv4Addr, u8), String> {
+        let cidr             = IfaceInfo::cidr(iface)?;
         let parts: Vec<&str> = cidr.split('/').collect();
         let ip: Ipv4Addr     = parts[0].parse().unwrap();
         let prefix: u8       = parts[1].parse().unwrap();
-        (ip, prefix)
+        Ok((ip, prefix))
     }
 
 

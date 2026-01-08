@@ -5,7 +5,7 @@ use crate::utils::{mac_u8_to_string, abort};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct Info {
+struct Info {
     bssid     : [u8; 6],
     ssid      : [i8; 33],
     frequency : u32,
@@ -25,7 +25,7 @@ unsafe extern "C" {
 
 
 
-pub struct SysSniff<'a> {
+pub(super) struct SysSniff<'a> {
     iface     : String,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
 }
