@@ -60,7 +60,7 @@ impl FakeAps {
         while running.load(Ordering::SeqCst) {
             let bssid = rand.random_mac();
             let seq   = rand.random_seq();
-            let ssid  = rand.random_char_to_uppercase(&self.args.ssid);
+            let ssid  = rand.random_case_inversion(&self.args.ssid);
             
             self.send_beacon(bssid, &ssid, seq);
             self.send_beacon(bssid, &ssid, seq + 1);

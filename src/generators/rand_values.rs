@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use rand::{Rng, rngs::ThreadRng};
+use rand::{Rng, rngs::ThreadRng, prelude::SliceRandom};
 
 
 
@@ -55,32 +55,88 @@ impl RandomValues {
 
 
 
-    pub fn random_char_to_uppercase(&mut self, input: &str) -> String {
+    pub fn random_case_inversion(&mut self, input: &str) -> String {
         if input.is_empty() {
             return String::new();
         }
 
-        let lowercase_indices: Vec<usize> = input
-            .char_indices()
-            .filter(|(_, c)| c.is_lowercase())
-            .map(|(idx, _)| idx)
-            .collect();
+        let chars: Vec<char> = input.chars().collect();
+        let total_chars      = chars.len();
 
-        if lowercase_indices.is_empty() {
+        let change_count = self.determine_change_count(total_chars);
+
+        if change_count == 0 {
             return input.to_string();
         }
 
-        let random_idx = self.rng.gen_range(0..lowercase_indices.len());
-        let char_start = lowercase_indices[random_idx];
+        let letter_indices: Vec<usize> = chars
+            .iter()
+            .enumerate()
+            .filter(|&(_, &c)| c.is_alphabetic())
+            .map(|(idx, _)| idx)
+            .collect();
 
-        let char_str: String = input[char_start..].chars().next().unwrap().to_string();
-        let char_len = char_str.len();
+        if letter_indices.is_empty() {
+            return input.to_string();
+        }
 
-        let mut result = String::with_capacity(input.len());
+        let selected_indices: Vec<usize> = if letter_indices.len() <= change_count {
+            letter_indices
+        } else {
+            letter_indices
+                .choose_multiple(&mut self.rng, change_count)
+                .cloned()
+                .collect()
+        };
 
-        result.push_str(&input[..char_start]);
-        result.push_str(&char_str.to_uppercase());
-        result.push_str(&input[char_start + char_len..]);
+        Self::invert_case_at_indices(&chars, &selected_indices)
+    }
+
+
+
+    fn determine_change_count(&mut self, total_chars: usize) -> usize {
+        match total_chars {
+            0 => 0,
+            1..=3 => {
+                if self.rng.gen_bool(0.5) { 1 } else { 0 }
+            }
+            4..=7 => {
+                self.rng.gen_range(1..=2)
+            }
+            8..=15 => {
+                self.rng.gen_range(2..=4.min(total_chars / 2))
+            }
+            16..=31 => {
+                let sqrt_based = (total_chars as f64).sqrt().ceil() as usize;
+                self.rng.gen_range(3..=sqrt_based.min(total_chars / 3))
+            }
+            _ => {
+                let log_based     = (total_chars as f64).log2().ceil() as usize;
+                let percent_based = total_chars / 10;
+                let max_changes   = log_based.max(percent_based).min(total_chars / 4);
+                self.rng.gen_range(5..=max_changes)
+            }
+        }
+    }
+
+
+
+    fn invert_case_at_indices(chars: &[char], indices: &[usize]) -> String {
+        let mut result = String::with_capacity(chars.len());
+
+        for (i, &c) in chars.iter().enumerate() {
+            if indices.contains(&i) {
+                if c.is_lowercase() {
+                    result.push_str(&c.to_uppercase().to_string());
+                } else if c.is_uppercase() {
+                    result.push_str(&c.to_lowercase().to_string());
+                } else {
+                    result.push(c);
+                }
+            } else {
+                result.push(c);
+            }
+        }
 
         result
     }
