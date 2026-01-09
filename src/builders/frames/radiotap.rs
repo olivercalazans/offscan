@@ -3,7 +3,8 @@ pub(super) struct Radiotap;
 
 impl Radiotap {
 
-    pub fn build_header(buffer: &mut [u8]) {
+    #[inline]
+    pub fn minimal_header(buffer: &mut [u8]) {
         buffer[0]  = 0x00; // Header revision
         buffer[1]  = 0x00; // Header pad
         buffer[2]  = 0x0c; // Header length
