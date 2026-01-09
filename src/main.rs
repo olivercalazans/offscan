@@ -74,7 +74,7 @@ impl Command {
     fn get_command_registry() -> Vec<(&'static str, &'static str, Box<dyn Fn(Vec<String>)>)> {
         vec![
             ("deauth", "Deauthentication attack", Box::new(execute::<DeauthArgs,   Deauthentication>)),
-            ("fake",   "Fake APs beacons",        Box::new(execute::<FakeApsArgs,  FakeAps>)),
+            ("beacon", "Beacon Flood",            Box::new(execute::<BcFloodArgs,  BeaconFlood>)),
             ("info",   "Network Information",     Box::new(execute::<NetInfoArgs,  NetworkInfo>)),
             ("netmap", "Network Mapping",         Box::new(execute::<NetMapArgs,   NetworkMapper>)),
             ("ping",   "Ping Flooding",           Box::new(execute::<PingArgs,     PingFlooder>)),

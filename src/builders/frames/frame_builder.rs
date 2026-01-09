@@ -3,14 +3,14 @@ use crate::builders::frames::{Radiotap, Ieee80211};
 
 
 pub(crate) struct Frames {
-    buffer: [u8; 106],
+    buffer: [u8; 119],
 }
 
 
 impl Frames {
 
     pub fn new() -> Self {
-        Self { buffer: [0; 106], }
+        Self { buffer: [0; 119], }
     }
 
 
@@ -39,13 +39,14 @@ impl Frames {
         ssid    : &str,
         seq     : u16,
         channel : u8,
+        sec     : &str,
     ) -> &[u8]
     {
         Radiotap::minimal_header(&mut self.buffer[..12]);
         Ieee80211::beacon_header(&mut self.buffer[12..36], bssid, seq);
-        Ieee80211::beacon_body(&mut self.buffer[36..104], ssid, channel);
+        let len = Ieee80211::beacon_body(&mut self.buffer[36..], ssid, channel, sec);
 
-        &self.buffer[..104]
+        &self.buffer[..36 + len]
     }
 
 }
