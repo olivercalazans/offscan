@@ -11,11 +11,11 @@ use crate::utils::{inline_display, get_host_name, abort};
 
 
 pub struct PortScanner {
-    args        : PortScanArgs,
-    iface       : String,
-    my_ip       : Ipv4Addr,
-    raw_packets : Vec<Vec<u8>>,
-    open_ports  : BTreeSet<u16>,
+    args       : PortScanArgs,
+    iface      : String,
+    my_ip      : Ipv4Addr,
+    raw_pkts   : Vec<Vec<u8>>,
+    open_ports : BTreeSet<u16>,
 }
 
 
@@ -25,9 +25,9 @@ impl PortScanner {
     pub fn new(args: PortScanArgs) -> Self {
         let iface = IfaceInfo::iface_from_ip(args.target_ip.clone());
         Self {
-            my_ip       : IfaceInfo::ip(&iface).unwrap_or_else(|e| abort(e)),
-            raw_packets : Vec::new(),
-            open_ports  : BTreeSet::new(),
+            my_ip      : IfaceInfo::ip(&iface).unwrap_or_else(|e| abort(e)),
+            raw_pkts   : Vec::new(),
+            open_ports : BTreeSet::new(),
             args,
             iface,
         }
@@ -58,7 +58,7 @@ impl PortScanner {
         thread::sleep(Duration::from_secs(5));
         tools.sniffer.stop();
         
-        self.raw_packets = tools.sniffer.get_packets();
+        self.raw_pkts = tools.sniffer.get_packets();
     }
 
 
@@ -101,7 +101,7 @@ impl PortScanner {
         thread::sleep(Duration::from_secs(5));
         tools.sniffer.stop();
 
-        self.raw_packets = tools.sniffer.get_packets();
+        self.raw_pkts = tools.sniffer.get_packets();
     }
 
 
@@ -177,7 +177,7 @@ impl PortScanner {
 
 
     fn process_raw_packets(&mut self) {
-        let packets       = mem::take(&mut self.raw_packets);
+        let packets       = mem::take(&mut self.raw_pkts);
         let mut dissector = PacketDissector::new(); 
 
         for packet in packets.into_iter() {

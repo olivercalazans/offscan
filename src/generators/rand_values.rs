@@ -46,4 +46,43 @@ impl RandomValues {
         bytes
     }
 
+
+
+    #[inline]
+    pub fn random_seq(&mut self) -> u16 {
+        self.rng.gen_range(1..4095)
+    }
+
+
+
+    pub fn random_char_to_uppercase(&mut self, input: &str) -> String {
+        if input.is_empty() {
+            return String::new();
+        }
+
+        let lowercase_indices: Vec<usize> = input
+            .char_indices()
+            .filter(|(_, c)| c.is_lowercase())
+            .map(|(idx, _)| idx)
+            .collect();
+
+        if lowercase_indices.is_empty() {
+            return input.to_string();
+        }
+
+        let random_idx = self.rng.gen_range(0..lowercase_indices.len());
+        let char_start = lowercase_indices[random_idx];
+
+        let char_str: String = input[char_start..].chars().next().unwrap().to_string();
+        let char_len = char_str.len();
+
+        let mut result = String::with_capacity(input.len());
+
+        result.push_str(&input[..char_start]);
+        result.push_str(&char_str.to_uppercase());
+        result.push_str(&input[char_start + char_len..]);
+
+        result
+    }
+
 }

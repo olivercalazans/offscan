@@ -59,8 +59,9 @@ impl Ieee80211 {
 
     #[inline]
     pub fn beacon_body(
-        buffer : &mut [u8],
-        ssid   : &str,
+        buffer  : &mut [u8],
+        ssid    : &str,
+        channel : u8,
     ) {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -71,20 +72,20 @@ impl Ieee80211 {
         buffer[8..10].copy_from_slice(&100u16.to_le_bytes());
         buffer[10..12].copy_from_slice(&[0x01, 0x04]);
 
-        let ssid_bytes = ssid.to_bytes();
+        let ssid_bytes = ssid.as_bytes();
         let ssid_len   = ssid_bytes.len().min(32);
         let mut index  = 14 + ssid_len;
         
         buffer[12] = 0x00;  // Element ID (SSID)
         buffer[13] = ssid_len as u8;
-        buffer[14..index] = copy_from_slice(&ssid_bytes);
+        buffer[14..index].copy_from_slice(&ssid_bytes);
 
-        buffer[index..index + 8].copy_from_slice(&[
+        buffer[index..index + 10].copy_from_slice(&[
             0x01, 0x08,             // ID 1, Length 8
             0x82, 0x84, 0x8B, 0x96, // 1, 2, 5.5, 11 Mbps
             0x0C, 0x12, 0x18, 0x24, // 6, 9, 12, 24 Mbps
         ]);
-        index += 8;
+        index += 10;
 
         // DS Parameter (channel)
         buffer[index..index + 3].copy_from_slice(&[0x03, 0x01, channel]);
