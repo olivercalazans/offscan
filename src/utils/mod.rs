@@ -1,3 +1,6 @@
+pub(crate) mod channel_parser;
+pub(crate) use channel_parser::parse_channel;
+
 pub(crate) mod ctrl_c_handler;
 pub(crate) use ctrl_c_handler::CtrlCHandler;
 

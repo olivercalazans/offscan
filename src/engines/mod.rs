@@ -1,6 +1,9 @@
 pub mod deauth;
 pub use deauth::*;
 
+pub mod flood_beacon;
+pub use flood_beacon::*;
+
 pub mod flood_ping;
 pub use flood_ping::*;
 
