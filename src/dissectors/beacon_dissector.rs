@@ -6,8 +6,8 @@ pub(crate) struct BeaconDissector;
 
 impl BeaconDissector {
 
-    pub fn parse_beacon(packet: &[u8]) -> Option<Vec<String>> {
-        let frame = Self::skip_headers(packet);
+    pub fn parse_beacon(beacon: &[u8]) -> Option<Vec<String>> {
+        let frame = Self::skip_headers(beacon);
         
         if frame.len() < 24 {
             return None;
@@ -21,40 +21,41 @@ impl BeaconDissector {
             return None;
         }
 
-        let bssid   = Self::get_bssid(frame);
-        let ssid    = Self::get_ssid(frame);
-        let channel = Self::get_channel(frame);
+        let bssid     = Self::get_bssid(frame);
+        let ssid      = Self::get_ssid(frame);
+        let channel   = Self::get_channel(frame);
+        let security  = Self::get_security_type(frame);
 
-        Some(vec![ssid, bssid, channel.to_string()])
+        Some(vec![ssid, bssid, channel.to_string(), security])
     }
 
 
 
-    fn skip_headers(packet: &[u8]) -> &[u8] {
-        if let Some(offset) = Self::find_frame_start_by_type(packet) {
-            return &packet[offset..];
+    fn skip_headers(beacon: &[u8]) -> &[u8] {
+        if let Some(offset) = Self::find_frame_start_by_type(beacon) {
+            return &beacon[offset..];
         }
 
-        if let Some(offset) = Self::skip_radiotap_header(packet) {
-            return &packet[offset..];
+        if let Some(offset) = Self::skip_radiotap_header(beacon) {
+            return &beacon[offset..];
         }
 
-        if let Some(offset) = Self::skip_common_headers(packet) {
-            return &packet[offset..];
+        if let Some(offset) = Self::skip_common_headers(beacon) {
+            return &beacon[offset..];
         }
 
-        packet
+        beacon
     }
 
 
 
-    fn find_frame_start_by_type(packet: &[u8]) -> Option<usize> {
-        for i in 0..packet.len().saturating_sub(24) {
-            if i + 2 > packet.len() {
+    fn find_frame_start_by_type(beacon: &[u8]) -> Option<usize> {
+        for i in 0..beacon.len().saturating_sub(24) {
+            if i + 2 > beacon.len() {
                 continue;
             }
 
-            let frame_control = u16::from_le_bytes([packet[i], packet[i+1]]);
+            let frame_control = u16::from_le_bytes([beacon[i], beacon[i+1]]);
             let frame_type    = (frame_control >> 2) & 0x03;
             let frame_subtype = (frame_control >> 4) & 0x0F;
 
@@ -62,11 +63,11 @@ impl BeaconDissector {
                 continue;
             }
 
-            if i + 3 >= packet.len() {
+            if i + 3 >= beacon.len() {
                 continue;
             }
 
-            let duration = u16::from_le_bytes([packet[i+2], packet[i+3]]);
+            let duration = u16::from_le_bytes([beacon[i+2], beacon[i+3]]);
             if duration > 0x3AFF {
                 continue;
             }
@@ -79,17 +80,17 @@ impl BeaconDissector {
 
 
 
-    fn skip_radiotap_header(packet: &[u8]) -> Option<usize> {
-        if packet.len() < 8 || packet[0] != 0x00 || packet[1] != 0x00 {
+    fn skip_radiotap_header(beacon: &[u8]) -> Option<usize> {
+        if beacon.len() < 8 || beacon[0] != 0x00 || beacon[1] != 0x00 {
             return None
         }
 
-        let radiotap_len = u16::from_le_bytes([packet[2], packet[3]]) as usize;
-        if radiotap_len < 8 || radiotap_len + 24 > packet.len() {
+        let radiotap_len = u16::from_le_bytes([beacon[2], beacon[3]]) as usize;
+        if radiotap_len < 8 || radiotap_len + 24 > beacon.len() {
             return None;
         }
 
-        let after_radiotap = &packet[radiotap_len..];
+        let after_radiotap = &beacon[radiotap_len..];
         if after_radiotap.len() < 24 {
             return None;
         }
@@ -105,15 +106,15 @@ impl BeaconDissector {
 
 
 
-    fn skip_common_headers(packet: &[u8]) -> Option<usize> {
+    fn skip_common_headers(beacon: &[u8]) -> Option<usize> {
         let common_offsets = [0, 4, 8, 12, 16, 24, 32, 36];
 
         for &offset in &common_offsets {
-            if offset + 24 > packet.len() {
+            if offset + 24 > beacon.len() {
                 continue;
             }
 
-            let frame_data    = &packet[offset..];
+            let frame_data    = &beacon[offset..];
             let frame_control = u16::from_le_bytes([frame_data[0], frame_data[1]]);
             let frame_type    = (frame_control >> 2) & 0x03;
             let frame_subtype = (frame_control >> 4) & 0x0F;
@@ -233,6 +234,102 @@ impl BeaconDissector {
         }
 
         0
+    }
+
+
+
+    fn get_security_type(frame: &[u8]) -> String {
+        if frame.len() < 38 {
+            return "Unknown".to_string();
+        }
+
+        let mut offset = 36;
+        let mut has_rsn = false;
+        let mut has_wpa = false;
+        let mut has_wep = false;
+        let mut is_open = true;
+
+        while offset + 1 < frame.len() {
+            let element_id = frame[offset];
+            let element_length = frame[offset + 1] as usize;
+            
+            if offset + 2 + element_length > frame.len() {
+                break;
+            }
+
+            match element_id {
+                0x30 => {
+                    has_rsn = true;
+                    is_open = false;
+                    if element_length >= 20 {
+                        let mut rsn_offset = offset + 2 + 2;
+                        
+                        rsn_offset += 4;
+                        
+                        if rsn_offset + 2 <= offset + 2 + element_length {
+                            let pairwise_count = u16::from_le_bytes([
+                                frame[rsn_offset],
+                                frame[rsn_offset + 1]
+                            ]) as usize;
+                            rsn_offset += 2 + (pairwise_count * 4);
+                        }
+                        
+                        if rsn_offset + 2 <= offset + 2 + element_length {
+                            let akm_count = u16::from_le_bytes([
+                                frame[rsn_offset],
+                                frame[rsn_offset + 1]
+                            ]) as usize;
+                            rsn_offset += 2;
+                            
+                            for i in 0..akm_count {
+                                if rsn_offset + 3 <= offset + 2 + element_length {
+                                    if frame[rsn_offset] == 0x00 &&
+                                       frame[rsn_offset + 1] == 0x0F &&
+                                       frame[rsn_offset + 2] == 0xAC {
+                                        let suite_type = frame[rsn_offset + 3];
+                                        if suite_type == 8 || suite_type == 9 {
+                                            return "WPA3".to_string();
+                                        }
+                                    }
+                                }
+                                rsn_offset += 4;
+                            }
+                        }
+                    }
+                }
+                0xDD => {
+                    if element_length >= 4 &&
+                       frame[offset + 2] == 0x00 &&
+                       frame[offset + 3] == 0x50 &&
+                       frame[offset + 4] == 0xF2 &&
+                       frame[offset + 5] == 0x01 {
+                        has_wpa = true;
+                        is_open = false;
+                    }
+                }
+                0x06 => {
+                    if frame[offset + 2] & 0x10 != 0 {
+                        has_wep = true;
+                        is_open = false;
+                    }
+                }
+                _ => {}
+            }
+
+            offset += 2 + element_length;
+        }
+
+        if has_rsn {
+            "WPA2".to_string()
+        } else if has_wpa {
+            "WPA".to_string()
+        } else if has_wep {
+            "WEP".to_string()
+        } else if is_open {
+            "Open".to_string()
+        } else {
+            "Unknown".to_string()
+        }
     }
 
 }

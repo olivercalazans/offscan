@@ -64,8 +64,8 @@ impl WifiMapper {
         let mut chnls:BTreeSet<u8> = BTreeSet::new();
         Self::display_header(max_len);
         
-        for (name, info) in wifis.into_iter() {
-            Self::display_wifi_info(&name, &info, max_len);
+        for (ssid, info) in wifis.into_iter() {
+            Self::display_wifi_info(&ssid, &info, max_len);
             chnls.insert(info.chnl);
         }
 
@@ -76,22 +76,27 @@ impl WifiMapper {
 
     fn display_header(max_len: usize) {
         println!(
-            "\n{:<width$}  {:<17}  {}  {}", 
-            "SSID", "MAC", "Channel", "Freq", width = max_len
+            "\n{:<width$}  {:<17}  {}  {}  {}", 
+            "SSID", "MAC", "Channel", "Sec", "Freq", width = max_len
         );
-        println!("{}  {}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7), "-".repeat(4));
+        
+        println!(
+            "{}  {}  {}  {}  {}", 
+            "-".repeat(max_len), "-".repeat(17), "-".repeat(7), "-".repeat(4), "-".repeat(4)
+        );
     }
 
 
 
-    fn display_wifi_info(name: &str, info: &WifiData, max_len: usize) {
+    fn display_wifi_info(ssid: &str, info: &WifiData, max_len: usize) {
         let macs: Vec<&String> = info.bssids.iter().collect();
         
         println!(
-            "{:<width$}  {}  {:<7}  {}G",
-            name, 
+            "{:<width$}  {}  {:<7}  {:<4}  {}G",
+            ssid, 
             macs.first().unwrap_or(&&"N/A".to_string()), 
             info.chnl,
+            info.sec,
             info.freq,
             width = max_len
         );

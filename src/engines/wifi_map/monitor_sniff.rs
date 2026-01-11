@@ -80,7 +80,7 @@ impl<'a> MonitorSniff<'a> {
                     std::thread::sleep(Duration::from_millis(100));
                 }
                 Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    abort("Unknown error in sniffer or channel");
+                    abort("Unknown error in sniffer or chnl");
                 }
             }
         }
@@ -98,31 +98,33 @@ impl<'a> MonitorSniff<'a> {
         beacon   : Vec<u8>,
     ) {
         if let Some(info) = BeaconDissector::parse_beacon(&beacon) {
-            let ssid        = info[0].clone();
-            let bssid       = info[1].clone();
-            let channel: u8 = info[2].parse().unwrap_or_else(|_| 0);
-            let frequency   = Self::get_frequency(channel);
+            let ssid     = info[0].clone();
+            let bssid    = info[1].clone();
+            let chnl: u8 = info[2].parse().unwrap_or_else(|_| 0);
+            let freq     = Self::get_frequency(chnl);
+            let sec      = info[3].clone();
                 
-            Self::add_info(temp_buf, ssid, bssid, channel, frequency);
+            Self::add_info(temp_buf, ssid, bssid, chnl, freq, sec);
         }
     }
 
 
 
     #[inline]
-    fn get_frequency(channel: u8) -> String {
-        if channel <= 14 {"2.4".to_string()} else {"5".to_string()}
+    fn get_frequency(chnl: u8) -> String {
+        if chnl <= 14 {"2.4".to_string()} else {"5".to_string()}
     }
 
 
 
     #[inline]
     fn add_info(
-        temp_buf  : &mut BTreeMap<String, WifiData>,
-        ssid      : String, 
-        bssid     : String, 
-        channel   : u8, 
-        frequency : String
+        temp_buf : &mut BTreeMap<String, WifiData>,
+        ssid     : String, 
+        bssid    : String, 
+        chnl     : u8, 
+        freq     : String,
+        sec      : String,
     ) {
         temp_buf
             .entry(ssid)
@@ -130,7 +132,7 @@ impl<'a> MonitorSniff<'a> {
                 existing_info.bssids.insert(bssid.clone());
             })
             .or_insert_with(|| {
-                WifiData::new(bssid, channel, frequency.to_string(), String::new())
+                WifiData::new(bssid, chnl, freq.to_string(), sec)
             });
     }
 
@@ -166,23 +168,23 @@ impl<'a> MonitorSniff<'a> {
 
 
     #[inline]
-    fn sniff_channels(&self, channels: Vec<i32>, frequency: &str) {
+    fn sniff_channels(&self, channels: Vec<i32>, freq: &str) {
         let mut err: Vec<i32> = Vec::new();
 
-        for channel in channels {
-            let done = IfaceManager::set_channel(&self.iface, channel);
+        for chnl in channels {
+            let done = IfaceManager::set_channel(&self.iface, chnl);
 
             if !done {
-                err.push(channel);
+                err.push(chnl);
                 continue;
             }
 
-            inline_display(&format!("Sniffing channel {} ({}G)", channel, frequency));
+            inline_display(&format!("Sniffing chnl {} ({}G)", chnl, freq));
             thread::sleep(Duration::from_millis(300));
         }
 
         if err.len() > 0 {
-            println!("[!] Uneable to sniff these channels ({}G):\n{:?}", frequency, err);
+            println!("[!] Uneable to sniff these channels ({}G):\n{:?}", freq, err);
         }
     }
 

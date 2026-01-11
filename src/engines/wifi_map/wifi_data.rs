@@ -3,10 +3,10 @@ use std::collections::HashSet;
 
 
 pub(super) struct WifiData {
-    pub bssids  : HashSet<String>,
-    pub chnl : u8,
-    pub freq    : String,
-    pub sec     : String,
+    pub bssids : HashSet<String>,
+    pub chnl   : u8,
+    pub freq   : String,
+    pub sec    : String,
 }
 
 
