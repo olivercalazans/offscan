@@ -2,7 +2,7 @@ use std::{thread, time::Duration, collections::BTreeMap};
 use crate::engines::wifi_map::WifiData;
 use crate::dissectors::BeaconDissector;
 use crate::iface::IfaceManager;
-use crate::sniffer::Sniffer;
+use crate::sniffer::Sniffer2;
 use crate::utils::inline_display;
 
 
@@ -34,7 +34,7 @@ impl<'a> MonitorSniff<'a> {
 
 
     fn start_sniffing(&mut self) -> Vec<Vec<u8>> {
-        let mut sniffer = Sniffer::new(
+        let mut sniffer = Sniffer2::new(
             self.iface.clone(),
             "type mgt and subtype beacon".to_string()
         );
@@ -45,7 +45,7 @@ impl<'a> MonitorSniff<'a> {
         sniffer.stop();
 
         sniffer.get_packets()
-    }    
+    }
 
 
 

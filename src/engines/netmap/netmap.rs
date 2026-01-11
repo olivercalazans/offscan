@@ -1,4 +1,6 @@
-use std::{thread, time::Duration, collections::BTreeMap, mem, net::Ipv4Addr};
+use std::{thread, time::Duration, collections::BTreeMap, net::Ipv4Addr};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use crate::engines::NetMapArgs;
 use crate::generators::{Ipv4Iter, DelayIter, RandomValues};
 use crate::iface::IfaceInfo;
@@ -10,15 +12,13 @@ use crate::utils::{abort, get_host_name};
 
 
 
-
 pub struct NetworkMapper {
-    args         : NetMapArgs,
-    active_ips   : BTreeMap<Ipv4Addr, Vec<String>>,
-    ips          : Ipv4Iter,
-    my_ip        : Ipv4Addr,
-    raw_pkts     : Vec<Vec<u8>>,
-    start_ip_u32 : u32,
-    end_ip_u32   : u32,
+    args       : NetMapArgs,
+    active_ips : Arc<Mutex<BTreeMap<Ipv4Addr, Info>>>,
+    ips        : Ipv4Iter,
+    my_ip      : Ipv4Addr,
+    handle     : Option<thread::JoinHandle<()>>,
+    running    : Arc<AtomicBool>
 }
 
 
@@ -28,12 +28,11 @@ impl NetworkMapper {
         let cidr = IfaceInfo::cidr(&args.iface).unwrap_or_else(|e| abort(e));
 
         Self {
-            active_ips   : BTreeMap::new(),
-            ips          : Ipv4Iter::new(&cidr, args.range.as_deref()),
-            my_ip        : IfaceInfo::ip(&args.iface).unwrap_or_else(|e| abort(e)),
-            raw_pkts     : Vec::new(),
-            start_ip_u32 : 0,
-            end_ip_u32   : 0,
+            active_ips : Arc::new(Mutex::new(BTreeMap::new())),
+            ips        : Ipv4Iter::new(&cidr, args.range.as_deref()),
+            my_ip      : IfaceInfo::ip(&args.iface).unwrap_or_else(|e| abort(e)),
+            running    : Arc::new(AtomicBool::new(false)),
+            handle     : None,
             args,
         }
     }
@@ -41,18 +40,13 @@ impl NetworkMapper {
 
 
     pub fn execute(&mut self) {
-        self.set_start_and_final_ips();
         self.validate_protocol_flags();
-        self.send_and_receive();
-        self.process_raw_packets();
+        self.display_info();
+        self.start_pkt_processor();
+        self.create_proto_thread(); 
+        self.stop_pkt_processor();
+        self.get_names();
         self.display_result();
-    }
-
-
-
-    fn set_start_and_final_ips(&mut self) {
-        self.start_ip_u32 = self.ips.start_u32;
-        self.end_ip_u32   = self.ips.end_u32;
     }
 
 
@@ -67,17 +61,112 @@ impl NetworkMapper {
 
 
 
-    fn send_and_receive(&mut self) {    
-        let mut sniffer = Sniffer::new(self.args.iface.clone(), self.get_bpf_filter());   
+    fn display_info(&self) {
+        let mut protocols = Vec::new();
+        if self.args.icmp { protocols.push("ICMP"); }
+        if self.args.tcp { protocols.push("TCP"); }
+        if self.args.udp { protocols.push("UDP"); }
         
-        sniffer.start();
-        
-        self.create_proto_thread();
-        
-        thread::sleep(Duration::from_secs(3));
+        let proto = protocols.join(", ");
+        let first = Ipv4Addr::from(self.ips.start_u32);
+        let last  = Ipv4Addr::from(self.ips.end_u32);
+        let len   = self.ips.end_u32 - self.ips.start_u32 + 1;
+
+        println!("Iface..: {}", self.args.iface);
+        println!("Range..: {} - {}", first, last);        
+        println!("Len IPs: {}", len);
+        println!("Proto..: {}", proto);
+    }
+
+
+
+    fn start_pkt_processor(&mut self) {
+        let sniffer    = Sniffer::new(self.args.iface.clone(), self.get_bpf_filter(), false);
+        let dissector  = PacketDissector::new();
+        let active_ips = Arc::clone(&self.active_ips);
+        let start_u32  = self.ips.start_u32.clone();
+        let end_u32    = self.ips.end_u32.clone();
+
+        self.running.store(true, Ordering::Relaxed);
+        let running = Arc::clone(&self.running);
+
+        self.handle = Some(thread::spawn(move || {
+            Self::sniff_and_dissect(
+                sniffer, dissector, active_ips, running, start_u32, end_u32
+            )
+        }));
+    }
+
+
+
+    fn sniff_and_dissect(
+        mut sniffer    : Sniffer,
+        mut dissector  : PacketDissector,
+        active_ips     : Arc<Mutex<BTreeMap<Ipv4Addr, Info>>>,
+        running        : Arc<AtomicBool>,
+        start_u32      : u32,
+        end_u32        : u32,
+    ) {
+        let recx = sniffer.start();
+        let mut temp_buf: BTreeMap<Ipv4Addr, Info> = BTreeMap::new();
+
+        while running.load(Ordering::Relaxed) {
+            match recx.try_recv() {
+                Ok(pkt) => {
+                    Self::dissect_and_update(
+                        &mut dissector, &mut temp_buf, pkt, start_u32, end_u32
+                    );
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    std::thread::sleep(Duration::from_millis(100));
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    abort("Unknown error in sniffer or channel");
+                }
+            }
+        }
+
         sniffer.stop();
+        let mut guard = active_ips.lock().unwrap();
+        *guard = temp_buf;
+    }
+
+
+
+    #[inline]
+    fn dissect_and_update(
+        dissector : &mut PacketDissector,
+        temp_buf  : &mut BTreeMap<Ipv4Addr, Info>,
+        pkt       : Vec<u8>,
+        start_u32 : u32,
+        end_u32   : u32,
+    ) {
+        dissector.update_pkt(pkt);
+
+        let src_ip = match dissector.get_src_ip() {
+            Some(ip) => ip,
+            None     => return,
+        };
+
+        if !Self::is_in_range(start_u32, end_u32, src_ip) || temp_buf.contains_key(&src_ip) { 
+            return;
+        }
+
+        let mac = dissector.get_src_mac().unwrap_or_else(|| "Unknown".to_string());
+        temp_buf.insert(src_ip, Info {mac, name: String::new()});
+    }
+
+
+
+    #[inline]
+    fn is_in_range(
+        start_u32 : u32, 
+        end_u32   : u32, 
+        ip        : Ipv4Addr
+    ) -> bool {
+        let ip_u32 = u32::from_be_bytes(ip.octets());
         
-        self.raw_pkts = sniffer.get_packets()
+        ip_u32 >= start_u32 || ip_u32 <= end_u32
     }
 
 
@@ -89,7 +178,7 @@ impl NetworkMapper {
 
 
     fn cidr_for_bpf_filter(&self) -> String {        
-        let xor = self.start_ip_u32 ^ self.end_ip_u32;
+        let xor = self.ips.start_u32 ^ self.ips.end_u32;
         
         let leading_zeros = if xor == 0 {
             32
@@ -105,9 +194,19 @@ impl NetworkMapper {
             !0u32 << (32 - prefix_len)
         };
 
-        let network_addr = self.start_ip_u32 & mask;
+        let network_addr = self.ips.start_u32 & mask;
 
         format!("{}/{}", Ipv4Addr::from(network_addr), prefix_len)
+    }
+
+
+
+    fn stop_pkt_processor(&mut self) {
+        self.running.store(false, Ordering::Relaxed);
+
+        if let Some(handle) = self.handle.take() {
+            handle.join().unwrap();
+        }
     }
 
 
@@ -130,13 +229,13 @@ impl NetworkMapper {
         for (thread, name) in threads {
             thread.join().unwrap_or_else(|_| abort(format!("{} thread failed", name)));
         }
+
+        thread::sleep(Duration::from_secs(3));
     }
 
 
 
     fn create_thread(&self, probe_type: String) -> thread::JoinHandle<()> {
-        println!("Sending {} probes", probe_type.to_uppercase());
-
         let iters = self.setup_iterators();
         let tools = self.setup_tools();
         let my_ip = self.my_ip.clone();
@@ -192,46 +291,25 @@ impl NetworkMapper {
 
 
 
-    fn process_raw_packets(&mut self) {
-        let raw_pkts      = mem::take(&mut self.raw_pkts);
-        let mut dissector = PacketDissector::new(); 
-
-        for packet in raw_pkts.into_iter() {
-            dissector.update_pkt(packet);
-
-            let src_ip = match dissector.get_src_ip() {
-                Some(ip) => ip,
-                None     => continue,
-            };
-
-            if self.active_ips.contains_key(&src_ip) || !self.is_in_range(src_ip) { 
-                continue
-            }
-
-            let mac_addr    = dissector.get_src_mac().unwrap_or_else(|| "Unknown".to_string());
-            let device_name = get_host_name(&src_ip.to_string());
-
-            self.active_ips.insert(src_ip, vec![mac_addr, device_name]);
-        }
-    }
-
-
-
-    #[inline]
-    fn is_in_range(&self, ip: Ipv4Addr) -> bool {
-        let ip_u32 = u32::from_be_bytes(ip.octets());
+    fn get_names(&mut self) {
+        let mut guard = self.active_ips.lock().unwrap();
         
-        ip_u32 >= self.start_ip_u32 || ip_u32 <= self.end_ip_u32
+        for (ip, info) in guard.iter_mut() {
+            let name = get_host_name(&ip.to_string());
+            info.name = name;
+        }
     }
 
 
 
     fn display_result(&mut self) {
         Self::display_header();
-        let active_ips = mem::take(&mut self.active_ips);
 
-        for (ip, host) in active_ips {
-            println!("{}", format!("{:<15}  {}  {}", ip, host[0], host[1]));
+        let guard = self.active_ips.lock().unwrap();
+        let map   = &*guard;
+
+        for (ip, info) in map.iter() {
+            println!("{}", format!("{:<15}  {}  {}", ip, info.mac, info.name));
         }
     }
 
@@ -258,6 +336,11 @@ impl crate::EngineTrait for NetworkMapper {
     }
 }
 
+
+struct Info {
+    mac  : String,
+    name : String,
+}
 
 
 struct Iterators {

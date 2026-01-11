@@ -6,7 +6,7 @@ use crate::engines::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandomValues};
 use crate::iface::IfaceInfo;
 use crate::builders::{Packets, UdpPayloads};
-use crate::sniffer::Sniffer2;
+use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
 use crate::utils::{inline_display, get_host_name, abort, CtrlCHandler};
@@ -59,6 +59,22 @@ impl PortScanner {
 
 
 
+    fn start_pkt_processor(&mut self) {
+        let sniffer    = Sniffer::new(self.iface.clone(), self.get_bpf_filter(), false);
+        let dissector  = PacketDissector::new();
+        let open_ports = Arc::clone(&self.open_ports);
+        let is_udp     = self.args.udp.clone();
+
+        self.running.store(true, Ordering::Relaxed);
+        let running = Arc::clone(&self.running);
+
+        self.handle = Some(thread::spawn(move || {
+            Self::sniff_and_dissect(sniffer, dissector, open_ports, running, is_udp)
+        }));
+    }
+
+
+
     fn get_bpf_filter(&self) -> String {
         if self.args.udp {
             return format!(
@@ -75,24 +91,8 @@ impl PortScanner {
 
 
 
-    fn start_pkt_processor(&mut self) {
-        let sniffer    = Sniffer2::new(self.iface.clone(), self.get_bpf_filter(), false);
-        let dissector  = PacketDissector::new();
-        let open_ports = Arc::clone(&self.open_ports);
-        let is_udp     = self.args.udp.clone();
-
-        self.running.store(true, Ordering::Relaxed);
-        let running = Arc::clone(&self.running);
-
-        self.handle = Some(thread::spawn(move || {
-            Self::sniff_and_dissect(sniffer, dissector, open_ports, running, is_udp)
-        }));
-    }
-
-
-
     fn sniff_and_dissect(
-        mut sniffer    : Sniffer2,
+        mut sniffer    : Sniffer,
         mut dissector  : PacketDissector,
         mut open_ports : Arc<Mutex<BTreeSet<u16>>>,
         running        : Arc<AtomicBool>,
