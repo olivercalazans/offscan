@@ -68,7 +68,7 @@ impl NetworkMapper {
         if self.args.udp { protocols.push("UDP"); }
         
         let proto = protocols.join(", ");
-        let first = Ipv4Addr::from(self.ips.start_u32);
+        let first = Ipv4Addr::from(self.ips.end_u32);
         let last  = Ipv4Addr::from(self.ips.end_u32);
         let len   = self.ips.end_u32 - self.ips.start_u32 + 1;
 

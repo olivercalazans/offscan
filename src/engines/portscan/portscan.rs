@@ -9,7 +9,7 @@ use crate::builders::{Packets, UdpPayloads};
 use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{inline_display, get_host_name, abort, CtrlCHandler};
+use crate::utils::{inline_display, get_host_name, abort};
 
 
 
@@ -52,8 +52,8 @@ impl PortScanner {
 
 
     fn display_info(&self) {
-        println!("Target..: {}", self.args.target_ip);
         println!("Iface...: {}", self.iface);
+        println!("Target..: {}", self.args.target_ip);
         println!("Proto...: {}", if self.args.udp {"UDP"} else {"TCP"});
     }
 
@@ -92,19 +92,20 @@ impl PortScanner {
 
 
     fn sniff_and_dissect(
-        mut sniffer    : Sniffer,
-        mut dissector  : PacketDissector,
-        mut open_ports : Arc<Mutex<BTreeSet<u16>>>,
-        running        : Arc<AtomicBool>,
-        is_udp         : bool,
+        mut sniffer   : Sniffer,
+        mut dissector : PacketDissector,
+        open_ports    : Arc<Mutex<BTreeSet<u16>>>,
+        running       : Arc<AtomicBool>,
+        is_udp        : bool,
     ) {
         let recx = sniffer.start();
+        let mut temp_buf: BTreeSet<u16> = BTreeSet::new();
 
         while running.load(Ordering::Relaxed) {
             match recx.try_recv() {
                 Ok(pkt) => {
                     Self::dissect_and_update(
-                        &mut dissector, &mut open_ports, is_udp, pkt
+                        &mut dissector, &mut temp_buf, is_udp, pkt
                     );
                 }
                 Err(std::sync::mpsc::TryRecvError::Empty) => {
@@ -117,16 +118,18 @@ impl PortScanner {
         }
 
         sniffer.stop();
+        let mut guard = open_ports.lock().unwrap();
+        *guard = temp_buf;
     }
 
 
 
     #[inline]
     fn dissect_and_update(
-        dissector  : &mut PacketDissector,
-        open_ports : &mut Arc<Mutex<BTreeSet<u16>>>,
-        is_udp     : bool,
-        pkt        : Vec<u8>,
+        dissector : &mut PacketDissector,
+        temp_buf  : &mut BTreeSet<u16>,
+        is_udp    : bool,
+        pkt       : Vec<u8>,
     ) {
         dissector.update_pkt(pkt);
 
@@ -137,7 +140,7 @@ impl PortScanner {
         };
     
         if port.is_some() {
-            open_ports.lock().unwrap().insert(port.unwrap());
+            temp_buf.insert(port.unwrap());
         }
     }
 
@@ -159,31 +162,26 @@ impl PortScanner {
             false => { self.send_tcp_probes(); }
         }
         println!("");
+        std::thread::sleep(Duration::from_secs(3))
     }
 
 
 
     fn send_tcp_probes(&mut self) {
+        let iters     = self.setup_tcp_iterators();
         let mut tools = self.setup_tools();
-        let mut iters = self.setup_tcp_iterators();
         let mut rand  = RandomValues::new(None, None);
-        let running = Arc::new(AtomicBool::new(true));
-        CtrlCHandler::setup(running.clone());
 
-        while running.load(Ordering::SeqCst) {
-            if let Some((port, delay)) = iters.next() {
-                let src_port = rand.random_port();
+        for (port, delay) in iters{
+            let src_port = rand.random_port();
                 
-                let pkt = tools.builder.tcp_ip(
-                    self.my_ip, src_port, 
-                    self.args.target_ip, port
-                );
+            let pkt = tools.builder.tcp_ip(
+                self.my_ip, src_port, 
+                self.args.target_ip, port
+            );
 
-                tools.socket.send_to(pkt, self.args.target_ip);
-                Self::display_and_sleep(port, delay);
-            } else {
-                break;
-            }
+            tools.socket.send_to(pkt, self.args.target_ip);
+            Self::display_and_sleep(port, delay);
         }
     }
 
@@ -199,27 +197,21 @@ impl PortScanner {
 
 
     fn send_udp_probes(&mut self) {
+        let iters     = self.setup_udp_iterators();
         let mut tools = self.setup_tools();
-        let mut iters = self.setup_udp_iterators();
         let mut rand  = RandomValues::new(None, None);
-        let running   = Arc::new(AtomicBool::new(true));
-        CtrlCHandler::setup(running.clone());
 
-        while running.load(Ordering::SeqCst) {
-            if let Some(((port, payload), delay)) = iters.next() {
-                let src_port = rand.random_port();
+        for ((port, payload), delay) in iters {
+            let src_port = rand.random_port();
                 
-                let pkt = tools.builder.udp_ip(
-                    self.my_ip, src_port, 
-                    self.args.target_ip, port, 
-                    &payload
-                );
+            let pkt = tools.builder.udp_ip(
+                self.my_ip, src_port, 
+                self.args.target_ip, port, 
+                &payload
+            );
                 
-                tools.socket.send_to(pkt, self.args.target_ip);
-                Self::display_and_sleep(port, delay);
-            } else {
-                break;
-            }
+            tools.socket.send_to(pkt, self.args.target_ip);
+            Self::display_and_sleep(port, delay);
         }
     }
 
