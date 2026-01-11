@@ -240,96 +240,146 @@ impl BeaconDissector {
 
     fn get_security_type(frame: &[u8]) -> String {
         if frame.len() < 38 {
-            return "Unknown".to_string();
+            return "????".to_string();
         }
 
+        let mut security_flags = SecurityFlags::new();
         let mut offset = 36;
-        let mut has_rsn = false;
-        let mut has_wpa = false;
-        let mut has_wep = false;
-        let mut is_open = true;
 
         while offset + 1 < frame.len() {
             let element_id = frame[offset];
             let element_length = frame[offset + 1] as usize;
-            
+
             if offset + 2 + element_length > frame.len() {
                 break;
             }
 
+            let element_data = &frame[offset + 2..offset + 2 + element_length];
+
             match element_id {
-                0x30 => {
-                    has_rsn = true;
-                    is_open = false;
-                    if element_length >= 20 {
-                        let mut rsn_offset = offset + 2 + 2;
-                        
-                        rsn_offset += 4;
-                        
-                        if rsn_offset + 2 <= offset + 2 + element_length {
-                            let pairwise_count = u16::from_le_bytes([
-                                frame[rsn_offset],
-                                frame[rsn_offset + 1]
-                            ]) as usize;
-                            rsn_offset += 2 + (pairwise_count * 4);
-                        }
-                        
-                        if rsn_offset + 2 <= offset + 2 + element_length {
-                            let akm_count = u16::from_le_bytes([
-                                frame[rsn_offset],
-                                frame[rsn_offset + 1]
-                            ]) as usize;
-                            rsn_offset += 2;
-                            
-                            for i in 0..akm_count {
-                                if rsn_offset + 3 <= offset + 2 + element_length {
-                                    if frame[rsn_offset] == 0x00 &&
-                                       frame[rsn_offset + 1] == 0x0F &&
-                                       frame[rsn_offset + 2] == 0xAC {
-                                        let suite_type = frame[rsn_offset + 3];
-                                        if suite_type == 8 || suite_type == 9 {
-                                            return "WPA3".to_string();
-                                        }
-                                    }
-                                }
-                                rsn_offset += 4;
-                            }
-                        }
-                    }
-                }
-                0xDD => {
-                    if element_length >= 4 &&
-                       frame[offset + 2] == 0x00 &&
-                       frame[offset + 3] == 0x50 &&
-                       frame[offset + 4] == 0xF2 &&
-                       frame[offset + 5] == 0x01 {
-                        has_wpa = true;
-                        is_open = false;
-                    }
-                }
-                0x06 => {
-                    if frame[offset + 2] & 0x10 != 0 {
-                        has_wep = true;
-                        is_open = false;
-                    }
-                }
+                0x30 => Self::process_rsn_element(element_data, &mut security_flags),
+                0xDD => Self::process_vendor_element(element_data, &mut security_flags),
+                0x06 => Self::process_privacy_element(element_data, &mut security_flags),
                 _ => {}
             }
 
             offset += 2 + element_length;
         }
 
-        if has_rsn {
+        security_flags.to_security_string()
+    }
+
+
+
+    fn process_rsn_element(data: &[u8], flags: &mut SecurityFlags) {
+        flags.has_rsn = true;
+        flags.is_open = false;
+
+        if data.len() >= 20 {
+            flags.is_wpa3 = Self::check_for_wpa3(data);
+        }
+    }
+
+
+
+    fn check_for_wpa3(rsn_data: &[u8]) -> bool {
+        let mut offset = 6; // Version (2 bytes) Group Cipher Suite (4 bytes)
+
+        if offset + 2 > rsn_data.len() {
+            return false;
+        }
+
+        let pairwise_count = u16::from_le_bytes([rsn_data[offset], rsn_data[offset + 1]]) as usize;
+        offset += 2 + (pairwise_count * 4);
+
+        if offset + 2 > rsn_data.len() {
+            return false;
+        }
+
+        let akm_count = u16::from_le_bytes([rsn_data[offset], rsn_data[offset + 1]]) as usize;
+        offset += 2;
+
+        for _ in 0..akm_count {
+            if offset + 3 >= rsn_data.len() {
+                break;
+            }
+
+            if rsn_data[offset] != 0x00 ||
+               rsn_data[offset + 1] != 0x0F ||
+               rsn_data[offset + 2] != 0xAC {
+                offset += 4;
+                continue;
+            }
+
+            let suite_type = rsn_data[offset + 3];
+            if suite_type == 8 || suite_type == 9 {
+                return true;
+            }
+
+            offset += 4;
+        }
+
+        false
+    }
+
+
+
+    fn process_vendor_element(data: &[u8], flags: &mut SecurityFlags) {
+        if data.len() >= 4 &&
+           data[0] == 0x00 &&
+           data[1] == 0x50 &&
+           data[2] == 0xF2 &&
+           data[3] == 0x01 {
+            flags.has_wpa = true;
+            flags.is_open = false;
+        }
+    }
+
+
+
+    fn process_privacy_element(data: &[u8], flags: &mut SecurityFlags) {
+        if !data.is_empty() && data[0] & 0x10 != 0 {
+            flags.has_wep = true;
+            flags.is_open = false;
+        }
+    }
+
+}
+
+
+
+struct SecurityFlags {
+    has_rsn: bool,
+    has_wpa: bool,
+    has_wep: bool,
+    is_open: bool,
+    is_wpa3: bool,
+}
+
+impl SecurityFlags {
+    fn new() -> Self {
+        SecurityFlags {
+            has_rsn: false,
+            has_wpa: false,
+            has_wep: false,
+            is_open: true,
+            is_wpa3: false,
+        }
+    }
+
+    fn to_security_string(&self) -> String {
+        if self.is_wpa3 {
+            "WPA3".to_string()
+        } else if self.has_rsn {
             "WPA2".to_string()
-        } else if has_wpa {
+        } else if self.has_wpa {
             "WPA".to_string()
-        } else if has_wep {
+        } else if self.has_wep {
             "WEP".to_string()
-        } else if is_open {
+        } else if self.is_open {
             "Open".to_string()
         } else {
             "Unknown".to_string()
         }
     }
-
 }
