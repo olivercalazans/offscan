@@ -1,15 +1,20 @@
-use std::{thread, time::Duration, collections::BTreeMap};
+use std::{thread, time::Duration, collections::BTreeMap, mem};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use crate::engines::wifi_map::WifiData;
 use crate::dissectors::BeaconDissector;
 use crate::iface::IfaceManager;
 use crate::sniffer::Sniffer;
-use crate::utils::inline_display;
+use crate::utils::{inline_display, abort};
 
 
 
 pub(super) struct MonitorSniff<'a> {
     iface     : String,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
+    buffer    : Arc<Mutex<BTreeMap<String, WifiData>>>,
+    handle    : Option<thread::JoinHandle<()>>,
+    running   : Arc<AtomicBool>
 }
 
 
@@ -19,33 +24,125 @@ impl<'a> MonitorSniff<'a> {
         iface     : String, 
         wifis_buf : &'a mut BTreeMap<String, WifiData>
     ) -> Self {
-        Self { iface, wifis_buf, }
+        Self { 
+            iface, 
+            wifis_buf,
+            buffer  : Arc::new(Mutex::new(BTreeMap::new())),
+            running : Arc::new(AtomicBool::new(false)),
+            handle  : None,
+        }
     }
 
 
 
     pub fn execute_monitor_sniff(&mut self) {
-        println!("Sniffing beacons on monitor mode");
-
-        let beacons = self.start_sniffing();
-        self.process_beacons(beacons);
+        self.start_bc_processor();
+        self.sniff_2g_channels();
+        self.sniff_5g_channels();
+        self.stop_bc_processor();
+        self.send_data();
     }
 
 
 
-    fn start_sniffing(&mut self) -> Vec<Vec<u8>> {
-        let mut sniffer = Sniffer::new(
-            self.iface.clone(),
-            "type mgt and subtype beacon".to_string()
-        );
-        
-        sniffer.start();
-        self.sniff_2g_channels();
-        self.sniff_5g_channels();
-        sniffer.stop();
+    fn start_bc_processor(&mut self) {
+        let sniffer = Sniffer::new(self.iface.clone(), Self::get_bpf_filter(), false);
+        let buffer  = Arc::clone(&self.buffer);
 
-        sniffer.get_packets()
-    }    
+        self.running.store(true, Ordering::Relaxed);
+        let running = Arc::clone(&self.running);
+
+        self.handle = Some(thread::spawn(move || {
+            Self::sniff_and_dissect(sniffer, buffer, running)
+        }));
+    }
+
+
+    fn get_bpf_filter() -> String {
+        "type mgt and subtype beacon".to_string()
+    }
+
+
+    fn sniff_and_dissect(
+        mut sniffer : Sniffer,
+        buffer      : Arc<Mutex<BTreeMap<String, WifiData>>>,
+        running     : Arc<AtomicBool>,
+    ) {
+        let mut temp_buf: BTreeMap<String, WifiData> = BTreeMap::new();
+        let recx = sniffer.start();
+
+        while running.load(Ordering::Relaxed) {
+            match recx.try_recv() {
+                Ok(beacon) => {
+                    Self::dissect_and_update(&mut temp_buf, beacon);
+                }
+                Err(std::sync::mpsc::TryRecvError::Empty) => {
+                    std::thread::sleep(Duration::from_millis(100));
+                }
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    abort("Unknown error in sniffer or channel");
+                }
+            }
+        }
+
+        sniffer.stop();
+        let mut guard = buffer.lock().unwrap();
+        *guard = temp_buf;
+    }
+
+
+
+    #[inline]
+    fn dissect_and_update(
+        temp_buf : &mut BTreeMap<String, WifiData>,
+        beacon   : Vec<u8>,
+    ) {
+        if let Some(info) = BeaconDissector::parse_beacon(&beacon) {
+            let ssid        = info[0].clone();
+            let bssid       = info[1].clone();
+            let channel: u8 = info[2].parse().unwrap_or_else(|_| 0);
+            let frequency   = Self::get_frequency(channel);
+                
+            Self::add_info(temp_buf, ssid, bssid, channel, frequency);
+        }
+    }
+
+
+
+    #[inline]
+    fn get_frequency(channel: u8) -> String {
+        if channel <= 14 {"2.4".to_string()} else {"5".to_string()}
+    }
+
+
+
+    #[inline]
+    fn add_info(
+        temp_buf  : &mut BTreeMap<String, WifiData>,
+        ssid      : String, 
+        bssid     : String, 
+        channel   : u8, 
+        frequency : String
+    ) {
+        temp_buf
+            .entry(ssid)
+            .and_modify(|existing_info| {
+                existing_info.bssids.insert(bssid.clone());
+            })
+            .or_insert_with(|| {
+                WifiData::new(bssid, channel, frequency.to_string())
+            });
+    }
+
+
+
+    fn stop_bc_processor(&mut self) {
+        self.running.store(false, Ordering::Relaxed);
+
+        if let Some(handle) = self.handle.take() {
+            handle.join().unwrap();
+        }
+    }
 
 
 
@@ -91,43 +188,9 @@ impl<'a> MonitorSniff<'a> {
 
 
 
-    fn process_beacons(&mut self, beacons: Vec<Vec<u8>>) {
-        for b in beacons.into_iter() {
-            if let Some(info) = BeaconDissector::parse_beacon(&b) {
-                let ssid        = info[0].clone();
-                let bssid       = info[1].clone();
-                let channel: u8 = info[2].parse().unwrap_or_else(|_| 0);
-                let frequency   = Self::get_frequency(channel);
-                
-                self.add_info(ssid, bssid, channel, frequency);
-            }
-        }
-    }
-
-
-
-    fn get_frequency(channel: u8) -> String {
-        if channel <= 14 {"2.4".to_string()} else {"5".to_string()}
-    }
-
-
-
-    #[inline]
-    fn add_info(
-        &mut self, 
-        ssid      : String, 
-        bssid     : String, 
-        channel   : u8, 
-        frequency : String
-    ) {
-        self.wifis_buf
-            .entry(ssid)
-            .and_modify(|existing_info| {
-                existing_info.bssids.insert(bssid.clone());
-            })
-            .or_insert_with(|| {
-                WifiData::new(bssid, channel, frequency.to_string())
-            });
+    fn send_data(&mut self) {
+        let mut guard = self.buffer.lock().unwrap();
+        *self.wifis_buf = mem::take(&mut *guard);
     }
 
 }
