@@ -130,7 +130,7 @@ impl<'a> MonitorSniff<'a> {
                 existing_info.bssids.insert(bssid.clone());
             })
             .or_insert_with(|| {
-                WifiData::new(bssid, channel, frequency.to_string())
+                WifiData::new(bssid, channel, frequency.to_string(), String::new())
             });
     }
 

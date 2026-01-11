@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, mem};
+use std::{collections::{BTreeMap, BTreeSet}, mem};
 use crate::engines::wifi_map::{WmapArgs, SysSniff, MonitorSniff, WifiData};
 
 
@@ -18,12 +18,27 @@ impl WifiMapper {
 
 
     pub fn execute(&mut self) {
+        self.display_exec_info();
+        self.execute_mode();
+        self.display_results();
+    }
+
+
+
+    fn display_exec_info(&self) {
+        let mode = if self.args.monitor {"Monitor"} else {"System"};
+
+        println!("\nIface..: {}", self.args.iface);
+        println!("Mode...: {} Sniff", mode);
+    }
+
+
+
+    fn execute_mode(&mut self) {
         match self.args.monitor {
             true  => self.monitor_sniff(),
             false => self.sys_sniff(),
         }
-
-        self.display_results();
     }
 
 
@@ -45,12 +60,16 @@ impl WifiMapper {
      fn display_results(&mut self) {
         let max_len = self.wifis.keys().map(String::len).max().unwrap_or(4);
         let wifis   = mem::take(&mut self.wifis);
-
+        
+        let mut chnls:BTreeSet<u8> = BTreeSet::new();
         Self::display_header(max_len);
         
         for (name, info) in wifis.into_iter() {
             Self::display_wifi_info(&name, &info, max_len);
+            chnls.insert(info.chnl);
         }
+
+        println!("\n# Channels found: {:?}", chnls);
     }
 
 
@@ -58,9 +77,9 @@ impl WifiMapper {
     fn display_header(max_len: usize) {
         println!(
             "\n{:<width$}  {:<17}  {}  {}", 
-            "SSID", "MAC", "Channel", "Frequency", width = max_len
+            "SSID", "MAC", "Channel", "Freq", width = max_len
         );
-        println!("{}  {}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7), "-".repeat(9));
+        println!("{}  {}  {}  {}", "-".repeat(max_len), "-".repeat(17), "-".repeat(7), "-".repeat(4));
     }
 
 
@@ -72,8 +91,8 @@ impl WifiMapper {
             "{:<width$}  {}  {:<7}  {}G",
             name, 
             macs.first().unwrap_or(&&"N/A".to_string()), 
-            info.channel,
-            info.frequency,
+            info.chnl,
+            info.freq,
             width = max_len
         );
         
