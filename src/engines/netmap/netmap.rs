@@ -45,7 +45,7 @@ impl NetworkMapper {
         self.start_pkt_processor();
         self.create_proto_thread(); 
         self.stop_pkt_processor();
-        self.get_names();
+        self.resolve_names();
         self.display_result();
     }
 
@@ -68,7 +68,7 @@ impl NetworkMapper {
         if self.args.udp { protocols.push("UDP"); }
         
         let proto = protocols.join(", ");
-        let first = Ipv4Addr::from(self.ips.end_u32);
+        let first = Ipv4Addr::from(self.ips.start_u32);
         let last  = Ipv4Addr::from(self.ips.end_u32);
         let len   = self.ips.end_u32 - self.ips.start_u32 + 1;
 
@@ -291,7 +291,7 @@ impl NetworkMapper {
 
 
 
-    fn get_names(&mut self) {
+    fn resolve_names(&mut self) {
         let mut guard = self.active_ips.lock().unwrap();
         
         for (ip, info) in guard.iter_mut() {
@@ -341,7 +341,6 @@ struct Info {
     mac  : String,
     name : String,
 }
-
 
 struct Iterators {
     ips    : Ipv4Iter,

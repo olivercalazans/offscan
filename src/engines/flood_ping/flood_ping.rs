@@ -47,11 +47,7 @@ impl PingFlooder {
 
     fn set_pkt_info_for(&mut self) {
         self.pkt_data.src_ip  = self.args.src_ip;
-        self.pkt_data.src_mac = if self.args.src_mac.is_none() {
-                None
-            } else {
-                self.resolve_mac(self.args.src_mac.clone())
-            };
+        self.pkt_data.src_mac = self.resolve_mac(self.args.src_mac.clone());
 
         self.pkt_data.dst_ip  = Some(self.args.dst_ip);
         self.pkt_data.dst_mac = self.resolve_mac(Some(self.args.dst_mac.clone()));

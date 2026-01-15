@@ -16,6 +16,7 @@ pub struct TcpArgs {
 
 
     /// Target port
+    #[arg(short, long)]
     pub port: u16,
 
 

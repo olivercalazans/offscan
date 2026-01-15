@@ -50,6 +50,7 @@ impl TcpFlooder {
         self.pkt_data.src_ip   = self.args.src_ip;
         self.pkt_data.src_mac  = self.resolve_mac(self.args.src_mac.clone());
         self.pkt_data.dst_port = self.args.port;
+        
         self.pkt_data.dst_ip   = self.args.target_ip;
         self.pkt_data.dst_mac  = self.resolve_mac(Some(self.args.target_mac.clone())).unwrap();
         self.pkt_data.flag     = if self.args.ack {"ack".to_string()} else {"syn".to_string()};

@@ -8,10 +8,12 @@ use clap::Parser;
 pub struct PingArgs {
 
     /// Destination IP address to flood
+    #[arg(long)]
     pub dst_ip: Ipv4Addr,
 
 
     /// Destination MAC address. Use 'local' to use the iface MAC
+    #[arg(long)]
     pub dst_mac: String,
 
     
