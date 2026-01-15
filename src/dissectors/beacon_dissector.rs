@@ -13,20 +13,20 @@ impl BeaconDissector {
             return None;
         }
 
-        let frame_control = u16::from_le_bytes([frame[0], frame[1]]);
-        let frame_type    = (frame_control >> 2) & 0x03; 
-        let frame_subtype = (frame_control >> 4) & 0x0F;
+        let frame_ctrl    = u16::from_le_bytes([frame[0], frame[1]]);
+        let frame_type    = (frame_ctrl >> 2) & 0x03; 
+        let frame_subtype = (frame_ctrl >> 4) & 0x0F;
 
         if frame_type != 0 || frame_subtype != 8 {
             return None;
         }
 
-        let bssid     = Self::get_bssid(frame);
-        let ssid      = Self::get_ssid(frame);
-        let channel   = Self::get_channel(frame);
-        let security  = Self::get_security_type(frame);
+        let bssid = Self::get_bssid(frame);
+        let ssid  = Self::get_ssid(frame);
+        let chnl  = Self::get_channel(frame);
+        let sec   = Self::get_sec_type(frame);
 
-        Some(vec![ssid, bssid, channel.to_string(), security])
+        Some(vec![ssid, bssid, chnl.to_string(), sec])
     }
 
 
@@ -55,9 +55,9 @@ impl BeaconDissector {
                 continue;
             }
 
-            let frame_control = u16::from_le_bytes([beacon[i], beacon[i+1]]);
-            let frame_type    = (frame_control >> 2) & 0x03;
-            let frame_subtype = (frame_control >> 4) & 0x0F;
+            let frame_ctrl = u16::from_le_bytes([beacon[i], beacon[i+1]]);
+            let frame_type    = (frame_ctrl >> 2) & 0x03;
+            let frame_subtype = (frame_ctrl >> 4) & 0x0F;
 
             if frame_type != 0 || frame_subtype != 8 {
                 continue;
@@ -95,8 +95,8 @@ impl BeaconDissector {
             return None;
         }
 
-        let frame_control = u16::from_le_bytes([after_radiotap[0], after_radiotap[1]]);
-        let frame_type    = (frame_control >> 2) & 0x03;
+        let frame_ctrl = u16::from_le_bytes([after_radiotap[0], after_radiotap[1]]);
+        let frame_type = (frame_ctrl >> 2) & 0x03;
         if frame_type > 2 {
             return None;
         }
@@ -115,9 +115,9 @@ impl BeaconDissector {
             }
 
             let frame_data    = &beacon[offset..];
-            let frame_control = u16::from_le_bytes([frame_data[0], frame_data[1]]);
-            let frame_type    = (frame_control >> 2) & 0x03;
-            let frame_subtype = (frame_control >> 4) & 0x0F;
+            let frame_ctrl    = u16::from_le_bytes([frame_data[0], frame_data[1]]);
+            let frame_type    = (frame_ctrl >> 2) & 0x03;
+            let frame_subtype = (frame_ctrl >> 4) & 0x0F;
             
             if frame_type != 0 || frame_subtype != 8 {
                 continue;
@@ -238,12 +238,12 @@ impl BeaconDissector {
 
 
 
-    fn get_security_type(frame: &[u8]) -> String {
+    fn get_sec_type(frame: &[u8]) -> String {
         if frame.len() < 38 {
             return "????".to_string();
         }
 
-        let mut security_flags = SecurityFlags::new();
+        let mut sec_flags = secFlags::new();
         let mut offset = 36;
 
         while offset + 1 < frame.len() {
@@ -257,21 +257,21 @@ impl BeaconDissector {
             let element_data = &frame[offset + 2..offset + 2 + element_length];
 
             match element_id {
-                0x30 => Self::process_rsn_element(element_data, &mut security_flags),
-                0xDD => Self::process_vendor_element(element_data, &mut security_flags),
-                0x06 => Self::process_privacy_element(element_data, &mut security_flags),
+                0x30 => Self::process_rsn_element(element_data, &mut sec_flags),
+                0xDD => Self::process_vendor_element(element_data, &mut sec_flags),
+                0x06 => Self::process_privacy_element(element_data, &mut sec_flags),
                 _ => {}
             }
 
             offset += 2 + element_length;
         }
 
-        security_flags.to_security_string()
+        sec_flags.to_sec_string()
     }
 
 
 
-    fn process_rsn_element(data: &[u8], flags: &mut SecurityFlags) {
+    fn process_rsn_element(data: &[u8], flags: &mut secFlags) {
         flags.has_rsn = true;
         flags.is_open = false;
 
@@ -324,7 +324,7 @@ impl BeaconDissector {
 
 
 
-    fn process_vendor_element(data: &[u8], flags: &mut SecurityFlags) {
+    fn process_vendor_element(data: &[u8], flags: &mut secFlags) {
         if data.len() >= 4 &&
            data[0] == 0x00 &&
            data[1] == 0x50 &&
@@ -337,7 +337,7 @@ impl BeaconDissector {
 
 
 
-    fn process_privacy_element(data: &[u8], flags: &mut SecurityFlags) {
+    fn process_privacy_element(data: &[u8], flags: &mut secFlags) {
         if !data.is_empty() && data[0] & 0x10 != 0 {
             flags.has_wep = true;
             flags.is_open = false;
@@ -348,7 +348,7 @@ impl BeaconDissector {
 
 
 
-struct SecurityFlags {
+struct secFlags {
     has_rsn: bool,
     has_wpa: bool,
     has_wep: bool,
@@ -356,9 +356,9 @@ struct SecurityFlags {
     is_wpa3: bool,
 }
 
-impl SecurityFlags {
+impl secFlags {
     fn new() -> Self {
-        SecurityFlags {
+        secFlags {
             has_rsn: false,
             has_wpa: false,
             has_wep: false,
@@ -367,7 +367,7 @@ impl SecurityFlags {
         }
     }
 
-    fn to_security_string(&self) -> String {
+    fn to_sec_string(&self) -> String {
         if self.is_wpa3 {
             "WPA3".to_string()
         } else if self.has_rsn {
