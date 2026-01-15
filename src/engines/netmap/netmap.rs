@@ -100,12 +100,12 @@ impl NetworkMapper {
 
 
     fn sniff_and_dissect(
-        mut sniffer    : Sniffer,
-        mut dissector  : PacketDissector,
-        active_ips     : Arc<Mutex<BTreeMap<Ipv4Addr, Info>>>,
-        running        : Arc<AtomicBool>,
-        start_u32      : u32,
-        end_u32        : u32,
+        mut sniffer   : Sniffer,
+        mut dissector : PacketDissector,
+        active_ips    : Arc<Mutex<BTreeMap<Ipv4Addr, Info>>>,
+        running       : Arc<AtomicBool>,
+        start_u32     : u32,
+        end_u32       : u32,
     ) {
         let recx = sniffer.start();
         let mut temp_buf: BTreeMap<Ipv4Addr, Info> = BTreeMap::new();

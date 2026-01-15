@@ -1,4 +1,4 @@
-use crate::utils::mac_u8_to_string;
+use crate::utils::TypeConverter;
 
 
 pub(crate) struct BeaconDissector;
@@ -137,7 +137,7 @@ impl BeaconDissector {
         }
 
         let bssid_bytes = &frame[16..22];
-        mac_u8_to_string(bssid_bytes)
+        TypeConverter::mac_vec_u8_to_string(bssid_bytes)
     }
 
 
@@ -243,7 +243,7 @@ impl BeaconDissector {
             return "????".to_string();
         }
 
-        let mut sec_flags = secFlags::new();
+        let mut sec_flags = SecFlags::new();
         let mut offset = 36;
 
         while offset + 1 < frame.len() {
@@ -271,7 +271,7 @@ impl BeaconDissector {
 
 
 
-    fn process_rsn_element(data: &[u8], flags: &mut secFlags) {
+    fn process_rsn_element(data: &[u8], flags: &mut SecFlags) {
         flags.has_rsn = true;
         flags.is_open = false;
 
@@ -324,7 +324,7 @@ impl BeaconDissector {
 
 
 
-    fn process_vendor_element(data: &[u8], flags: &mut secFlags) {
+    fn process_vendor_element(data: &[u8], flags: &mut SecFlags) {
         if data.len() >= 4 &&
            data[0] == 0x00 &&
            data[1] == 0x50 &&
@@ -337,7 +337,7 @@ impl BeaconDissector {
 
 
 
-    fn process_privacy_element(data: &[u8], flags: &mut secFlags) {
+    fn process_privacy_element(data: &[u8], flags: &mut SecFlags) {
         if !data.is_empty() && data[0] & 0x10 != 0 {
             flags.has_wep = true;
             flags.is_open = false;
@@ -348,7 +348,7 @@ impl BeaconDissector {
 
 
 
-struct secFlags {
+struct SecFlags {
     has_rsn: bool,
     has_wpa: bool,
     has_wep: bool,
@@ -356,9 +356,9 @@ struct secFlags {
     is_wpa3: bool,
 }
 
-impl secFlags {
+impl SecFlags {
     fn new() -> Self {
-        secFlags {
+        SecFlags {
             has_rsn: false,
             has_wpa: false,
             has_wep: false,

@@ -6,7 +6,7 @@ use crate::builders::Packets;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::sockets::Layer2Socket;
-use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, parse_mac };
+use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, TypeConverter };
 
 
 
@@ -72,7 +72,7 @@ impl PingFlooder {
             mac
         };
 
-        match parse_mac(&mac_to_parse) {
+        match TypeConverter::mac_str_to_vec_u8(&mac_to_parse) {
             Err(e)  => { abort(e) },
             Ok(mac) => { Some(mac) },    
         }

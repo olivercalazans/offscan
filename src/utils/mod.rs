@@ -13,8 +13,5 @@ pub(crate) use dns::get_host_name;
 pub(crate) mod first_and_last_ip;
 pub(crate) use first_and_last_ip::get_first_and_last_ip;
 
-pub(crate) mod format_mac;
-pub(crate) use format_mac::mac_u8_to_string;
-
-pub(crate) mod mac_parser;
-pub(crate) use mac_parser::parse_mac;
+pub(crate) mod type_converter;
+pub(crate) use type_converter::TypeConverter;

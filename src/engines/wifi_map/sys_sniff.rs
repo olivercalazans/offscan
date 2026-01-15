@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, mem};
 use crate::engines::wifi_map::WifiData;
-use crate::utils::{mac_u8_to_string, abort};
+use crate::utils::{TypeConverter, abort};
 
 
 #[repr(C)]
@@ -86,7 +86,7 @@ impl<'a> SysSniff<'a> {
 
         for info in sys_info.into_iter() {
             let ssid  = Self::ssid_to_string(&info.ssid);
-            let bssid = mac_u8_to_string(&info.bssid);
+            let bssid = TypeConverter::mac_vec_u8_to_string(&info.bssid);
             let chnl  = Self::freq_to_channel(info.freq);
             let freq  = Self::get_frequency(chnl);
 

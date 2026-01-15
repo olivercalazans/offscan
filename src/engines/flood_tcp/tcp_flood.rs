@@ -6,9 +6,7 @@ use crate::builders::Packets;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::sockets::Layer2Socket;
-use crate::utils::{
-    abort, inline_display, get_first_and_last_ip, parse_mac, mac_u8_to_string, CtrlCHandler
-};
+use crate::utils::{ abort, inline_display, get_first_and_last_ip, TypeConverter, CtrlCHandler };
 
 
 
@@ -72,7 +70,7 @@ impl TcpFlooder {
             _         => mac
         };
 
-        match parse_mac(&mac_to_parse) {
+        match TypeConverter::mac_str_to_vec_u8(&mac_to_parse) {
             Err(e)  => { abort(e) },
             Ok(mac) => { Some(mac) },    
         }
@@ -82,7 +80,7 @@ impl TcpFlooder {
     
     fn display_pkt_data(&self) {
         let src_mac = match self.pkt_data.src_mac {
-            Some(mac) => mac_u8_to_string(&mac),
+            Some(mac) => TypeConverter::mac_vec_u8_to_string(&mac),
             None      => "Random".to_string(),
         };
 
@@ -91,8 +89,10 @@ impl TcpFlooder {
             None     => "Random".to_string(),
         };
 
+        let dst_mac = TypeConverter::mac_vec_u8_to_string(&self.pkt_data.dst_mac);
+
         println!("SRC >> MAC: {}  IP: {}", src_mac, src_ip);
-        println!("DST >> MAC: {}  IP: {}", mac_u8_to_string(&self.pkt_data.dst_mac), self.pkt_data.dst_ip);
+        println!("DST >> MAC: {}  IP: {}", dst_mac, self.pkt_data.dst_ip);
         println!("IFACE: {}", self.iface);
     }
 
