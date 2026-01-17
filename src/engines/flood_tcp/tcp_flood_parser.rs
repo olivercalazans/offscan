@@ -8,11 +8,13 @@ use clap::Parser;
 pub struct TcpArgs {
 
     /// Target IP address to flood
-    pub target_ip: Ipv4Addr,
+    #[arg(long = "dip")]
+    pub dst_ip: Ipv4Addr,
 
 
-    /// Use "gateway" if the target isn't in the local net
-    pub target_mac: String,
+    /// Use "local" = iface MAC, "gateway" = gateway MAC
+    #[arg(long = "dmac")]
+    pub dst_mac: String,
 
 
     /// Target port
@@ -21,12 +23,12 @@ pub struct TcpArgs {
 
 
     /// Optional source IP address
-    #[arg(long)]
+    #[arg(long = "sip")]
     pub src_ip: Option<Ipv4Addr>,
 
 
-    /// Use "local" to use the interface MAC address
-    #[arg(long)]
+    /// Use "local" = iface MAC or "gateway" = gateway MAC
+    #[arg(long = "smac")]
     pub src_mac: Option<String>,
 
 
