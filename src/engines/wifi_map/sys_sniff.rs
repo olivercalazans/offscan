@@ -1,14 +1,14 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, mem};
 use crate::engines::wifi_map::WifiData;
-use crate::utils::{mac_u8_to_string, abort};
+use crate::utils::{TypeConverter, abort};
 
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 struct Info {
-    bssid     : [u8; 6],
-    ssid      : [i8; 33],
-    frequency : u32,
+    bssid : [u8; 6],
+    ssid  : [i8; 33],
+    freq  : u32,
 }
 
 
@@ -28,6 +28,7 @@ unsafe extern "C" {
 pub(super) struct SysSniff<'a> {
     iface     : String,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
+    buffer    : Vec<Info>,
 }
 
 
@@ -37,21 +38,23 @@ impl<'a> SysSniff<'a> {
         iface     : String, 
         wifis_buf : &'a mut BTreeMap<String, WifiData>
     ) -> Self {
-        Self { iface, wifis_buf, }
+        Self { 
+            iface, 
+            wifis_buf,
+            buffer : Vec::new(), 
+        }
     }
 
 
 
     pub fn execute_sys_sniff(&mut self) {
-        println!("Getting data from the system");
-
-        let sys_info = self.call_c_module();
-        self.process_info(sys_info);
+        self.call_c_module();
+        self.process_info();
     }
 
 
 
-    fn call_c_module(&mut self) -> Vec<Info>{
+    fn call_c_module(&mut self) {
         unsafe {
             let iface = std::ffi::CString::new(self.iface.clone()).unwrap();
 
@@ -72,21 +75,22 @@ impl<'a> SysSniff<'a> {
             let sys_info = slice.iter().copied().map(Into::into).collect();
 
             free_scan_results(ptr);
-
-            sys_info
+            self.buffer = sys_info;
         }
     }
 
 
 
-    fn process_info(&mut self, sys_info: Vec<Info>) {
-        for info in sys_info.into_iter() {
-            let ssid      = Self::ssid_to_string(&info.ssid);
-            let bssid     = mac_u8_to_string(&info.bssid);
-            let channel   = Self::freq_to_channel(info.frequency);
-            let frequency = Self::get_frequency(channel);
+    fn process_info(&mut self) {
+        let sys_info = mem::take(&mut self.buffer);
 
-            self.add_info(ssid, bssid, channel, frequency)
+        for info in sys_info.into_iter() {
+            let ssid  = Self::ssid_to_string(&info.ssid);
+            let bssid = TypeConverter::mac_vec_u8_to_string(&info.bssid);
+            let chnl  = Self::freq_to_channel(info.freq);
+            let freq  = Self::get_frequency(chnl);
+
+            self.add_info(ssid, bssid, chnl, freq)
         }
     }
 
@@ -115,8 +119,8 @@ impl<'a> SysSniff<'a> {
 
 
 
-    fn get_frequency(channel: u8) -> String {
-        if channel <= 14 {"2.4".to_string()} else {"5".to_string()}
+    fn get_frequency(chnl: u8) -> String {
+        if chnl <= 14 {"2.4".to_string()} else {"5".to_string()}
     }
 
 
@@ -124,10 +128,10 @@ impl<'a> SysSniff<'a> {
     #[inline]
     fn add_info(
         &mut self, 
-        ssid      : String, 
-        bssid     : String, 
-        channel   : u8, 
-        frequency : String
+        ssid  : String, 
+        bssid : String, 
+        chnl  : u8, 
+        freq  : String
     ) {
         self.wifis_buf
             .entry(ssid)
@@ -135,7 +139,7 @@ impl<'a> SysSniff<'a> {
                 existing_info.bssids.insert(bssid.clone());
             })
             .or_insert_with(|| {
-                WifiData::new(bssid, channel, frequency.to_string())
+                WifiData::new(bssid, chnl, freq.to_string(), String::new())
             });
     }
 

@@ -6,7 +6,7 @@ use crate::builders::Packets;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::sockets::Layer2Socket;
-use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, abort, parse_mac };
+use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, resolve_mac };
 
 
 
@@ -47,35 +47,10 @@ impl PingFlooder {
 
     fn set_pkt_info_for(&mut self) {
         self.pkt_data.src_ip  = self.args.src_ip;
-        self.pkt_data.src_mac = if self.args.src_mac.is_none() {
-                None
-            } else {
-                self.resolve_mac(self.args.src_mac.clone())
-            };
+        self.pkt_data.src_mac = resolve_mac(self.args.src_mac.clone(), &self.iface);
 
         self.pkt_data.dst_ip  = Some(self.args.dst_ip);
-        self.pkt_data.dst_mac = self.resolve_mac(Some(self.args.dst_mac.clone()));
-    }
-
-
-
-    fn resolve_mac(&self, input_mac: Option<String>) -> Option<[u8; 6]> {
-        if input_mac.is_none() {
-            return None;
-        }
-
-        let mac = input_mac.unwrap();
-
-        let mac_to_parse = if mac == "local" {
-            IfaceInfo::mac(&self.iface)
-        } else {
-            mac
-        };
-
-        match parse_mac(&mac_to_parse) {
-            Err(e)  => { abort(e) },
-            Ok(mac) => { Some(mac) },    
-        }
+        self.pkt_data.dst_mac = resolve_mac(Some(self.args.dst_mac.clone()), &self.iface);
     }
 
     

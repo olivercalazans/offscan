@@ -16,6 +16,7 @@ macro_rules! long_help {
 pub struct PortScanArgs {
 
     /// Target IP
+    #[arg(short, long)]
     pub target_ip: Ipv4Addr,
 
 

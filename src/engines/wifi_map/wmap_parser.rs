@@ -8,7 +8,7 @@ use crate::iface::IfaceInfo;
 pub struct WmapArgs {
 
     /// Interface to be use to get the beacons
-    #[arg(value_parser = IfaceInfo::exists)]
+    #[arg(short, long, value_parser = IfaceInfo::exists)]
     pub iface: String,
 
 

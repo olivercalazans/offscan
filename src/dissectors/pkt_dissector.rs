@@ -1,4 +1,5 @@
 use std::net::Ipv4Addr;
+use crate::utils::TypeConverter;
 
 
 
@@ -89,11 +90,7 @@ impl PacketDissector {
             return None;
         }
 
-        let mac = self.pkt[6..12]
-            .iter()
-            .map(|b| format!("{:02x}", b))
-            .collect::<Vec<_>>()
-            .join(":");
+        let mac = TypeConverter::mac_vec_u8_to_string(&self.pkt[6..12]);
         
         Some(mac)
     }
@@ -106,10 +103,7 @@ impl PacketDissector {
             return None;
         }
 
-        let src_ip_bytes: [u8; 4] = [
-            self.pkt[26], self.pkt[27], 
-            self.pkt[28], self.pkt[29]
-        ];
+        let src_ip_bytes: [u8; 4] = self.pkt[26..30].try_into().unwrap();
 
         Some(Ipv4Addr::from(src_ip_bytes))
     }

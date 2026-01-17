@@ -69,17 +69,17 @@ pub struct NetMapArgs {
 
 
     
-    /// Use only ICMP probes
+    /// Use only/and ICMP probes
     #[arg(long)]
     pub icmp: bool,
 
 
-    /// Use only TCP probes
+    /// Use only/and TCP probes
     #[arg(long)]
     pub tcp: bool,
 
     
-    /// Use only UDP probes
+    /// Use only/and UDP probes
     #[arg(long)]
     pub udp: bool,
 
