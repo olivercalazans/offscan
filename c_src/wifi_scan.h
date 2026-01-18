@@ -1,4 +1,3 @@
-// wifi_scan.h
 #ifndef WIFI_SCAN_H
 #define WIFI_SCAN_H
 
@@ -10,6 +9,7 @@ typedef struct {
     uint8_t  bssid[6];
     char     ssid[MAX_SSID_LEN + 1];
     uint32_t frequency;
+    char     security[16];
 } wifi_network_t;
 
 

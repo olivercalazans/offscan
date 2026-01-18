@@ -1,5 +1,4 @@
 #include "wifi_scan.h"
-
 #include <netlink/netlink.h>
 #include <netlink/genl/genl.h>
 #include <netlink/genl/ctrl.h>
@@ -17,6 +16,7 @@
 
 static wifi_network_t *results = NULL;
 static int result_count        = 0;
+
 
 
 static int scan_dump_cb(struct nl_msg *msg, void *arg) {
@@ -48,21 +48,73 @@ static int scan_dump_cb(struct nl_msg *msg, void *arg) {
                      : 0;
 
     memset(net->ssid, 0, sizeof(net->ssid));
+    memset(net->security, 0, sizeof(net->security));
 
     uint8_t *ie = nla_data(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
     int ie_len  = nla_len(bss[NL80211_BSS_INFORMATION_ELEMENTS]);
+
+    int wpa_found = 0;
+    int rsn_found = 0;
+    int privacy   = 0;
+
+    if (bss[NL80211_BSS_CAPABILITY]) {
+        uint16_t cap = nla_get_u16(bss[NL80211_BSS_CAPABILITY]);
+        privacy      = (cap & (1 << 0)) ? 1 : 0;
+    }
 
     for (int i = 0; i + 1 < ie_len; ) {
         uint8_t id  = ie[i];
         uint8_t len = ie[i + 1];
 
+        if (i + 2 + len > ie_len)
+            break;
+
         if (id == 0 && len <= 32) {
             memcpy(net->ssid, &ie[i + 2], len);
             net->ssid[len] = '\0';
-            break;
+        }
+
+        else if (id == 0xDD && len >= 8) {
+            if (ie[i+2] == 0x00 && ie[i+3] == 0x50 && ie[i+4] == 0xF2 &&
+                ie[i+5] == 0x01 && ie[i+6] == 0x01 && ie[i+7] == 0x00) {
+                wpa_found = 1;
+            }
+        }
+
+        else if (id == 0x30) {
+            rsn_found = 1;
+
+            if (len < 6) {
+                continue;
+            }
+            
+            uint8_t akm_count = ie[i + 6];
+            if (akm_count <= 0) {
+                continue;
+            }
+
+            for (int j = 0; j < akm_count && j < 4; j++) {
+                int offset = i + 8 + j * 4;
+                if (ie[offset] == 0x00 && ie[offset+1] == 0x0F &&
+                    ie[offset+2] == 0xAC && ie[offset+3] == 0x06) {
+                    strcpy(net->security, "wpa3");
+                }
+            }
         }
 
         i += 2 + len;
+    }
+
+    if (strlen(net->security) == 0) {
+        if (rsn_found) {
+            strcpy(net->security, "wpa2");
+        } else if (wpa_found) {
+            strcpy(net->security, "wpa");
+        } else if (privacy) {
+            strcpy(net->security, "wep");
+        } else {
+            strcpy(net->security, "open");
+        }
     }
 
     return NL_OK;
