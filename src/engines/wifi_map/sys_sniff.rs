@@ -1,3 +1,4 @@
+// sys_sniff.rs
 use std::{collections::BTreeMap, mem};
 use crate::engines::wifi_map::WifiData;
 use crate::utils::{TypeConverter, abort};
@@ -9,6 +10,7 @@ struct Info {
     bssid : [u8; 6],
     ssid  : [i8; 33],
     freq  : u32,
+    security : [i8; 16],  // Adicionado campo security
 }
 
 
@@ -85,12 +87,13 @@ impl<'a> SysSniff<'a> {
         let sys_info = mem::take(&mut self.buffer);
 
         for info in sys_info.into_iter() {
-            let ssid  = Self::ssid_to_string(&info.ssid);
-            let bssid = TypeConverter::mac_vec_u8_to_string(&info.bssid);
-            let chnl  = Self::freq_to_channel(info.freq);
-            let freq  = Self::get_frequency(chnl);
+            let ssid     = Self::ssid_to_string(&info.ssid);
+            let bssid    = TypeConverter::mac_vec_u8_to_string(&info.bssid);
+            let chnl     = Self::freq_to_channel(info.freq);
+            let freq     = Self::get_frequency(chnl);
+            let security = Self::security_to_string(&info.security);  // Nova função
 
-            self.add_info(ssid, bssid, chnl, freq)
+            self.add_info(ssid, bssid, chnl, freq, security)
         }
     }
 
@@ -98,6 +101,18 @@ impl<'a> SysSniff<'a> {
 
     fn ssid_to_string(ssid: &[i8]) -> String {
         let bytes: Vec<u8> = ssid
+            .iter()
+            .take_while(|&&b| b != 0)
+            .map(|&b| b as u8)
+            .collect();
+
+        String::from_utf8_lossy(&bytes).to_string()
+    }
+
+
+
+    fn security_to_string(security: &[i8]) -> String {
+        let bytes: Vec<u8> = security
             .iter()
             .take_while(|&&b| b != 0)
             .map(|&b| b as u8)
@@ -128,10 +143,11 @@ impl<'a> SysSniff<'a> {
     #[inline]
     fn add_info(
         &mut self, 
-        ssid  : String, 
-        bssid : String, 
-        chnl  : u8, 
-        freq  : String
+        ssid     : String, 
+        bssid    : String, 
+        chnl     : u8, 
+        freq     : String,
+        security : String,  // Novo parâmetro
     ) {
         self.wifis_buf
             .entry(ssid)
@@ -139,7 +155,7 @@ impl<'a> SysSniff<'a> {
                 existing_info.bssids.insert(bssid.clone());
             })
             .or_insert_with(|| {
-                WifiData::new(bssid, chnl, freq.to_string(), String::new())
+                WifiData::new(bssid, chnl, freq.to_string(), security)  // Passa segurança
             });
     }
 
