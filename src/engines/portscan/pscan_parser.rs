@@ -49,7 +49,7 @@ pub struct PortScanArgs {
     
     
     /// Scan UDP ports
-    #[arg(short = 'U', long = "UDP")]
+    #[arg(short = 'U', long)]
     pub udp: bool,
 
 }

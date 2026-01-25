@@ -1,6 +1,7 @@
 use clap::Parser;
 use crate::addrs::{Mac, Bssid};
-use crate::iface::IfaceInfo;
+use crate::iface::Iface;
+use crate::utils::parse_channel;
 
 
 
@@ -9,8 +10,8 @@ use crate::iface::IfaceInfo;
 pub struct DeauthArgs {
 
     /// Define a network interface to send the frames
-    #[arg(short, long, value_parser = IfaceInfo::exists)]
-    pub iface: String,
+    #[arg(short, long)]
+    pub iface: Iface,
 
 
     /// Target MAC
@@ -29,7 +30,7 @@ pub struct DeauthArgs {
 
 
     /// Channel
-    #[arg(short, long)]
+    #[arg(short, long, value_parser = parse_channel)]
     pub channel: i32,
 
 }

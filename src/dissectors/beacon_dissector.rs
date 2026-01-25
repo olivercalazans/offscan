@@ -330,7 +330,7 @@ impl BeaconDissector {
            data[0] == 0x00 &&
            data[1] == 0x50 &&
            data[2] == 0xF2 &&
-           data[3] == 0x01 {
+           data[3] == 0x01 { 
             flags.has_wpa = true;
             flags.is_open = false;
         }

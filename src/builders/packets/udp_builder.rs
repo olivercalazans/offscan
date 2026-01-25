@@ -38,7 +38,8 @@ impl UdpPktBuilder {
         dst_ip   : Ipv4Addr,
         dst_port : u16,
         payload  : &[u8]
-    ) -> usize 
+    ) 
+      -> usize 
     {
         let len_payload: usize = payload.len().try_into().unwrap();
         let len_pkt:     usize = 28 + len_payload;

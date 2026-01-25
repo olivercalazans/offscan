@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, mem};
 use crate::engines::wifi_map::WifiData;
 use crate::addrs::Bssid;
+use crate::iface::Iface;
 use crate::utils::abort;
 
 
@@ -28,7 +29,7 @@ unsafe extern "C" {
 
 
 pub(super) struct SysSniff<'a> {
-    iface     : String,
+    iface     : &'a Iface,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
     buffer    : Vec<Info>,
 }
@@ -37,7 +38,7 @@ pub(super) struct SysSniff<'a> {
 impl<'a> SysSniff<'a> {
 
     pub fn new(
-        iface     : String, 
+        iface     : &'a Iface, 
         wifis_buf : &'a mut BTreeMap<String, WifiData>
     ) -> Self {
         Self { 
@@ -58,7 +59,7 @@ impl<'a> SysSniff<'a> {
 
     fn call_c_module(&mut self) {
         unsafe {
-            let iface = std::ffi::CString::new(self.iface.clone()).unwrap();
+            let iface = std::ffi::CString::new(self.iface.name().to_string()).unwrap();
 
             let mut ptr: *mut Info = std::ptr::null_mut();
             let mut count: i32 = 0;

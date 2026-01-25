@@ -4,14 +4,14 @@ use std::sync::{Arc, Mutex};
 use crate::engines::wifi_map::WifiData;
 use crate::addrs::Bssid;
 use crate::dissectors::BeaconDissector;
-use crate::iface::IfaceManager;
+use crate::iface::{IfaceManager, Iface};
 use crate::sniffer::Sniffer;
 use crate::utils::{inline_display, abort};
 
 
 
 pub(super) struct MonitorSniff<'a> {
-    iface     : String,
+    iface     : &'a Iface,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
     buffer    : Arc<Mutex<BTreeMap<String, WifiData>>>,
     handle    : Option<thread::JoinHandle<()>>,
@@ -22,7 +22,7 @@ pub(super) struct MonitorSniff<'a> {
 impl<'a> MonitorSniff<'a> {
 
     pub fn new(
-        iface     : String, 
+        iface     : &'a Iface, 
         wifis_buf : &'a mut BTreeMap<String, WifiData>
     ) -> Self {
         Self { 
@@ -47,8 +47,9 @@ impl<'a> MonitorSniff<'a> {
 
 
     fn start_bc_processor(&mut self) {
-        let sniffer = Sniffer::new(self.iface.clone(), Self::get_bpf_filter(), false);
-        let buffer  = Arc::clone(&self.buffer);
+        let iface_name = self.iface.name().to_string();
+        let sniffer    = Sniffer::new(iface_name, Self::get_bpf_filter(), false);
+        let buffer     = Arc::clone(&self.buffer);
 
         self.running.store(true, Ordering::Relaxed);
         let running = Arc::clone(&self.running);
@@ -173,7 +174,7 @@ impl<'a> MonitorSniff<'a> {
         let mut err: Vec<i32> = Vec::new();
 
         for chnl in channels {
-            let done = IfaceManager::set_channel(&self.iface, chnl);
+            let done = IfaceManager::set_channel(self.iface.name(), chnl);
 
             if !done {
                 err.push(chnl);

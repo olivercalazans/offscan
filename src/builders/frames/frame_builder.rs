@@ -26,7 +26,8 @@ impl Frames {
         dst_mac : &[u8; 6], 
         bssid   : Bssid,
         seq     : u16,
-    ) -> &[u8] 
+    ) 
+      -> &[u8] 
     {
         Ieee80211::deauth(&mut self.buffer[12..38], src_mac, dst_mac, bssid, seq);
         &self.buffer[..38]
@@ -42,7 +43,8 @@ impl Frames {
         seq     : u16,
         channel : u8,
         sec     : &str,
-    ) -> &[u8]
+    ) 
+      -> &[u8]
     {
         Ieee80211::beacon_header(&mut self.buffer[12..36], bssid, seq);
         let len = Ieee80211::beacon_body(&mut self.buffer[36..], ssid, channel, sec);

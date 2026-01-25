@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use std::iter::Zip;
 use crate::engines::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandomValues};
-use crate::iface::IfaceInfo;
+use crate::iface::{Iface, SysInfo};
 use crate::builders::{Packets, UdpPayloads};
 use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
@@ -14,9 +14,13 @@ use crate::utils::{inline_display, get_host_name, abort};
 
 
 pub struct PortScanner {
-    args       : PortScanArgs,
-    iface      : String,
+    iface      : Iface,
     my_ip      : Ipv4Addr,
+    target_ip  : Ipv4Addr,
+    ports      : Option<String>,
+    random     : bool,
+    delay      : String,
+    udp        : bool,
     open_ports : Arc<Mutex<BTreeSet<u16>>>,
     handle     : Option<thread::JoinHandle<()>>,
     running    : Arc<AtomicBool>
@@ -27,14 +31,18 @@ pub struct PortScanner {
 impl PortScanner {
 
     pub fn new(args: PortScanArgs) -> Self {
-        let iface = IfaceInfo::iface_from_ip(args.target_ip.clone());
+        let iface = SysInfo::iface_from_ip(args.target_ip);
 
         Self {
-            my_ip      : IfaceInfo::ip(&iface).unwrap_or_else(|e| abort(e)),
+            my_ip      : iface.ip().unwrap_or_else(|e| abort(e)),
             open_ports : Arc::new(Mutex::new(BTreeSet::new())),
             running    : Arc::new(AtomicBool::new(false)),
             handle     : None,
-            args,
+            target_ip  : args.target_ip,
+            ports      : args.ports,
+            random     : args.random,
+            delay      : args.delay,
+            udp        : args.udp,
             iface,
         }
     }
@@ -52,18 +60,19 @@ impl PortScanner {
 
 
     fn display_info(&self) {
-        println!("Iface...: {}", self.iface);
-        println!("Target..: {}", self.args.target_ip);
-        println!("Proto...: {}", if self.args.udp {"UDP"} else {"TCP"});
+        println!("Iface...: {}", self.iface.name());
+        println!("Target..: {}", self.target_ip);
+        println!("Proto...: {}", if self.udp {"UDP"} else {"TCP"});
     }
 
 
 
     fn start_pkt_processor(&mut self) {
-        let sniffer    = Sniffer::new(self.iface.clone(), self.get_bpf_filter(), false);
+        let iface_name = self.iface.name().to_string();
+        let sniffer    = Sniffer::new(iface_name, self.get_bpf_filter(), false);
         let dissector  = PacketDissector::new();
         let open_ports = Arc::clone(&self.open_ports);
-        let is_udp     = self.args.udp.clone();
+        let is_udp     = self.udp.clone();
 
         self.running.store(true, Ordering::Relaxed);
         let running = Arc::clone(&self.running);
@@ -76,16 +85,16 @@ impl PortScanner {
 
 
     fn get_bpf_filter(&self) -> String {
-        if self.args.udp {
+        if self.udp {
             return format!(
                 "udp and dst host {} and src host {}",
-                self.my_ip, self.args.target_ip
+                self.my_ip, self.target_ip
             );
         }
 
         format!(
             "tcp[13] & 0x12 == 0x12 and dst host {} and src host {}",
-            self.my_ip, self.args.target_ip
+            self.my_ip, self.target_ip
         )
     }
 
@@ -157,7 +166,7 @@ impl PortScanner {
 
 
     fn send_probes(&mut self) {
-        match self.args.udp {
+        match self.udp {
             true  => { self.send_udp_probes(); }
             false => { self.send_tcp_probes(); }
         }
@@ -177,10 +186,10 @@ impl PortScanner {
                 
             let pkt = tools.builder.tcp_ip(
                 self.my_ip, src_port, 
-                self.args.target_ip, port
+                self.target_ip, port
             );
 
-            tools.socket.send_to(pkt, self.args.target_ip);
+            tools.socket.send_to(pkt, self.target_ip);
             Self::display_and_sleep(port, delay);
         }
     }
@@ -188,8 +197,8 @@ impl PortScanner {
 
 
     fn setup_tcp_iterators(&self) -> Zip<PortIter, DelayIter> {
-        let ports  = PortIter::new(self.args.ports.clone(), self.args.random.clone());
-        let delays = DelayIter::new(&self.args.delay, ports.len());
+        let ports  = PortIter::new(self.ports.clone(), self.random.clone());
+        let delays = DelayIter::new(&self.delay, ports.len());
         
         ports.zip(delays)
     }
@@ -206,11 +215,11 @@ impl PortScanner {
                 
             let pkt = tools.builder.udp_ip(
                 self.my_ip, src_port, 
-                self.args.target_ip, port, 
+                self.target_ip, port, 
                 &payload
             );
                 
-            tools.socket.send_to(pkt, self.args.target_ip);
+            tools.socket.send_to(pkt, self.target_ip);
             Self::display_and_sleep(port, delay);
         }
     }
@@ -219,7 +228,7 @@ impl PortScanner {
 
     fn setup_udp_iterators(&self) -> impl Iterator<Item = ((u16, Vec<u8>), f32)> + '_ {
         let payloads = UdpPayloads::new(self.my_ip.clone());
-        let delays   = DelayIter::new(&self.args.delay, payloads.len());
+        let delays   = DelayIter::new(&self.delay, payloads.len());
 
         let collected: Vec<_> = payloads.iter()
             .map(|(port, payload)| (port, payload.clone()))
@@ -249,10 +258,10 @@ impl PortScanner {
 
 
     fn display_result(&self) {
-        let device_name = get_host_name(&self.args.target_ip.to_string());
+        let device_name = get_host_name(&self.target_ip.to_string());
         let ports       = self.format_ports();
 
-        println!("\nOpen ports from {} ({})", device_name, self.args.target_ip);
+        println!("\nOpen ports from {} ({})", device_name, self.target_ip);
         println!("{}", ports);
     }
 

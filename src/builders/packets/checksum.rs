@@ -33,7 +33,9 @@ impl Checksum {
         src_ip   : &Ipv4Addr,
         dst_ip   : &Ipv4Addr,
         protocol : u8,
-    ) -> u16 {
+    ) 
+      -> u16
+    {
         let mut sum    = 0u32;
         let src_octets = src_ip.octets();
         let dst_octets = dst_ip.octets();

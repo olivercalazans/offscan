@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::DeauthArgs;
 use crate::addrs::{Mac, Bssid};
-use crate::iface::IfaceManager;
+use crate::iface::{Iface, IfaceManager};
 use crate::builders::Frames;
 use crate::sockets::Layer2Socket;
 use crate::utils::{ CtrlCHandler, inline_display, abort };
@@ -16,7 +16,7 @@ pub struct Deauthentication {
     frms_sent  : usize,
     seq_num    : u16,
     socket     : Layer2Socket,
-    iface      : String,
+    iface      : Iface,
     channel    : i32,
     bssid      : Bssid,
     target_mac : Mac,
@@ -51,11 +51,11 @@ impl Deauthentication {
 
 
     fn set_channel(&self) {
-        if !IfaceManager::set_channel(&self.iface, self.channel) {
+        if !IfaceManager::set_channel(self.iface.name(), self.channel) {
             abort(
                 format!(
                     "Uneable to set channel {} on interface {}", 
-                    self.iface, self.channel
+                    self.iface.name(), self.channel
                 )
             )
         }
