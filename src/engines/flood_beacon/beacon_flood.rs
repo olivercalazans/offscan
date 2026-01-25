@@ -1,11 +1,12 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::BcFloodArgs;
+use crate::addrs::Bssid;
 use crate::iface::IfaceManager;
 use crate::builders::Frames;
 use crate::sockets::Layer2Socket;
 use crate::generators::RandomValues;
-use crate::utils::{ CtrlCHandler, inline_display, abort };
+use crate::utils::{ CtrlCHandler, inline_display, abort};
 
 
 
@@ -58,7 +59,7 @@ impl BeaconFlood {
 
 
         while running.load(Ordering::SeqCst) {
-            let bssid = rand.random_mac();
+            let bssid = rand.random_bssid();
             let ssid  = rand.random_case_inversion(&self.args.ssid);
             let seq   = rand.random_seq();
             
@@ -72,7 +73,7 @@ impl BeaconFlood {
 
     fn send_quartet(
         &mut self,
-        bssid : [u8; 6],
+        bssid : Bssid,
         ssid  : &str,
         seq   : u16
     ) {
@@ -87,7 +88,7 @@ impl BeaconFlood {
     #[inline]
     fn send_beacon(
         &mut self, 
-        bssid : [u8; 6], 
+        bssid : Bssid, 
         ssid  : &str,
         seq   : u16,
         sec   : &str

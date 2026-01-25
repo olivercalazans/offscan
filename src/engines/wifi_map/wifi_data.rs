@@ -1,9 +1,10 @@
 use std::collections::HashSet;
+use crate::addrs::Bssid;
 
 
 
 pub(super) struct WifiData {
-    pub bssids : HashSet<String>,
+    pub bssids : HashSet<Bssid>,
     pub chnl   : u8,
     pub freq   : String,
     pub sec    : String,
@@ -12,7 +13,7 @@ pub(super) struct WifiData {
 
 impl WifiData {
     pub fn new(
-        bssid : String, 
+        bssid : Bssid, 
         chnl  : u8, 
         freq  : String,
         sec   : String,

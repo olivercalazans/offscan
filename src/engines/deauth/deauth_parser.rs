@@ -1,6 +1,7 @@
 use clap::Parser;
+use crate::addrs::{Mac, Bssid};
 use crate::iface::IfaceInfo;
-use crate::utils::TypeConverter;
+
 
 
 #[derive(Parser)]
@@ -13,13 +14,13 @@ pub struct DeauthArgs {
 
 
     /// Target MAC
-    #[arg(short, long, value_parser = TypeConverter::mac_str_to_vec_u8)]
-    pub target_mac: [u8; 6],
+    #[arg(short, long, value_parser = Mac::from_str)]
+    pub target_mac: Mac,
 
 
     /// BSSID
-    #[arg(short, long, value_parser = TypeConverter::mac_str_to_vec_u8)]
-    pub bssid: [u8; 6],
+    #[arg(short, long, value_parser = Bssid::from_str)]
+    pub bssid: Bssid,
 
 
     /// Delay between frame sendings (milliseconds)

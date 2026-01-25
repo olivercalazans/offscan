@@ -2,11 +2,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{net::Ipv4Addr};
 use crate::engines::TcpArgs;
+use crate::addrs::Mac;
 use crate::builders::Packets;
 use crate::generators::RandomValues;
 use crate::iface::IfaceInfo;
 use crate::sockets::Layer2Socket;
-use crate::utils::{inline_display, get_first_and_last_ip, TypeConverter, CtrlCHandler, resolve_mac};
+use crate::utils::{inline_display, get_first_and_last_ip, CtrlCHandler, resolve_mac};
 
 
 
@@ -61,7 +62,7 @@ impl TcpFlooder {
     
     fn display_pkt_data(&self) {
         let src_mac = match self.pkt_data.src_mac {
-            Some(mac) => TypeConverter::mac_vec_u8_to_string(&mac),
+            Some(mac) => mac.to_string(),
             None      => "Random".to_string(),
         };
 
@@ -70,10 +71,10 @@ impl TcpFlooder {
             None     => "Random".to_string(),
         };
 
-        let dst_mac = TypeConverter::mac_vec_u8_to_string(&self.pkt_data.dst_mac);
+        let dst_mac = self.pkt_data.dst_mac.to_string();
 
-        println!("SRC >> MAC: {}  IP: {}", src_mac, src_ip);
-        println!("DST >> MAC: {}  IP: {}", dst_mac, self.pkt_data.dst_ip);
+        println!("SRC >> MAC: {} / IP: {}", src_mac, src_ip);
+        println!("DST >> MAC: {} / IP: {}", dst_mac, self.pkt_data.dst_ip);
         println!("IFACE: {}", self.iface);
     }
 
@@ -130,9 +131,9 @@ impl crate::EngineTrait for TcpFlooder {
 
 struct PacketData {
     src_ip   : Option<Ipv4Addr>,
-    src_mac  : Option<[u8; 6]>,
+    src_mac  : Option<Mac>,
     dst_ip   : Ipv4Addr,
-    dst_mac  : [u8; 6],
+    dst_mac  : Mac,
     dst_port : u16,
     flag     : String,
 }
@@ -144,7 +145,7 @@ impl PacketData {
             src_ip   : None,
             src_mac  : None,
             dst_ip   : Ipv4Addr::new(0, 0, 0, 0),
-            dst_mac  : [0u8; 6],
+            dst_mac  : Mac::new([0u8; 6]),
             dst_port : 0,
             flag     : "".to_string(),
         }

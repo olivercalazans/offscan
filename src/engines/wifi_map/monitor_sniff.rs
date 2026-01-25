@@ -2,6 +2,7 @@ use std::{thread, time::Duration, collections::BTreeMap, mem};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use crate::engines::wifi_map::WifiData;
+use crate::addrs::Bssid;
 use crate::dissectors::BeaconDissector;
 use crate::iface::IfaceManager;
 use crate::sniffer::Sniffer;
@@ -99,7 +100,7 @@ impl<'a> MonitorSniff<'a> {
     ) {
         if let Some(info) = BeaconDissector::parse_beacon(&beacon) {
             let ssid     = info[0].clone();
-            let bssid    = info[1].clone();
+            let bssid    = Bssid::from_str(&info[1].clone()).unwrap();
             let chnl: u8 = info[2].parse().unwrap_or_else(|_| 0);
             let freq     = Self::get_frequency(chnl);
             let sec      = info[3].clone();
@@ -121,7 +122,7 @@ impl<'a> MonitorSniff<'a> {
     fn add_info(
         temp_buf : &mut BTreeMap<String, WifiData>,
         ssid     : String, 
-        bssid    : String, 
+        bssid    : Bssid, 
         chnl     : u8, 
         freq     : String,
         sec      : String,
@@ -179,7 +180,7 @@ impl<'a> MonitorSniff<'a> {
                 continue;
             }
 
-            inline_display(&format!("Sniffing chnl {} ({}G)", chnl, freq));
+            inline_display(&format!("Sniffing channel {} ({}G)", chnl, freq));
             thread::sleep(Duration::from_millis(300));
         }
 

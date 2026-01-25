@@ -89,20 +89,23 @@ impl WifiMapper {
 
 
     fn display_wifi_info(ssid: &str, info: &WifiData, max_len: usize) {
-        let macs: Vec<&String> = info.bssids.iter().collect();
+        let bssids: Vec<String> = info.bssids
+            .iter()
+            .map(|bssid| bssid.to_string())
+            .collect();
         
         println!(
             "{:<width$}  {}  {:<7}  {:<4}  {}G",
             ssid, 
-            macs.first().unwrap_or(&&"N/A".to_string()), 
+            bssids.first().unwrap_or(&&"N/A".to_string()).to_string(), 
             info.chnl,
             info.sec,
             info.freq,
             width = max_len
         );
         
-        for mac in macs.iter().skip(1) {
-            println!("{:<width$}  {}", "", mac, width = max_len);
+        for bssid in bssids.iter().skip(1) {
+            println!("{:<width$}  {}", "", bssid.to_string(), width = max_len);
         }
     }
 

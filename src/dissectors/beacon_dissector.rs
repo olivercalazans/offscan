@@ -1,6 +1,3 @@
-use crate::utils::TypeConverter;
-
-
 pub(crate) struct BeaconDissector;
 
 
@@ -136,8 +133,12 @@ impl BeaconDissector {
             return "00:00:00:00:00:00".to_string();
         }
 
-        let bssid_bytes = &frame[16..22];
-        TypeConverter::mac_vec_u8_to_string(bssid_bytes)
+        let bytes = &frame[16..22];
+        format!(
+            "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+            bytes[0], bytes[1], bytes[2],
+            bytes[3], bytes[4], bytes[5]
+        )
     }
 
 

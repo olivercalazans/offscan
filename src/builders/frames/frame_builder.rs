@@ -1,3 +1,4 @@
+use crate::addrs::Bssid;
 use crate::builders::frames::{Radiotap, Ieee80211};
 
 
@@ -21,9 +22,9 @@ impl Frames {
     #[inline]
     pub fn deauth(
         &mut self,
-        src_mac : [u8; 6],
-        dst_mac : [u8; 6], 
-        bssid   : [u8; 6],
+        src_mac : &[u8; 6],
+        dst_mac : &[u8; 6], 
+        bssid   : Bssid,
         seq     : u16,
     ) -> &[u8] 
     {
@@ -36,7 +37,7 @@ impl Frames {
     #[inline]
     pub fn beacon(
         &mut self,
-        bssid   : [u8; 6],
+        bssid   : Bssid,
         ssid    : &str,
         seq     : u16,
         channel : u8,
