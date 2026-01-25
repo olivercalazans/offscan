@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use crate::utils::TypeConverter;
+use crate::addrs::Mac;
 
 
 
@@ -85,12 +85,12 @@ impl PacketDissector {
 
 
     #[inline]
-    pub fn get_src_mac(&self) -> Option<String> {
+    pub fn get_src_mac(&self) -> Option<Mac> {
         if self.pkt.len() < 12 {
             return None;
         }
 
-        let mac = TypeConverter::mac_vec_u8_to_string(&self.pkt[6..12]);
+        let mac = Mac::from_slice(&self.pkt[6..12]);
         
         Some(mac)
     }

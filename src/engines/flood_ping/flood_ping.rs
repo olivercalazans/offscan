@@ -1,59 +1,76 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{ AtomicBool, Ordering };
 use std::sync::Arc;
 use std::net::Ipv4Addr;
 use crate::engines::PingArgs;
+use crate::addrs::Mac;
 use crate::builders::Packets;
 use crate::generators::RandomValues;
-use crate::iface::IfaceInfo;
+use crate::iface::{ Iface, SysInfo };
 use crate::sockets::Layer2Socket;
-use crate::utils::{ inline_display, get_first_and_last_ip, CtrlCHandler, resolve_mac };
+use crate::utils::{ abort, inline_display, get_first_and_last_ip, CtrlCHandler, resolve_mac };
 
 
 
 pub struct PingFlooder {
-    args      : PingArgs,
     rand      : RandomValues,
     builder   : Packets,
-    iface     : String,
+    iface     : Iface,
     pkts_sent : usize,
-    pkt_data  : PacketData,
+    src_ip    : Option<Ipv4Addr>,
+    src_mac   : Option<Mac>,
+    dst_ip    : Ipv4Addr,
+    dst_mac   : Mac,
 }
 
 
 impl PingFlooder {
 
     pub fn new(args: PingArgs) -> Self {
-        let iface               = IfaceInfo::iface_from_ip(args.dst_ip);
-        let (first_ip, last_ip) = get_first_and_last_ip(&iface);
+        let iface = SysInfo::iface_from_ip(args.dst_ip);
+        let cidr  = iface.cidr().unwrap_or_else(|e| abort(e));
+        
+        let (first_ip, last_ip) = get_first_and_last_ip(&cidr);
 
         Self {
             rand      : RandomValues::new(Some(first_ip), Some(last_ip)),
             builder   : Packets::new(),
             pkts_sent : 0,
-            pkt_data  : Default::default(),
+            src_ip    : args.src_ip,
+            src_mac   : resolve_mac(args.src_mac, &iface),
+            dst_ip    : args.dst_ip,
+            dst_mac   : resolve_mac(Some(args.dst_mac), &iface).unwrap(),
             iface,
-            args,
         }
     }
 
     
     
     pub fn execute(&mut self){
-        self.set_pkt_info_for();
+        self.display_exec_info();
         self.send_endlessly();
     }
 
 
+    
+    fn display_exec_info(&self) {
+        let src_mac = match self.src_mac {
+            Some(mac) => mac.to_string(),
+            None      => "Random".to_string(),
+        };
 
-    fn set_pkt_info_for(&mut self) {
-        self.pkt_data.src_ip  = self.args.src_ip;
-        self.pkt_data.src_mac = resolve_mac(self.args.src_mac.clone(), &self.iface);
+        let src_ip = match self.src_ip {
+            Some(ip) => ip.to_string(),
+            None     => "Random".to_string(),
+        };
 
-        self.pkt_data.dst_ip  = Some(self.args.dst_ip);
-        self.pkt_data.dst_mac = resolve_mac(Some(self.args.dst_mac.clone()), &self.iface);
+        let dst_mac = self.dst_mac.to_string();
+
+        println!("SRC >> MAC: {} / IP: {}", src_mac, src_ip);
+        println!("DST >> MAC: {} / IP: {}", dst_mac, self.dst_ip);
+        println!("IFACE: {}", self.iface.name());
     }
 
-    
+
 
     fn send_endlessly(&mut self) {
         let socket  = Layer2Socket::new(&self.iface);
@@ -76,10 +93,10 @@ impl PingFlooder {
     #[inline]
     fn get_packet(&mut self) -> &[u8] {
         self.builder.icmp_ping_ether(
-            self.pkt_data.src_mac.unwrap_or_else(|| self.rand.random_mac()),
-            self.pkt_data.src_ip.unwrap_or_else( || self.rand.random_ip()),
-            self.pkt_data.dst_mac.unwrap_or_else(|| self.rand.random_mac()),
-            self.pkt_data.dst_ip.unwrap_or_else( || self.rand.random_ip())
+            self.src_mac.unwrap_or_else(|| self.rand.random_mac()),
+            self.src_ip.unwrap_or_else( || self.rand.random_ip()),
+            self.dst_mac,
+            self.dst_ip
         )
     }
 
@@ -97,14 +114,4 @@ impl crate::EngineTrait for PingFlooder {
     fn execute(&mut self) {
         self.execute();
     }
-}
-
-
-
-#[derive(Default)]
-struct PacketData {
-    src_ip  : Option<Ipv4Addr>,
-    src_mac : Option<[u8; 6]>,
-    dst_ip  : Option<Ipv4Addr>,
-    dst_mac : Option<[u8; 6]>,
 }

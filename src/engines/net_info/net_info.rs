@@ -1,12 +1,11 @@
-use std::fs;
-use crate::iface::IfaceInfo;
+use crate::iface::{Iface, SysInfo};
 use crate::engines::NetInfoArgs;
 
 
 
 #[derive(Default)]
 pub struct NetworkInfo {
-    iface       : String,
+    iface       : Iface,
     state       : String, 
     if_type     : String, 
     mac         : String, 
@@ -30,7 +29,7 @@ impl NetworkInfo {
 
 
     pub fn execute(&mut self) {
-        IfaceInfo::ifaces()
+        SysInfo::ifaces()
             .into_iter()
             .enumerate()
             .for_each(|(i, iface)|{
@@ -53,55 +52,39 @@ impl NetworkInfo {
 
 
     fn set_iface(&mut self, iface: String) -> &mut Self {
-        self.iface = iface;
+        self.iface = Iface::new(&iface);
         self
     }
 
 
 
     fn set_state(&mut self) -> &mut Self {
-        self.state = IfaceInfo::get_info("operstate", &self.iface).to_uppercase();
+        self.state = self.iface.state().unwrap_or_else(|_| "Unknown".to_string());
         self
     }
 
     
     
     fn set_type(&mut self) -> &mut Self {        
-        if IfaceInfo::is_wireless(&self.iface) {
-            self.if_type = "Wireless".to_string();
-            return self;
-        }
-        
-        let type_path = format!("/sys/class/net/{}/type", &self.iface);
-        
-        self.if_type = fs::read_to_string(&type_path)
-            .map(|content| {
-                match content.trim() {
-                    "1"   => "Ethernet".to_string(),
-                    "772" => "Loopback".to_string(),
-                    _     => format!("Type-{}", content.trim()),
-                }
-            })
-            .unwrap_or_else(|_| "Unknown".to_string());
-        
-        if self.if_type == "Ethernet" && self.iface == "lo" {
-            self.if_type = "Loopback".to_string();
-        }
-        
+        self.if_type = self.iface.if_type();
         self
     }
     
 
 
     fn set_mac(&mut self) -> &mut Self {
-        self.mac = IfaceInfo::mac(&self.iface);
+        self.mac = match self.iface.mac() {
+            Ok(mac) => mac.to_string(),
+            Err(_)  => "Unknown".to_string(),
+        };
+
         self
     }
 
     
     
     fn set_ip(&mut self) -> &mut Self {
-        self.ip = match IfaceInfo::ip(&self.iface) {
+        self.ip = match self.iface.ip() {
             Ok(ip) => ip.to_string(),
             Err(_) => "None".to_string(),
         };
@@ -112,9 +95,9 @@ impl NetworkInfo {
     
     
     fn set_cidr(&mut self) -> &mut Self {
-        self.cidr = match IfaceInfo::cidr(&self.iface) {
-            Ok(ip) => ip.to_string(),
-            Err(_) => "Unknown".to_string(),
+        self.cidr = match self.iface.cidr() {
+            Ok(cidr) => cidr,
+            Err(_)   => "Unknown".to_string(),
         };
 
         self
@@ -158,15 +141,15 @@ impl NetworkInfo {
 
 
     fn set_mtu(&mut self) -> &mut Self {
-        self.mtu = IfaceInfo::get_info("mtu", &self.iface);
+        self.mtu = self.iface.mtu().unwrap_or_else(|_| "None".to_string());
         self
     }
 
 
 
     fn set_gateway_mac(&mut self) -> &mut Self {
-        self.gateway_mac = match IfaceInfo::gateway_mac(&self.iface) {
-            Ok(mac) => mac,
+        self.gateway_mac = match self.iface.gateway_mac() {
+            Ok(mac) => mac.to_string(),
             Err(_)  => "Unknown".to_string()
         };
         
@@ -176,43 +159,12 @@ impl NetworkInfo {
 
 
     fn set_gateway_ip(&mut self) -> &mut Self {
-        let content = fs::read_to_string("/proc/net/route")
-            .unwrap_or_default();
+        self.gateway_ip = match self.iface.gateway_ip() {
+            Ok(ip) => ip.to_string(),
+            Err(_) => "Unknown".to_string()
+        };
         
-        for line in content.lines().skip(1) {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-
-            if parts.len() < 8 || parts[0] != self.iface {
-                continue;
-            }
-
-            let gateway_hex = parts[2];
-            if gateway_hex == "00000000" {
-                continue;
-            }
-
-            if let Some(gateway) = Self::hex_to_ip(gateway_hex) {
-                self.gateway_ip = gateway;
-                return self;
-            }
-        }
-
-        self.gateway_ip = "Unknown".to_string();
         self
-    }
-
-    
-    
-    fn hex_to_ip(hex: &str) -> Option<String> {
-        if hex.len() != 8 {
-            return None;
-        }
-
-        let bytes: Vec<u8> = (0..4)
-            .map(|i| u8::from_str_radix(&hex[i*2..i*2+2], 16).ok())
-            .collect::<Option<Vec<_>>>()?;
-
-        Some(format!("{}.{}.{}.{}", bytes[3], bytes[2], bytes[1], bytes[0]))
     }
 
 
@@ -223,9 +175,9 @@ impl NetworkInfo {
             return self
         }
         
-        self.broadcast = match IfaceInfo::broadcast_ip(&self.iface) {
-            Err(_) => "None".to_string(),
+        self.broadcast = match self.iface.broadcast_ip() {
             Ok(ip) => ip.to_string(),
+            Err(_) => "Unknown".to_string(),
         };
 
         self
@@ -234,7 +186,7 @@ impl NetworkInfo {
     
     
     fn display_info(&self, index: usize) {
-        println!("#{} Interface: {} - State: {}", index, self.iface, self.state);
+        println!("#{} Interface: {} - State: {}", index, self.iface.name(), self.state);
         println!("  - Type.......: {}", self.if_type);
         println!("  - MAC........: {}", self.mac);
         println!("  - IP.........: {}", self.ip);

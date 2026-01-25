@@ -1,16 +1,19 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::BcFloodArgs;
-use crate::iface::IfaceManager;
+use crate::addrs::Bssid;
+use crate::iface::{Iface, IfaceManager};
 use crate::builders::Frames;
 use crate::sockets::Layer2Socket;
 use crate::generators::RandomValues;
-use crate::utils::{ CtrlCHandler, inline_display, abort };
+use crate::utils::{ CtrlCHandler, inline_display, abort};
 
 
 
 pub struct BeaconFlood {
-    args    : BcFloodArgs,
+    iface   : Iface,
+    channel : i32,
+    ssid    : String,
     bc_sent : usize,
     builder : Frames,
     socket  : Layer2Socket,
@@ -24,7 +27,9 @@ impl BeaconFlood {
             bc_sent : 0,
             builder : Frames::new(),
             socket  : Layer2Socket::new(&args.iface),
-            args, 
+            iface   : args.iface,
+            channel : args.channel,
+            ssid    : args.ssid,
         }
     }
 
@@ -38,12 +43,12 @@ impl BeaconFlood {
 
 
     fn set_channel(&self) {
-        if !IfaceManager::set_channel(&self.args.iface, self.args.channel) {
+        if !IfaceManager::set_channel(self.iface.name(), self.channel) {
             abort(
                 format!(
                     "Uneable to set channel {} on interface {}", 
-                    self.args.iface, 
-                    self.args.channel
+                    self.iface.name(),
+                    self.channel
                 )
             )
         }
@@ -58,8 +63,8 @@ impl BeaconFlood {
 
 
         while running.load(Ordering::SeqCst) {
-            let bssid = rand.random_mac();
-            let ssid  = rand.random_case_inversion(&self.args.ssid);
+            let bssid = rand.random_bssid();
+            let ssid  = rand.random_case_inversion(&self.ssid);
             let seq   = rand.random_seq();
             
             self.send_quartet(bssid, &ssid, seq);
@@ -72,7 +77,7 @@ impl BeaconFlood {
 
     fn send_quartet(
         &mut self,
-        bssid : [u8; 6],
+        bssid : Bssid,
         ssid  : &str,
         seq   : u16
     ) {
@@ -87,12 +92,12 @@ impl BeaconFlood {
     #[inline]
     fn send_beacon(
         &mut self, 
-        bssid : [u8; 6], 
+        bssid : Bssid, 
         ssid  : &str,
         seq   : u16,
         sec   : &str
     ) {
-        let beacon = self.builder.beacon(bssid, ssid, seq, self.args.channel as u8, sec);
+        let beacon = self.builder.beacon(bssid, ssid, seq, self.channel as u8, sec);
         
         self.socket.send(beacon);
         self.bc_sent += 1;

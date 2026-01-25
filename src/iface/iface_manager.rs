@@ -4,7 +4,10 @@ use crate::utils::abort;
 
 
 unsafe extern "C" {
-    fn set_wifi_channel(interface_name: *const libc::c_char, channel: libc::c_int) -> libc::c_int;
+    fn set_wifi_channel(
+        interface_name: *const libc::c_char, 
+        channel: libc::c_int
+    ) -> libc::c_int;
 }
 
 
@@ -14,7 +17,7 @@ pub(crate) struct IfaceManager;
 impl IfaceManager {
 
     pub fn set_channel(iface: &str, channel: i32) -> bool {
-        let c_iface   = CString::new(iface)
+        let c_iface = CString::new(iface)
             .unwrap_or_else(|e| abort(e.to_string()));
 
         unsafe {

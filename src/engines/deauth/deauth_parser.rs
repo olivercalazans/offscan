@@ -1,6 +1,8 @@
 use clap::Parser;
-use crate::iface::IfaceInfo;
-use crate::utils::TypeConverter;
+use crate::addrs::{Mac, Bssid};
+use crate::iface::Iface;
+use crate::utils::parse_channel;
+
 
 
 #[derive(Parser)]
@@ -8,18 +10,18 @@ use crate::utils::TypeConverter;
 pub struct DeauthArgs {
 
     /// Define a network interface to send the frames
-    #[arg(short, long, value_parser = IfaceInfo::exists)]
-    pub iface: String,
+    #[arg(short, long)]
+    pub iface: Iface,
 
 
     /// Target MAC
-    #[arg(short, long, value_parser = TypeConverter::mac_str_to_vec_u8)]
-    pub target_mac: [u8; 6],
+    #[arg(short, long, value_parser = Mac::from_str)]
+    pub target_mac: Mac,
 
 
     /// BSSID
-    #[arg(short, long, value_parser = TypeConverter::mac_str_to_vec_u8)]
-    pub bssid: [u8; 6],
+    #[arg(short, long, value_parser = Bssid::from_str)]
+    pub bssid: Bssid,
 
 
     /// Delay between frame sendings (milliseconds)
@@ -28,7 +30,7 @@ pub struct DeauthArgs {
 
 
     /// Channel
-    #[arg(short, long)]
+    #[arg(short, long, value_parser = parse_channel)]
     pub channel: i32,
 
 }

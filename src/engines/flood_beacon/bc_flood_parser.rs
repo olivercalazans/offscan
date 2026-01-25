@@ -1,5 +1,5 @@
 use clap::Parser;
-use crate::iface::IfaceInfo;
+use crate::iface::Iface;
 use crate::utils::parse_channel;
 
 
@@ -14,8 +14,8 @@ pub struct BcFloodArgs {
 
 
     /// Interface to be used
-    #[arg(short, long, value_parser = IfaceInfo::exists)]
-    pub iface: String,
+    #[arg(short, long)]
+    pub iface: Iface,
 
 
     /// Channel

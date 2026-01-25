@@ -23,7 +23,8 @@ impl Sniffer {
         iface   : String, 
         filter  : String, 
         promisc : bool
-    ) -> Self 
+    ) 
+      -> Self 
     {
         Self {
             filter,
@@ -53,7 +54,7 @@ impl Sniffer {
     
     
     fn create_sniffer(&self) -> Capture<pcap::Active> {
-        let dev     = self.get_default_iface();
+        let dev     = self.get_iface();
         let mut cap = self.open_capture(dev.clone());
         cap.filter(&self.filter, true).unwrap();
         
@@ -63,7 +64,7 @@ impl Sniffer {
 
     
     
-    fn get_default_iface(&self) -> Device {
+    fn get_iface(&self) -> Device {
         Device::list()
             .unwrap()
             .into_iter()

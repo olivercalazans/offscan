@@ -1,5 +1,5 @@
 use clap::Parser;
-use crate::iface::IfaceInfo;
+use crate::iface::Iface;
 
 
 
@@ -8,8 +8,8 @@ use crate::iface::IfaceInfo;
 pub struct WmapArgs {
 
     /// Interface to be use to get the beacons
-    #[arg(short, long, value_parser = IfaceInfo::exists)]
-    pub iface: String,
+    #[arg(short, long)]
+    pub iface: Iface,
 
 
     /// Sniff beacons from the interface on monitor mode

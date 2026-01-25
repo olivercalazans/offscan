@@ -2,15 +2,16 @@ use std::{thread, time::Duration, collections::BTreeMap, mem};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use crate::engines::wifi_map::WifiData;
+use crate::addrs::Bssid;
 use crate::dissectors::BeaconDissector;
-use crate::iface::IfaceManager;
+use crate::iface::{IfaceManager, Iface};
 use crate::sniffer::Sniffer;
 use crate::utils::{inline_display, abort};
 
 
 
 pub(super) struct MonitorSniff<'a> {
-    iface     : String,
+    iface     : &'a Iface,
     wifis_buf : &'a mut BTreeMap<String, WifiData>,
     buffer    : Arc<Mutex<BTreeMap<String, WifiData>>>,
     handle    : Option<thread::JoinHandle<()>>,
@@ -21,7 +22,7 @@ pub(super) struct MonitorSniff<'a> {
 impl<'a> MonitorSniff<'a> {
 
     pub fn new(
-        iface     : String, 
+        iface     : &'a Iface, 
         wifis_buf : &'a mut BTreeMap<String, WifiData>
     ) -> Self {
         Self { 
@@ -46,8 +47,9 @@ impl<'a> MonitorSniff<'a> {
 
 
     fn start_bc_processor(&mut self) {
-        let sniffer = Sniffer::new(self.iface.clone(), Self::get_bpf_filter(), false);
-        let buffer  = Arc::clone(&self.buffer);
+        let iface_name = self.iface.name().to_string();
+        let sniffer    = Sniffer::new(iface_name, Self::get_bpf_filter(), false);
+        let buffer     = Arc::clone(&self.buffer);
 
         self.running.store(true, Ordering::Relaxed);
         let running = Arc::clone(&self.running);
@@ -99,7 +101,7 @@ impl<'a> MonitorSniff<'a> {
     ) {
         if let Some(info) = BeaconDissector::parse_beacon(&beacon) {
             let ssid     = info[0].clone();
-            let bssid    = info[1].clone();
+            let bssid    = Bssid::from_str(&info[1].clone()).unwrap();
             let chnl: u8 = info[2].parse().unwrap_or_else(|_| 0);
             let freq     = Self::get_frequency(chnl);
             let sec      = info[3].clone();
@@ -121,7 +123,7 @@ impl<'a> MonitorSniff<'a> {
     fn add_info(
         temp_buf : &mut BTreeMap<String, WifiData>,
         ssid     : String, 
-        bssid    : String, 
+        bssid    : Bssid, 
         chnl     : u8, 
         freq     : String,
         sec      : String,
@@ -172,14 +174,14 @@ impl<'a> MonitorSniff<'a> {
         let mut err: Vec<i32> = Vec::new();
 
         for chnl in channels {
-            let done = IfaceManager::set_channel(&self.iface, chnl);
+            let done = IfaceManager::set_channel(self.iface.name(), chnl);
 
             if !done {
                 err.push(chnl);
                 continue;
             }
 
-            inline_display(&format!("Sniffing chnl {} ({}G)", chnl, freq));
+            inline_display(&format!("Sniffing channel {} ({}G)", chnl, freq));
             thread::sleep(Duration::from_millis(300));
         }
 

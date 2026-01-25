@@ -1,13 +1,14 @@
-use crate::iface::IfaceInfo;
-use crate::utils::{TypeConverter, abort};
+use crate::addrs::Mac;
+use crate::iface::Iface;
+use crate::utils::abort;
 
 
 
 pub(crate) fn resolve_mac(
     input_mac : Option<String>, 
-    iface     : &str
+    iface     : &Iface
 ) 
-  -> Option<[u8; 6]>
+  -> Option<Mac>
 {
     if input_mac.is_none() {
         return None;
@@ -15,14 +16,11 @@ pub(crate) fn resolve_mac(
 
     let mac = input_mac.unwrap();
 
-    let mac_to_parse = match mac.as_str() {
-        "gateway" => IfaceInfo::gateway_mac(iface).unwrap().to_string(),
-        "local"   => IfaceInfo::mac(iface),
-        _         => mac
+    let mac = match mac.as_str() {
+        "gateway" => iface.gateway_mac().unwrap_or_else(|e| abort(e)),
+        "local"   => iface.mac().unwrap_or_else(|e| abort(e)),
+        _         => Mac::from_str(&mac).unwrap_or_else(|e| abort(e))
     };
-
-    let mac = TypeConverter::mac_str_to_vec_u8(&mac_to_parse)
-        .unwrap_or_else(|e| abort(e));
     
     Some(mac)
 }

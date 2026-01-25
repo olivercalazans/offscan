@@ -1,18 +1,24 @@
 use std::{collections::{BTreeMap, BTreeSet}, mem};
 use crate::engines::wifi_map::{WmapArgs, SysSniff, MonitorSniff, WifiData};
+use crate::iface::Iface;
 
 
 
 pub struct WifiMapper {
-    args  : WmapArgs,
     wifis : BTreeMap<String, WifiData>,
+    iface : Iface,
+    mon   : bool,
 }
 
 
 impl WifiMapper {
     
     pub fn new(args: WmapArgs) -> Self {
-        Self { args, wifis : BTreeMap::new(), }
+        Self { 
+            wifis : BTreeMap::new(), 
+            iface : args.iface,
+            mon   : args.monitor
+        }
     }
 
 
@@ -26,16 +32,16 @@ impl WifiMapper {
 
 
     fn display_exec_info(&self) {
-        let mode = if self.args.monitor {"Monitor"} else {"System"};
+        let mode = if self.mon {"Monitor"} else {"System"};
 
-        println!("\nIface..: {}", self.args.iface);
+        println!("\nIface..: {}", self.iface.name());
         println!("Mode...: {} Sniff", mode);
     }
 
 
 
     fn execute_mode(&mut self) {
-        match self.args.monitor {
+        match self.mon {
             true  => self.monitor_sniff(),
             false => self.sys_sniff(),
         }
@@ -44,14 +50,14 @@ impl WifiMapper {
 
 
     fn monitor_sniff(&mut self) {
-        let mut mon_sniff = MonitorSniff::new(self.args.iface.clone(), &mut self.wifis);
+        let mut mon_sniff = MonitorSniff::new(&self.iface, &mut self.wifis);
         mon_sniff.execute_monitor_sniff();
     }
 
 
 
     fn sys_sniff(&mut self) {
-        let mut sys_sniff = SysSniff::new(self.args.iface.clone(), &mut self.wifis);
+        let mut sys_sniff = SysSniff::new(&self.iface, &mut self.wifis);
         sys_sniff.execute_sys_sniff();
     }
 
@@ -89,20 +95,23 @@ impl WifiMapper {
 
 
     fn display_wifi_info(ssid: &str, info: &WifiData, max_len: usize) {
-        let macs: Vec<&String> = info.bssids.iter().collect();
+        let bssids: Vec<String> = info.bssids
+            .iter()
+            .map(|bssid| bssid.to_string())
+            .collect();
         
         println!(
             "{:<width$}  {}  {:<7}  {:<4}  {}G",
             ssid, 
-            macs.first().unwrap_or(&&"N/A".to_string()), 
+            bssids.first().unwrap_or(&&"N/A".to_string()).to_string(), 
             info.chnl,
             info.sec,
             info.freq,
             width = max_len
         );
         
-        for mac in macs.iter().skip(1) {
-            println!("{:<width$}  {}", "", mac, width = max_len);
+        for bssid in bssids.iter().skip(1) {
+            println!("{:<width$}  {}", "", bssid.to_string(), width = max_len);
         }
     }
 

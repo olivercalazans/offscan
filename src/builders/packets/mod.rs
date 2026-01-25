@@ -7,8 +7,11 @@ pub(crate) use udp_payloads::UdpPayloads;
 mod checksum;
 use checksum::Checksum;
 
-mod headers;
-use headers::Headers;
+mod ether_header;
+use ether_header::ether_header;
+
+mod ip_header;
+use ip_header::ip_header;
 
 mod icmp_builder;
 use icmp_builder::IcmpPktBuilder;

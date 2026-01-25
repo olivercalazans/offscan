@@ -1,4 +1,5 @@
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::addrs::Bssid;
 use crate::utils::abort;
 
 
@@ -10,9 +11,9 @@ impl Ieee80211 {
     #[inline]
     pub fn deauth(
         buffer  : &mut [u8],
-        src_mac : [u8; 6],
-        dst_mac : [u8; 6], 
-        bssid   : [u8; 6],
+        src_mac : &[u8; 6],
+        dst_mac : &[u8; 6], 
+        bssid   : Bssid,
         seq     : u16,
     ) {
         buffer[0] = 0xC0;
@@ -20,9 +21,9 @@ impl Ieee80211 {
         buffer[2] = 0x3a;
         buffer[3] = 0x01;
 
-        buffer[4..10].copy_from_slice(&dst_mac);
-        buffer[10..16].copy_from_slice(&src_mac);
-        buffer[16..22].copy_from_slice(&bssid);
+        buffer[4..10].copy_from_slice(dst_mac);
+        buffer[10..16].copy_from_slice(src_mac);
+        buffer[16..22].copy_from_slice(bssid.bytes());
 
         let seq_ctrl = ((seq & 0x0FFF) << 4) | 0x00;
         buffer[22..24].copy_from_slice(&seq_ctrl.to_le_bytes());
@@ -36,7 +37,7 @@ impl Ieee80211 {
     #[inline]
     pub fn beacon_header(
         buffer : &mut [u8],
-        bssid  : [u8; 6],
+        bssid  : Bssid,
         seq    : u16,
     ) {
         buffer[0] = 0x80; // Type/Subtype: Management Beacon
@@ -46,8 +47,8 @@ impl Ieee80211 {
         buffer[3] = 0x00;
 
         buffer[4..10].copy_from_slice(&[0xFF; 6]);
-        buffer[10..16].copy_from_slice(&bssid);
-        buffer[16..22].copy_from_slice(&bssid);
+        buffer[10..16].copy_from_slice(bssid.bytes());
+        buffer[16..22].copy_from_slice(bssid.bytes());
 
         let seq_ctrl = (seq & 0x0FFF) << 4;
         let bytes    = seq_ctrl.to_le_bytes();

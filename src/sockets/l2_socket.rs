@@ -4,7 +4,7 @@ use libc::{
     socket, sendto, close, sockaddr_ll, htons, 
     AF_PACKET, SOCK_RAW, ETH_P_ALL, SOL_SOCKET, SO_BINDTODEVICE
 };
-use crate::iface::IfaceInfo;
+use crate::iface::Iface;
 use crate::utils::abort;
 
 
@@ -17,17 +17,16 @@ pub(crate) struct Layer2Socket {
 
 impl Layer2Socket {
 
-    pub fn new(iface: &str) -> Self {
-        let if_index  = IfaceInfo::index(iface);
+    pub fn new(iface: &Iface) -> Self {
         let file_desc = Self::create_socket(iface);
-        let addr      = Self::build_sockaddr(if_index);
+        let addr      = Self::build_sockaddr(iface);
 
         Self { file_desc, addr }
     }
 
 
 
-    fn create_socket(iface: &str) -> i32 {
+    fn create_socket(iface: &Iface) -> i32 {
         unsafe {
             let file_desc = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL as u16) as i32);
             if file_desc < 0 {
@@ -53,9 +52,9 @@ impl Layer2Socket {
 
 
 
-    fn bind_to_interface(file_desc: i32, iface: &str) -> io::Result<()> {
+    fn bind_to_interface(file_desc: i32, iface: &Iface) -> io::Result<()> {
         unsafe {
-            let ifname_bytes           = iface.as_bytes();
+            let ifname_bytes           = iface.name().as_bytes();
             let mut ifreq: libc::ifreq = mem::zeroed();
             
             for (i, &byte) in ifname_bytes.iter().enumerate() {
@@ -101,12 +100,12 @@ impl Layer2Socket {
 
 
 
-    fn build_sockaddr(if_index: i32) -> sockaddr_ll {
+    fn build_sockaddr(iface: &Iface) -> sockaddr_ll {
         unsafe {
             let mut addr: sockaddr_ll = mem::zeroed();
             addr.sll_family   = AF_PACKET as u16;
             addr.sll_protocol = htons(ETH_P_ALL as u16);
-            addr.sll_ifindex  = if_index;
+            addr.sll_ifindex  = iface.index();
             addr.sll_halen    = 6;
             addr
         }

@@ -1,8 +1,9 @@
 use std::{mem, net::Ipv4Addr, os::raw::c_void, ffi::CString};
 use libc::{
-    socket, setsockopt, sendto, sockaddr_in, AF_INET, SOCK_RAW, IPPROTO_RAW, IPPROTO_IP, IP_HDRINCL,
-    close, SOL_SOCKET, SO_BINDTODEVICE
+    socket, setsockopt, sendto, sockaddr_in, AF_INET, SOCK_RAW, IPPROTO_RAW,
+    IPPROTO_IP, IP_HDRINCL, close, SOL_SOCKET, SO_BINDTODEVICE
 };
+use crate::iface::Iface;
 use crate::utils::abort;
 
 
@@ -12,13 +13,12 @@ pub(crate) struct Layer3Socket {
 }
 
 
-
 impl Layer3Socket {
 
-    pub fn new(iface_name: &str) -> Self {
+    pub fn new(iface: &Iface) -> Self {
             let file_desc = Self::create_socket();
             Self::enable_ip_hdrincl(file_desc);
-            Self::bind_to_iface(file_desc, iface_name);
+            Self::bind_to_iface(file_desc, iface);
 
             Self { file_desc }
     }
@@ -64,22 +64,22 @@ impl Layer3Socket {
 
 
 
-    fn bind_to_iface(file_desc: i32, iface: &str) {
-        let ifname = CString::new(iface).unwrap();
+    fn bind_to_iface(file_desc: i32, iface: &Iface) {
+        let ifname = CString::new(iface.name()).unwrap();
         let ret    = unsafe {
             setsockopt(
                 file_desc,
                 SOL_SOCKET,
                 SO_BINDTODEVICE,
                 ifname.as_ptr() as *const c_void,
-                iface.len() as u32,
+                iface.name().len() as u32,
             )
         };
 
         if ret < 0 {
             panic!(
                 "Failed to bind socket to interface {}: {}",
-                iface,
+                iface.name(),
                 std::io::Error::last_os_error()
             );
         }

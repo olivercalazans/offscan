@@ -15,6 +15,3 @@ pub(crate) use first_and_last_ip::get_first_and_last_ip;
 
 pub(crate) mod mac_resolver;
 pub(crate) use mac_resolver::resolve_mac;
-
-pub(crate) mod type_converter;
-pub(crate) use type_converter::TypeConverter;

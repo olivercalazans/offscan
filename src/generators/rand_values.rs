@@ -1,5 +1,6 @@
 use std::net::Ipv4Addr;
 use rand::{Rng, rngs::ThreadRng, prelude::SliceRandom};
+use crate::addrs::{Mac, Bssid};
 
 
 
@@ -39,11 +40,27 @@ impl RandomValues {
 
 
     #[inline]
-    pub fn random_mac(&mut self) -> [u8; 6] {
+    fn random_vec_u8_6(&mut self) -> [u8; 6] {
         let mut bytes = [0u8; 6];
         for b in bytes.iter_mut() { *b = self.rng.r#gen(); }
         bytes[0] = (bytes[0] | 0x02) & 0xFE;
         bytes
+    }
+
+
+
+    #[inline]
+    pub fn random_mac(&mut self) -> Mac {
+        let bytes = self.random_vec_u8_6();
+        Mac::new(bytes)
+    }
+
+
+
+    #[inline]
+    pub fn random_bssid(&mut self) -> Bssid {
+        let bytes = self.random_vec_u8_6();
+        Bssid::new(bytes )
     }
 
 
