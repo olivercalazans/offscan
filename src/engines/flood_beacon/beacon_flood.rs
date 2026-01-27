@@ -1,12 +1,13 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 use crate::engines::BcFloodArgs;
 use crate::addrs::Bssid;
 use crate::iface::{Iface, IfaceManager};
 use crate::builders::Frames;
 use crate::sockets::Layer2Socket;
 use crate::generators::RandomValues;
-use crate::utils::{ CtrlCHandler, inline_display, abort};
+use crate::utils::{ CtrlCHandler, abort};
 
 
 
@@ -61,6 +62,8 @@ impl BeaconFlood {
         let running  = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
 
+        let init = Instant::now();
+        println!("\n[+] Sending beacons. Press CTRL + C to stop");
 
         while running.load(Ordering::SeqCst) {
             let bssid = rand.random_bssid();
@@ -69,8 +72,11 @@ impl BeaconFlood {
             
             self.send_quartet(bssid, &ssid, seq);
         }
+
+        let time = init.elapsed().as_secs_f64();
         
-        println!("\nFlood interrupted"); 
+        println!("\n[-] Flood interrupted"); 
+        println!("[%] {} beacons sent in {:.2} seconds", &self.bc_sent, time);
     }
 
 
@@ -98,11 +104,9 @@ impl BeaconFlood {
         sec   : &str
     ) {
         let beacon = self.builder.beacon(bssid, ssid, seq, self.channel as u8, sec);
-        
+
         self.socket.send(beacon);
         self.bc_sent += 1;
-
-        inline_display(&format!("Beacons sent: {} - SSID: {}", &self.bc_sent, ssid));
     }
 
 }
