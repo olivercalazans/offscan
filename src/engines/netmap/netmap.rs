@@ -81,10 +81,10 @@ impl NetworkMapper {
         let last  = Ipv4Addr::from(self.ips.end_u32);
         let len   = self.ips.end_u32 - self.ips.start_u32 + 1;
 
-        println!("Iface..: {}", self.iface.name());
-        println!("Range..: {} - {}", first, last);        
-        println!("Len IPs: {}", len);
-        println!("Proto..: {}", proto);
+        println!("[!] Iface..: {}", self.iface.name());
+        println!("[!] Range..: {} - {}", first, last);        
+        println!("[!] Len IPs: {}", len);
+        println!("[!] Proto..: {}", proto);
     }
 
 

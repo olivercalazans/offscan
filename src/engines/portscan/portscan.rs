@@ -9,7 +9,7 @@ use crate::builders::{Packets, UdpPayloads};
 use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{inline_display, get_host_name, abort};
+use crate::utils::{get_host_name, abort};
 
 
 
@@ -190,7 +190,7 @@ impl PortScanner {
             );
 
             tools.socket.send_to(pkt, self.target_ip);
-            Self::display_and_sleep(port, delay);
+            thread::sleep(Duration::from_secs_f32(delay));
         }
     }
 
@@ -220,7 +220,7 @@ impl PortScanner {
             );
                 
             tools.socket.send_to(pkt, self.target_ip);
-            Self::display_and_sleep(port, delay);
+            thread::sleep(Duration::from_secs_f32(delay));
         }
     }
 
@@ -244,15 +244,6 @@ impl PortScanner {
             builder : Packets::new(),
             socket  : Layer3Socket::new(&self.iface),
         }
-    }
-
-
-    
-    #[inline]
-    fn display_and_sleep(port: u16, delay: f32) {
-        let msg = format!("Packet sent to port {:<5} - delay: {:.2}", port, delay);
-        inline_display(&msg);
-        thread::sleep(Duration::from_secs_f32(delay));
     }
 
 
