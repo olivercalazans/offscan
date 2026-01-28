@@ -6,7 +6,7 @@ use crate::addrs::Bssid;
 use crate::dissectors::BeaconDissector;
 use crate::iface::{IfaceManager, Iface};
 use crate::sniffer::Sniffer;
-use crate::utils::{inline_display, abort};
+use crate::utils::abort;
 
 
 
@@ -181,7 +181,6 @@ impl<'a> MonitorSniff<'a> {
                 continue;
             }
 
-            inline_display(&format!("Sniffing channel {} ({}G)", chnl, freq));
             thread::sleep(Duration::from_millis(300));
         }
 

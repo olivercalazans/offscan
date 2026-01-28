@@ -6,7 +6,7 @@ use crate::addrs::{Mac, Bssid};
 use crate::iface::{Iface, IfaceManager};
 use crate::builders::Frames;
 use crate::sockets::Layer2Socket;
-use crate::utils::{ CtrlCHandler, inline_display, abort };
+use crate::utils::{ CtrlCHandler, abort };
 
 
 
@@ -64,9 +64,9 @@ impl Deauthentication {
 
 
     fn display_exec_info(&self) {
-        println!("BSSID...: {}", self.bssid.to_string());
-        println!("TARGET..: {}", self.target_mac.to_string());
-        println!("CHANNEL.: {}", self.channel);
+        println!("[!] BSSID...: {}", self.bssid.to_string());
+        println!("[!] TARGET..: {}", self.target_mac.to_string());
+        println!("[!] CHANNEL.: {}", self.channel);
     }
 
 
@@ -75,6 +75,8 @@ impl Deauthentication {
         let running = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
         
+        println!("\n[+] Sending frames. Press CTRL + C to stop");
+
         while running.load(Ordering::SeqCst) {
             let target = *self.target_mac.bytes();
             let bssid  = *self.bssid.bytes();
@@ -83,7 +85,8 @@ impl Deauthentication {
             self.send_frame(&bssid, &target);
         }
     
-        println!("\nFlood interrupted");
+        println!("\n[-] Flood interrupted");
+        println!("[%] Frames sent: {}", self.frms_sent);
     }
 
 
@@ -100,7 +103,6 @@ impl Deauthentication {
         self.update_seq_num();
         self.frms_sent += 1;
 
-        inline_display(&format!("Frames sent: {}", &self.frms_sent));
         thread::sleep(Duration::from_millis(self.delay));
     }
 

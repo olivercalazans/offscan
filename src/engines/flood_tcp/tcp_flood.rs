@@ -1,13 +1,13 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::{net::Ipv4Addr};
+use std::{net::Ipv4Addr, time::Instant};
 use crate::engines::TcpArgs;
 use crate::addrs::Mac;
 use crate::builders::Packets;
 use crate::generators::RandomValues;
 use crate::iface::{SysInfo, Iface};
 use crate::sockets::Layer2Socket;
-use crate::utils::{abort, inline_display, get_first_and_last_ip, CtrlCHandler, resolve_mac};
+use crate::utils::{abort, get_first_and_last_ip, CtrlCHandler, resolve_mac};
 
 
 
@@ -22,6 +22,7 @@ pub struct TcpFlooder {
     dst_mac   : Mac,
     dst_port  : u16,
     flag      : String,
+    duration  : f64,
 }
 
 
@@ -43,6 +44,7 @@ impl TcpFlooder {
             dst_mac   : resolve_mac(Some(args.dst_mac.clone()), &iface).unwrap(),
             dst_port  : args.port,
             flag      : if args.ack {"ack".to_string()} else {"syn".to_string()},
+            duration  : 0.0,
             iface,
         }
     }
@@ -50,13 +52,14 @@ impl TcpFlooder {
 
 
     pub fn execute(&mut self){
-        self.display_exec_info();
+        self.display_info();
         self.send_endlessly();
+        self.display_exec_info();
     }
 
 
     
-    fn display_exec_info(&self) {
+    fn display_info(&self) {
         let src_mac = match self.src_mac {
             Some(mac) => mac.to_string(),
             None      => "Random".to_string(),
@@ -69,9 +72,9 @@ impl TcpFlooder {
 
         let dst_mac = self.dst_mac.to_string();
 
-        println!("SRC >> MAC: {} / IP: {}", src_mac, src_ip);
-        println!("DST >> MAC: {} / IP: {}", dst_mac, self.dst_ip);
-        println!("IFACE: {}", self.iface.name());
+        println!("\n[!] SRC >> MAC: {} / IP: {}", src_mac, src_ip);
+        println!("[!] DST >> MAC: {} / IP: {}", dst_mac, self.dst_ip);
+        println!("[!] IFACE: {}", self.iface.name());
     }
 
 
@@ -81,15 +84,18 @@ impl TcpFlooder {
         let running = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
 
+        println!("\n[+] Sending packets. Press CTRL + C to stop");
+        let init = Instant::now();
+
         while running.load(Ordering::SeqCst) {
             let pkt = self.get_pkt();
             socket.send(pkt);
 
             self.pkts_sent += 1;
-            inline_display(&format!("Packets sent: {}", &self.pkts_sent));
         }
-
-        println!("\nFlood interrupted");
+        
+        println!("\n[-] Flood interrupted");
+        self.duration = init.elapsed().as_secs_f64();    
     }
 
 
@@ -105,6 +111,17 @@ impl TcpFlooder {
             self.dst_port,
             &self.flag
         )
+    }
+
+
+
+    fn display_exec_info(&self) {
+        println!("[%] {} packets sent in {:.2} seconds", &self.pkts_sent, self.duration);
+
+        if self.duration > 1.0 {
+            let rate = self.pkts_sent as f64 / self.duration;
+            println!("[%] {:.2} packets sent per second", rate);
+        };        
     }
 
 }
