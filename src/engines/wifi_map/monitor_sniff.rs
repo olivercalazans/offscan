@@ -2,11 +2,10 @@ use std::{thread, time::Duration, collections::BTreeMap, mem};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use crate::engines::wifi_map::WifiData;
-use crate::addrs::Bssid;
 use crate::dissectors::BeaconDissector;
 use crate::iface::{IfaceManager, Iface};
 use crate::sniffer::Sniffer;
-use crate::utils::abort;
+use crate::utils::{abort, Bssid};
 
 
 

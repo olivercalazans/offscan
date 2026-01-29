@@ -1,11 +1,14 @@
+pub(crate) mod abort;
+pub(crate) use abort::abort;
+
+pub(crate) mod addresses;
+pub(crate) use addresses::{Mac, Bssid};
+
 pub(crate) mod channel_parser;
 pub(crate) use channel_parser::parse_channel;
 
 pub(crate) mod ctrl_c_handler;
 pub(crate) use ctrl_c_handler::CtrlCHandler;
-
-pub(crate) mod abort;
-pub(crate) use abort::abort;
 
 pub(crate) mod dns;
 pub(crate) use dns::get_host_name;

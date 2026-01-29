@@ -1,7 +1,6 @@
 use clap::Parser;
-use crate::addrs::{Mac, Bssid};
 use crate::iface::Iface;
-use crate::utils::parse_channel;
+use crate::utils::{parse_channel, Mac, Bssid};
 
 
 

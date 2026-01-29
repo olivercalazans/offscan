@@ -2,14 +2,13 @@ use std::{thread, time::Duration, collections::BTreeMap, net::Ipv4Addr};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use crate::engines::NetMapArgs;
-use crate::addrs::Mac;
 use crate::generators::{Ipv4Iter, DelayIter, RandomValues};
 use crate::iface::Iface;
 use crate::builders::Packets;
 use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
-use crate::utils::{abort, get_host_name};
+use crate::utils::{abort, get_host_name, Mac};
 
 
 
@@ -182,7 +181,7 @@ impl NetworkMapper {
 
 
     fn get_bpf_filter(&self) -> String {
-        format!("ip and src net {}", self.cidr_for_bpf_filter())
+        format!("dst host {} and src net {}", self.my_ip, self.cidr_for_bpf_filter())
     }
 
 

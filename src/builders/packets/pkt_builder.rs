@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
-use crate::addrs::Mac;
 use crate::builders::packets::{IcmpPktBuilder, TcpPktBuilder, UdpPktBuilder};
+use crate::utils::Mac;
 
 
 

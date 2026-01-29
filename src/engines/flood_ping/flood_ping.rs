@@ -1,13 +1,12 @@
-use std::sync::atomic::{ AtomicBool, Ordering };
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{net::Ipv4Addr, time::Instant};
 use crate::engines::PingArgs;
-use crate::addrs::Mac;
 use crate::builders::Packets;
 use crate::generators::RandomValues;
-use crate::iface::{ Iface, SysInfo };
+use crate::iface::{Iface, SysInfo};
 use crate::sockets::Layer2Socket;
-use crate::utils::{ abort, get_first_and_last_ip, CtrlCHandler, resolve_mac };
+use crate::utils::{abort, get_first_and_last_ip, CtrlCHandler, resolve_mac, Mac};
 
 
 

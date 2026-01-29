@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use crate::addrs::Mac;
+use crate::utils::Mac;
 
 
 

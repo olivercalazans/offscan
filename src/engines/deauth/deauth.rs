@@ -2,11 +2,10 @@ use std::{thread, time::Duration};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::DeauthArgs;
-use crate::addrs::{Mac, Bssid};
 use crate::iface::{Iface, IfaceManager};
 use crate::builders::Frames;
 use crate::sockets::Layer2Socket;
-use crate::utils::{ CtrlCHandler, abort };
+use crate::utils::{CtrlCHandler, abort, Mac, Bssid};
 
 
 

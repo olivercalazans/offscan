@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 use crate::builders::packets::{ip_header, ether_header, Checksum};
-use crate::addrs::Mac;
+use crate::utils::Mac;
 
 
 

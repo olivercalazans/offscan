@@ -1,5 +1,5 @@
-use crate::addrs::Bssid;
 use crate::builders::frames::{Radiotap, Ieee80211};
+use crate::utils::Bssid;
 
 
 

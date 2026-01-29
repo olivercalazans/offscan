@@ -1,6 +1,5 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::addrs::Bssid;
-use crate::utils::abort;
+use crate::utils::{abort, Bssid};
 
 
 pub(super) struct Ieee80211;
