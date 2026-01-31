@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use crate::engines::BcFloodArgs;
 use crate::iface::{Iface, IfaceManager};
-use crate::builders::Frames;
+use crate::builders::Beacon;
 use crate::sockets::Layer2Socket;
 use crate::generators::RandomValues;
 use crate::utils::{CtrlCHandler, abort, Bssid};
@@ -12,10 +12,10 @@ use crate::utils::{CtrlCHandler, abort, Bssid};
 
 pub struct BeaconFlood {
     iface   : Iface,
-    channel : i32,
+    channel : u8,
     ssid    : String,
     bc_sent : usize,
-    builder : Frames,
+    builder : Beacon,
     socket  : Layer2Socket,
 }
 
@@ -25,10 +25,10 @@ impl BeaconFlood {
     pub fn new(args: BcFloodArgs) -> Self {
         Self { 
             bc_sent : 0,
-            builder : Frames::new(),
+            builder : Beacon::new(),
             socket  : Layer2Socket::new(&args.iface),
             iface   : args.iface,
-            channel : args.channel,
+            channel : args.channel as u8,
             ssid    : args.ssid,
         }
     }
@@ -43,7 +43,7 @@ impl BeaconFlood {
 
 
     fn set_channel(&self) {
-        if !IfaceManager::set_channel(self.iface.name(), self.channel) {
+        if !IfaceManager::set_channel(self.iface.name(), self.channel as i32) {
             abort(
                 format!(
                     "Uneable to set channel {} on interface {}", 
@@ -102,7 +102,7 @@ impl BeaconFlood {
         seq   : u16,
         sec   : &str
     ) {
-        let beacon = self.builder.beacon(bssid, ssid, seq, self.channel as u8, sec);
+        let beacon = self.builder.beacon(bssid, ssid, seq, self.channel, sec);
 
         self.socket.send(beacon);
         self.bc_sent += 1;

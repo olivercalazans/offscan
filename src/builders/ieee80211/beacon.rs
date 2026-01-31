@@ -1,94 +1,115 @@
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::utils::{abort, Bssid};
+use crate::builders::ieee80211::Radiotap;
+use crate::utils::{Bssid, abort};
 
 
-pub(super) struct Ieee80211;
+
+pub(crate) struct Beacon {
+    buffer : [u8; 119],
+    len    : usize,
+}
 
 
-impl Ieee80211 {
-    
-    #[inline]
-    pub fn deauth(
-        buffer  : &mut [u8],
-        src_mac : &[u8; 6],
-        dst_mac : &[u8; 6], 
-        bssid   : Bssid,
-        seq     : u16,
-    ) {
-        buffer[0] = 0xC0;
-        buffer[1] = 0x00;
-        buffer[2] = 0x3a;
-        buffer[3] = 0x01;
+impl Beacon {
 
-        buffer[4..10].copy_from_slice(dst_mac);
-        buffer[10..16].copy_from_slice(src_mac);
-        buffer[16..22].copy_from_slice(bssid.bytes());
-
-        let seq_ctrl = ((seq & 0x0FFF) << 4) | 0x00;
-        buffer[22..24].copy_from_slice(&seq_ctrl.to_le_bytes());
+    pub fn new() -> Self {
+        let buffer = Self::build_fixed();
         
-        buffer[24] = 0x0007;
-        buffer[25] = 0x00;
+        Self { buffer, len: 0, }
     }
-    
+
+
+
+    fn build_fixed() -> [u8; 119] {
+        let mut buffer = [0u8; 119];
+
+        Radiotap::minimal_header(&mut buffer[..12]);
+
+        // HEADER (12 - 36)
+        buffer[12] = 0x80; // Type/Subtype: Management Beacon
+        buffer[13] = 0x00; // Flags: none
+        buffer[14] = 0x00; // Duration
+        buffer[15] = 0x00;
+
+        buffer[16..22].copy_from_slice(&[0xFF; 6]); // Dst addr
+
+        // BODY (36 ~ 119)
+        buffer[44..46].copy_from_slice(&100u16.to_le_bytes());
+
+        buffer
+    }
+
 
 
     #[inline]
-    pub fn beacon_header(
-        buffer : &mut [u8],
-        bssid  : Bssid,
-        seq    : u16,
+    pub fn beacon(
+        &mut self,
+        bssid   : Bssid,
+        ssid    : &str,
+        seq     : u16,
+        channel : u8,
+        sec     : &str,
+    ) 
+      -> &[u8]
+    {
+        self.beacon_header(bssid, seq);
+        self.beacon_body(ssid, channel, sec);
+
+        &self.buffer[..self.len]
+    }
+
+
+
+    #[inline]
+    fn beacon_header(
+        &mut self,
+        bssid : Bssid,
+        seq   : u16,
     ) {
-        buffer[0] = 0x80; // Type/Subtype: Management Beacon
-        buffer[1] = 0x00; // Flags: none
+        self.buffer[22..28].copy_from_slice(bssid.bytes());
+        self.buffer[28..34].copy_from_slice(bssid.bytes());
 
-        buffer[2] = 0x00; // Duration
-        buffer[3] = 0x00;
+        let bytes = {
+            let seq_ctrl = (seq & 0x0FFF) << 4;
+            seq_ctrl.to_le_bytes()
+        };
 
-        buffer[4..10].copy_from_slice(&[0xFF; 6]);
-        buffer[10..16].copy_from_slice(bssid.bytes());
-        buffer[16..22].copy_from_slice(bssid.bytes());
-
-        let seq_ctrl = (seq & 0x0FFF) << 4;
-        let bytes    = seq_ctrl.to_le_bytes();
-        buffer[22]   = bytes[0];
-        buffer[23]   = bytes[1]; // Fragment 0
+        self.buffer[34]   = bytes[0];
+        self.buffer[35]   = bytes[1]; // Fragment 0
     }
 
 
 
     #[inline]
-    pub fn beacon_body(
-        buffer  : &mut [u8],
+    fn beacon_body(
+        &mut self,
         ssid    : &str,
         channel : u8,
         sec     : &str,
-    ) -> usize
-    {
+    ) {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_micros() as u64;
 
-        buffer[..8].copy_from_slice(&timestamp.to_le_bytes());
-        buffer[8..10].copy_from_slice(&100u16.to_le_bytes());
+        self.buffer[36..44].copy_from_slice(&timestamp.to_le_bytes());
 
         let (sec_flags, sec_data) = Self::get_sec_data(sec);
 
-        buffer[10..12].copy_from_slice(&sec_flags);
+        self.buffer[46..48].copy_from_slice(&sec_flags);
 
         let ssid_bytes = ssid.as_bytes();
         let ssid_len   = ssid_bytes.len().min(32);
-        let mut index  = 12;
+        let mut index  = 48;
 
-        buffer[index]     = 0x00;  // Element ID (SSID)
-        buffer[index + 1] = ssid_len as u8;
+        self.buffer[index]     = 0x00;  // Element ID (SSID)
+        self.buffer[index + 1] = ssid_len as u8;
         index += 2;
 
-        buffer[index..index + ssid_len].copy_from_slice(&ssid_bytes[..ssid_len]);
+        self.buffer[index..index + ssid_len].copy_from_slice(&ssid_bytes[..ssid_len]);
         index += ssid_len;
 
-        buffer[index..index + 10].copy_from_slice(&[
+        self.buffer[index..index + 10].copy_from_slice(&[
             0x01, 0x08,             // ID 1, Length 8
             0x82, 0x84, 0x8B, 0x96, // 1, 2, 5.5, 11 Mbps
             0x0C, 0x12, 0x18, 0x24, // 6, 9, 12, 24 Mbps
@@ -96,22 +117,22 @@ impl Ieee80211 {
         index += 10;
         
         // IE 3: DS Parameter (channel)
-        buffer[index..index + 3].copy_from_slice(&[0x03, 0x01, channel]);
+        self.buffer[index..index + 3].copy_from_slice(&[0x03, 0x01, channel]);
         index += 3;
         
         // IE 5: TIM
-        buffer[index..index + 6].copy_from_slice(&[0x05, 0x04, 0x00, 0x01, 0x00, 0x00]);
+        self.buffer[index..index + 6].copy_from_slice(&[0x05, 0x04, 0x00, 0x01, 0x00, 0x00]);
         index += 6;
         
         let len_sec_data = sec_data.len();
-        buffer[index..index + len_sec_data].copy_from_slice(&sec_data);
+        self.buffer[index..index + len_sec_data].copy_from_slice(&sec_data);
         index += len_sec_data;
 
         // IE 50: Extended Supported Rates
-        buffer[index..index + 6].copy_from_slice(&[0x32, 0x04, 0x30, 0x48, 0x60, 0x6C]);
+        self.buffer[index..index + 6].copy_from_slice(&[0x32, 0x04, 0x30, 0x48, 0x60, 0x6C]);
         index += 6;
 
-        index
+        self.len = index;
     }
 
 
