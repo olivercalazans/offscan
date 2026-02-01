@@ -30,8 +30,8 @@ impl Checksum {
 
     pub fn tcp_udp_checksum(
         packet   : &[u8],
-        src_ip   : &Ipv4Addr,
-        dst_ip   : &Ipv4Addr,
+        src_ip   : Ipv4Addr,
+        dst_ip   : Ipv4Addr,
         protocol : u8,
     ) 
       -> u16

@@ -65,7 +65,7 @@ impl Deauthentication {
 
 
     fn display_exec_info(&self) {
-        println!("[*] BSSID...: {}", self.ap_mac.to_string());
+        println!("\n[*] BSSID...: {}", self.ap_mac.to_string());
         println!("[*] TARGET..: {}", self.target_mac.to_string());
         println!("[*] CHANNEL.: {}", self.channel);
     }

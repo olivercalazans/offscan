@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crate::engines::NetMapArgs;
 use crate::generators::{Ipv4Iter, DelayIter, RandomValues};
 use crate::iface::Iface;
-use crate::builders::Packets;
+use crate::builders::{IcmpPkt, TcpPkt, UdpPkt};
 use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
@@ -80,10 +80,10 @@ impl NetworkMapper {
         let last  = Ipv4Addr::from(self.ips.end_u32);
         let len   = self.ips.end_u32 - self.ips.start_u32 + 1;
 
-        println!("[!] Iface..: {}", self.iface.name());
-        println!("[!] Range..: {} - {}", first, last);        
-        println!("[!] Len IPs: {}", len);
-        println!("[!] Proto..: {}", proto);
+        println!("\n[*] Iface..: {}", self.iface.name());
+        println!("[*] Range..: {} - {}", first, last);        
+        println!("[*] Len IPs: {}", len);
+        println!("[*] Proto..: {}", proto);
     }
 
 
@@ -268,8 +268,10 @@ impl NetworkMapper {
 
     fn setup_tools(&self) -> PacketTools {
         PacketTools {
-            builder : Packets::new(),
-            socket  : Layer3Socket::new(&self.iface),
+            icmp   : IcmpPkt::new(),
+            tcp    : TcpPkt::new(),
+            udp    : UdpPkt::new(),
+            socket : Layer3Socket::new(&self.iface),
         }
     }
 
@@ -287,9 +289,9 @@ impl NetworkMapper {
             .zip(iters.delays.by_ref())
             .for_each(|(dst_ip, delay)| {
                 let pkt = match probe_type {
-                    "icmp" => tools.builder.icmp_ping(my_ip, dst_ip),
-                    "tcp"  => tools.builder.tcp_ip(my_ip, rand.random_port(), dst_ip, 80),
-                    "udp"  => tools.builder.udp_ip(my_ip, rand.random_port(), dst_ip, 53, &[]),
+                    "icmp" => tools.icmp.l3_pkt(my_ip, dst_ip),
+                    "tcp"  => tools.tcp.l3_pkt(my_ip, rand.random_port(), dst_ip, 80),
+                    "udp"  => tools.udp.l3_pkt(my_ip, rand.random_port(), dst_ip, 53, &[]),
                     &_     => abort(format!("Unknown protocol type: {}", probe_type)),
                 };
                 tools.socket.send_to(&pkt, dst_ip);
@@ -357,8 +359,10 @@ struct Iterators {
 }
 
 struct PacketTools {
-    builder : Packets,
-    socket  : Layer3Socket,
+    icmp   : IcmpPkt,
+    tcp    : TcpPkt,
+    udp    : UdpPkt,
+    socket : Layer3Socket,
 }
 
 struct IpRange {
