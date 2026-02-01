@@ -2,17 +2,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{net::Ipv4Addr, time::Instant};
 use crate::engines::TcpArgs;
-use crate::addrs::Mac;
-use crate::builders::Packets;
+use crate::builders::TcpPkt;
 use crate::generators::RandomValues;
 use crate::iface::{SysInfo, Iface};
 use crate::sockets::Layer2Socket;
-use crate::utils::{abort, get_first_and_last_ip, CtrlCHandler, resolve_mac};
+use crate::utils::{abort, get_first_and_last_ip, CtrlCHandler, resolve_mac, Mac};
 
 
 
 pub struct TcpFlooder {
-    builder   : Packets,
+    builder   : TcpPkt,
     iface     : Iface,
     pkts_sent : usize,
     rand      : RandomValues,
@@ -21,7 +20,6 @@ pub struct TcpFlooder {
     dst_ip    : Ipv4Addr,
     dst_mac   : Mac,
     dst_port  : u16,
-    flag      : String,
     duration  : f64,
 }
 
@@ -35,7 +33,7 @@ impl TcpFlooder {
         let (first_ip, last_ip) = get_first_and_last_ip(&cidr);
 
         Self {
-            builder   : Packets::new(),
+            builder   : TcpPkt::new(),
             pkts_sent : 0,
             rand      : RandomValues::new(Some(first_ip), Some(last_ip)),
             src_ip    : args.src_ip,
@@ -43,7 +41,6 @@ impl TcpFlooder {
             dst_ip    : args.dst_ip,
             dst_mac   : resolve_mac(Some(args.dst_mac.clone()), &iface).unwrap(),
             dst_port  : args.port,
-            flag      : if args.ack {"ack".to_string()} else {"syn".to_string()},
             duration  : 0.0,
             iface,
         }
@@ -72,9 +69,9 @@ impl TcpFlooder {
 
         let dst_mac = self.dst_mac.to_string();
 
-        println!("\n[!] SRC >> MAC: {} / IP: {}", src_mac, src_ip);
-        println!("[!] DST >> MAC: {} / IP: {}", dst_mac, self.dst_ip);
-        println!("[!] IFACE: {}", self.iface.name());
+        println!("\n[*] SRC >> MAC: {} / IP: {}", src_mac, src_ip);
+        println!("[*] DST >> MAC: {} / IP: {}", dst_mac, self.dst_ip);
+        println!("[*] IFACE: {}", self.iface.name());
     }
 
 
@@ -102,14 +99,13 @@ impl TcpFlooder {
     
     #[inline]
     fn get_pkt(&mut self) -> &[u8] {
-        self.builder.tcp_ether(
+        self.builder.l2_pkt(
             self.src_mac.unwrap_or_else(|| self.rand.random_mac()), 
             self.src_ip.unwrap_or_else( || self.rand.random_ip()), 
             self.rand.random_port(),
             self.dst_mac, 
             self.dst_ip,
             self.dst_port,
-            &self.flag
         )
     }
 

@@ -1,4 +1,3 @@
-mod addrs;
 mod builders;
 mod dissectors;
 mod generators;
@@ -55,7 +54,7 @@ impl Command {
             abort("No input found");
         }
 
-        self.command = input[0].clone();
+        self.command   = input[0].clone();
         self.arguments = input;
     }
 

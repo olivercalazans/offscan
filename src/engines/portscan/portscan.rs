@@ -5,7 +5,7 @@ use std::iter::Zip;
 use crate::engines::PortScanArgs;
 use crate::generators::{DelayIter, PortIter, RandomValues};
 use crate::iface::{Iface, SysInfo};
-use crate::builders::{Packets, UdpPayloads};
+use crate::builders::{TcpPkt, UdpPkt, UdpPayloads};
 use crate::sniffer::Sniffer;
 use crate::sockets::Layer3Socket;
 use crate::dissectors::PacketDissector;
@@ -60,9 +60,9 @@ impl PortScanner {
 
 
     fn display_info(&self) {
-        println!("Iface...: {}", self.iface.name());
-        println!("Target..: {}", self.target_ip);
-        println!("Proto...: {}", if self.udp {"UDP"} else {"TCP"});
+        println!("\n[*] Iface...: {}", self.iface.name());
+        println!("[*] Target..: {}", self.target_ip);
+        println!("[*] Proto...: {}", if self.udp {"UDP"} else {"TCP"});
     }
 
 
@@ -166,30 +166,35 @@ impl PortScanner {
 
 
     fn send_probes(&mut self) {
+        let socket = Layer3Socket::new(&self.iface);
+        let rand   = RandomValues::new(None, None);
+        
         match self.udp {
-            true  => { self.send_udp_probes(); }
-            false => { self.send_tcp_probes(); }
+            true  => { self.send_udp_probes(socket, rand); }
+            false => { self.send_tcp_probes(socket, rand); }
         }
-        println!("");
         std::thread::sleep(Duration::from_secs(3))
     }
 
 
 
-    fn send_tcp_probes(&mut self) {
-        let iters     = self.setup_tcp_iterators();
-        let mut tools = self.setup_tools();
-        let mut rand  = RandomValues::new(None, None);
+    fn send_tcp_probes(
+        &mut self,
+        socket   : Layer3Socket,
+        mut rand : RandomValues,
+    ) {
+        let iters       = self.setup_tcp_iterators();
+        let mut builder = TcpPkt::new();
 
-        for (port, delay) in iters{
+        for (port, delay) in iters {
             let src_port = rand.random_port();
                 
-            let pkt = tools.builder.tcp_ip(
+            let pkt = builder.l3_pkt(
                 self.my_ip, src_port, 
                 self.target_ip, port
             );
 
-            tools.socket.send_to(pkt, self.target_ip);
+            socket.send_to(pkt, self.target_ip);
             thread::sleep(Duration::from_secs_f32(delay));
         }
     }
@@ -205,21 +210,24 @@ impl PortScanner {
 
 
 
-    fn send_udp_probes(&mut self) {
-        let iters     = self.setup_udp_iterators();
-        let mut tools = self.setup_tools();
-        let mut rand  = RandomValues::new(None, None);
+    fn send_udp_probes(
+        &mut self,
+        socket   : Layer3Socket,
+        mut rand : RandomValues,
+    ) {
+        let iters       = self.setup_udp_iterators();
+        let mut builder = UdpPkt::new();
 
         for ((port, payload), delay) in iters {
             let src_port = rand.random_port();
                 
-            let pkt = tools.builder.udp_ip(
+            let pkt = builder.l3_pkt(
                 self.my_ip, src_port, 
                 self.target_ip, port, 
                 &payload
             );
                 
-            tools.socket.send_to(pkt, self.target_ip);
+            socket.send_to(pkt, self.target_ip);
             thread::sleep(Duration::from_secs_f32(delay));
         }
     }
@@ -235,15 +243,6 @@ impl PortScanner {
             .collect();
 
         collected.into_iter().zip(delays)
-    }
-
-
-
-    fn setup_tools(&self) -> PacketTools {
-        PacketTools {
-            builder : Packets::new(),
-            socket  : Layer3Socket::new(&self.iface),
-        }
     }
 
 
@@ -281,11 +280,4 @@ impl crate::EngineTrait for PortScanner {
     fn execute(&mut self) {
         self.execute();
     }
-}
-
-
-
-struct PacketTools {
-    builder : Packets,
-    socket  : Layer3Socket,
 }

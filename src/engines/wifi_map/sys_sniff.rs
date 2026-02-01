@@ -1,8 +1,7 @@
 use std::{collections::BTreeMap, mem};
 use crate::engines::wifi_map::WifiData;
-use crate::addrs::Bssid;
 use crate::iface::Iface;
-use crate::utils::abort;
+use crate::utils::{abort, Bssid};
 
 
 #[repr(C)]

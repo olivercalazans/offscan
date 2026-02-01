@@ -31,9 +31,4 @@ pub struct TcpArgs {
     #[arg(long = "smac")]
     pub src_mac: Option<String>,
 
-
-    /// Use ACK packets
-    #[arg(long)]
-    pub ack: bool,
-
 }

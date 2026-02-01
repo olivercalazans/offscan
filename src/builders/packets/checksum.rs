@@ -29,9 +29,9 @@ impl Checksum {
     
 
     pub fn tcp_udp_checksum(
-        packet   : &[u8],
-        src_ip   : &Ipv4Addr,
-        dst_ip   : &Ipv4Addr,
+        header   : &[u8],
+        src_ip   : Ipv4Addr,
+        dst_ip   : Ipv4Addr,
         protocol : u8,
     ) 
       -> u16
@@ -42,19 +42,20 @@ impl Checksum {
         
         sum += ((src_octets[0] as u32) << 8 | src_octets[1] as u32)
              + ((src_octets[2] as u32) << 8 | src_octets[3] as u32);
+        
         sum += ((dst_octets[0] as u32) << 8 | dst_octets[1] as u32)
              + ((dst_octets[2] as u32) << 8 | dst_octets[3] as u32);
         
         sum += protocol as u32;
-        sum += packet.len() as u32;
+        sum += header.len() as u32;
         
-        Self::calculate_checksum(sum, packet)
+        Self::calculate_checksum(sum, header)
     }
 
     
 
-    pub fn icmp_checksum(packet: &[u8]) -> u16 {
-        Self::calculate_checksum(0, packet)
+    pub fn icmp_checksum(header: &[u8]) -> u16 {
+        Self::calculate_checksum(0, header)
     }
     
 

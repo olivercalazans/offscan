@@ -1,8 +1,7 @@
 use std::{ net::Ipv4Addr, ffi::CStr, fs , path::Path, str::FromStr, fmt};
 use libc::{ freeifaddrs, AF_INET, sockaddr_in };
-use crate::addrs::Mac;
 use crate::iface::SysInfo;
-use crate::utils::abort;
+use crate::utils::{abort, Mac};
 
 
 

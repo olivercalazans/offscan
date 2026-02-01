@@ -1,6 +1,5 @@
-use crate::addrs::Mac;
 use crate::iface::Iface;
-use crate::utils::abort;
+use crate::utils::{abort, Mac};
 
 
 
