@@ -27,10 +27,6 @@ impl UdpPkt {
         buffer[6..8].copy_from_slice(&0x4000u16.to_be_bytes());
         buffer[8] = 64;
         buffer[9] = 17;
-        buffer[10..12].copy_from_slice(&0u16.to_be_bytes());
-
-        // UDP header (20 - 28)
-        buffer[26..28].copy_from_slice(&0u16.to_be_bytes());
 
         buffer
     }
@@ -46,7 +42,8 @@ impl UdpPkt {
     ) {
         // 0..1 pre built
         self.buffer[2..4].copy_from_slice(&len.to_be_bytes());
-        // 4..12 prebuilt
+        // 4..10 prebuilt
+        self.buffer[10..12].copy_from_slice(&0u16.to_be_bytes());
         self.buffer[12..16].copy_from_slice(&src_ip.octets());
         self.buffer[16..20].copy_from_slice(&dst_ip.octets());
 
@@ -70,7 +67,7 @@ impl UdpPkt {
         self.buffer[20..22].copy_from_slice(&src_port.to_be_bytes());
         self.buffer[22..24].copy_from_slice(&dst_port.to_be_bytes());
         self.buffer[24..26].copy_from_slice(&len.to_be_bytes());
-        // 26..28 pre built
+        self.buffer[26..28].copy_from_slice(&0u16.to_be_bytes());
         
         let cksum = Checksum::tcp_udp_checksum(&self.buffer[..len as usize], src_ip, dst_ip, 17);
         self.buffer[26..28].copy_from_slice(&cksum.to_be_bytes());

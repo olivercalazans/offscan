@@ -20,7 +20,6 @@ pub struct TcpFlooder {
     dst_ip    : Ipv4Addr,
     dst_mac   : Mac,
     dst_port  : u16,
-    flag      : String,
     duration  : f64,
 }
 
@@ -42,7 +41,6 @@ impl TcpFlooder {
             dst_ip    : args.dst_ip,
             dst_mac   : resolve_mac(Some(args.dst_mac.clone()), &iface).unwrap(),
             dst_port  : args.port,
-            flag      : if args.ack {"ack".to_string()} else {"syn".to_string()},
             duration  : 0.0,
             iface,
         }
@@ -108,7 +106,6 @@ impl TcpFlooder {
             self.dst_mac, 
             self.dst_ip,
             self.dst_port,
-            &self.flag
         )
     }
 

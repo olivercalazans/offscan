@@ -173,7 +173,6 @@ impl PortScanner {
             true  => { self.send_udp_probes(socket, rand); }
             false => { self.send_tcp_probes(socket, rand); }
         }
-        println!("");
         std::thread::sleep(Duration::from_secs(3))
     }
 
@@ -187,7 +186,7 @@ impl PortScanner {
         let iters       = self.setup_tcp_iterators();
         let mut builder = TcpPkt::new();
 
-        for (port, delay) in iters{
+        for (port, delay) in iters {
             let src_port = rand.random_port();
                 
             let pkt = builder.l3_pkt(
