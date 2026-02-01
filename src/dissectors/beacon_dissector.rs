@@ -13,11 +13,11 @@ impl BeaconDissector {
         let frame_ctrl    = u16::from_le_bytes([frame[0], frame[1]]);
         let frame_type    = (frame_ctrl >> 2) & 0x03; 
         let frame_subtype = (frame_ctrl >> 4) & 0x0F;
-
+            
         if frame_type != 0 || frame_subtype != 8 {
             return None;
         }
-
+        
         let bssid = Self::get_bssid(frame);
         let ssid  = Self::get_ssid(frame);
         let chnl  = Self::get_channel(frame);
@@ -52,7 +52,7 @@ impl BeaconDissector {
                 continue;
             }
 
-            let frame_ctrl = u16::from_le_bytes([beacon[i], beacon[i+1]]);
+            let frame_ctrl    = u16::from_le_bytes([beacon[i], beacon[i+1]]);
             let frame_type    = (frame_ctrl >> 2) & 0x03;
             let frame_subtype = (frame_ctrl >> 4) & 0x0F;
 
@@ -94,6 +94,7 @@ impl BeaconDissector {
 
         let frame_ctrl = u16::from_le_bytes([after_radiotap[0], after_radiotap[1]]);
         let frame_type = (frame_ctrl >> 2) & 0x03;
+        
         if frame_type > 2 {
             return None;
         }
@@ -219,15 +220,15 @@ impl BeaconDissector {
         let mut offset = 36;
 
         while offset + 1 < frame.len() {
-            let element_id     = frame[offset];
-            let element_length = frame[offset + 1] as usize;
+            let element_id  = frame[offset];
+            let element_len = frame[offset + 1] as usize;
             offset += 2;
 
             if element_id != 3
-               || element_length != 1
+               || element_len != 1
                || offset >= frame.len()
             {
-                offset += element_length;
+                offset += element_len;
                 continue;
             }
 
