@@ -1,10 +1,12 @@
 use crate::iface::{Iface, SysInfo};
 use crate::engines::NetInfoArgs;
+use crate::utils::abort;
 
 
 
 #[derive(Default)]
 pub struct NetworkInfo {
+    iface_list  : Vec<String>,
     iface       : Iface,
     state       : String, 
     if_type     : String, 
@@ -22,18 +24,36 @@ pub struct NetworkInfo {
 
 impl NetworkInfo {
 
-    pub fn new(_args: NetInfoArgs) -> Self {
-        Self { ..Default::default() }
+    pub fn new(args: NetInfoArgs) -> Self {
+        let iface_list = Self::validate_args(args);
+
+        Self { 
+            iface_list,    
+            ..Default::default()
+        }
+    }
+
+
+
+    fn validate_args(args: NetInfoArgs) -> Vec<String> {
+        if args.iface.is_none() {
+            return SysInfo::ifaces();
+        }
+
+        let iface = SysInfo::exists(&args.iface.unwrap())
+            .unwrap_or_else(|e| abort(e));
+
+        vec![iface]
     }
 
 
 
     pub fn execute(&mut self) {
-        SysInfo::ifaces()
+        self.iface_list.clone()
             .into_iter()
             .enumerate()
             .for_each(|(i, iface)|{
-                self.set_iface(iface)
+                self.set_iface(iface.to_string())
                     .set_state()
                     .set_type()
                     .set_mac()
@@ -190,7 +210,7 @@ impl NetworkInfo {
         println!("  - Type.......: {}", self.if_type);
         println!("  - MAC........: {}", self.mac);
         println!("  - IP.........: {}", self.ip);
-        println!("  - Net Addr...: {}", self.cidr);
+        println!("  - CIDR.......: {}", self.cidr);
         println!("  - Len hosts..: {}", self.host_len);
         println!("  - MTU........: {}", self.mtu);
         println!("  - Gateway MAC: {}", self.gateway_mac);

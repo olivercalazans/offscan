@@ -18,4 +18,9 @@ These information are:
 \t- Gateway MAC
 \t- Gateway IP"
 )]
-pub struct NetInfoArgs;
+
+pub struct NetInfoArgs {
+    /// Define a network interface to send packets
+    #[arg(short, long, value_name = "IFACE")]
+    pub iface: Option<String>,
+}

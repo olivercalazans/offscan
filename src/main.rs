@@ -61,10 +61,10 @@ impl Command {
     
 
     fn display_commands(&self) {
-        println!("\nAvailable commands:");
+        println!("# Available commands:");
         
         for (name, description, _) in Self::get_command_registry() {
-            println!("\t{:<6} -> {}", name, description);
+            println!("  {:<6} -> {}", name, description);
         }
         println!("");
     }
@@ -73,8 +73,8 @@ impl Command {
     
     fn get_command_registry() -> Vec<(&'static str, &'static str, Box<dyn Fn(Vec<String>)>)> {
         vec![
-            ("deauth", "Deauthentication attack", Box::new(execute::<DeauthArgs,   Deauthentication>)),
             ("beacon", "Beacon Flood",            Box::new(execute::<BcFloodArgs,  BeaconFlood>)),
+            ("deauth", "Deauthentication attack", Box::new(execute::<DeauthArgs,   Deauthentication>)),
             ("info",   "Network Information",     Box::new(execute::<NetInfoArgs,  NetworkInfo>)),
             ("netmap", "Network Mapping",         Box::new(execute::<NetMapArgs,   NetworkMapper>)),
             ("ping",   "Ping Flooding",           Box::new(execute::<PingArgs,     PingFlooder>)),

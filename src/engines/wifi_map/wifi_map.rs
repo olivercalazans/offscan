@@ -34,8 +34,8 @@ impl WifiMapper {
     fn display_exec_info(&self) {
         let mode = if self.mon {"Monitor"} else {"System"};
 
-        println!("\nIface..: {}", self.iface.name());
-        println!("Mode...: {} Sniff", mode);
+        println!("[*] Iface..: {}", self.iface.name());
+        println!("[*] Mode...: {} Sniff", mode);
     }
 
 
@@ -83,7 +83,7 @@ impl WifiMapper {
     fn display_header(max_len: usize) {
         println!(
             "\n{:<width$}  {:<17}  {}  {}  {}", 
-            "SSID", "MAC", "Channel", "Sec", "Freq", width = max_len
+            "SSID", "BSSID", "Channel", "Sec", "Freq", width = max_len
         );
         
         println!(

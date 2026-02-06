@@ -62,7 +62,7 @@ impl BeaconFlood {
         CtrlCHandler::setup(running.clone());
 
         let init = Instant::now();
-        println!("\n[+] Sending beacons. Press CTRL + C to stop");
+        println!("[+] Sending beacons. Press CTRL + C to stop");
 
         while running.load(Ordering::SeqCst) {
             let bssid = rand.random_bssid();

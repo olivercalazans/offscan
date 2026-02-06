@@ -110,12 +110,12 @@ impl Sniffer {
         match cap.stats() {
             Ok(stats) => {
                 println!(
-                    "\n[$] Packets received = {}, dropped = {}, if_dropped = {}",
+                    "[$] Packets received = {}, dropped = {}, if_dropped = {}",
                     stats.received, stats.dropped, stats.if_dropped
                 );
             }
             Err(err) => {
-                eprintln!("\n[!] failed to get stats: {}", err);
+                eprintln!("[!] failed to get stats: {}", err);
             }
         }
     }
