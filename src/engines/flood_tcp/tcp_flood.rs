@@ -69,7 +69,7 @@ impl TcpFlooder {
 
         let dst_mac = self.dst_mac.to_string();
 
-        println!("\n[*] SRC >> MAC: {} / IP: {}", src_mac, src_ip);
+        println!("[*] SRC >> MAC: {} / IP: {}", src_mac, src_ip);
         println!("[*] DST >> MAC: {} / IP: {}", dst_mac, self.dst_ip);
         println!("[*] IFACE: {}", self.iface.name());
     }
@@ -81,7 +81,7 @@ impl TcpFlooder {
         let running = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
 
-        println!("\n[+] Sending packets. Press CTRL + C to stop");
+        println!("[+] Sending packets. Press CTRL + C to stop");
         let init = Instant::now();
 
         while running.load(Ordering::SeqCst) {

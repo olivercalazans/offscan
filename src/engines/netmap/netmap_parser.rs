@@ -34,7 +34,7 @@ pub struct NetMapArgs {
     /// Define a network interface to send packets
     #[arg(
         short, long,
-        value_name = "INTERFACE",
+        value_name = "IFACE",
         default_value_t = SysInfo::default_iface(),
         long_help = long_help!(
             "Define a network interface to send the packets.\n\

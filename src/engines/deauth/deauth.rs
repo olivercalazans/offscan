@@ -65,7 +65,7 @@ impl Deauthentication {
 
 
     fn display_exec_info(&self) {
-        println!("\n[*] BSSID...: {}", self.ap_mac.to_string());
+        println!("[*] BSSID...: {}", self.ap_mac.to_string());
         println!("[*] TARGET..: {}", self.target_mac.to_string());
         println!("[*] CHANNEL.: {}", self.channel);
     }
@@ -77,7 +77,7 @@ impl Deauthentication {
         CtrlCHandler::setup(running.clone());
         
         let init = Instant::now();
-        println!("\n[+] Sending frames. Press CTRL + C to stop");
+        println!("[+] Sending frames. Press CTRL + C to stop");
 
         while running.load(Ordering::SeqCst) {
             self.send_frame(self.target_mac, self.ap_mac);

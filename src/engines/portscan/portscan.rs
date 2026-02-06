@@ -60,7 +60,7 @@ impl PortScanner {
 
 
     fn display_info(&self) {
-        println!("\n[*] Iface...: {}", self.iface.name());
+        println!("[*] Iface...: {}", self.iface.name());
         println!("[*] Target..: {}", self.target_ip);
         println!("[*] Proto...: {}", if self.udp {"UDP"} else {"TCP"});
     }
