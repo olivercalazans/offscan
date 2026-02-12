@@ -19,7 +19,7 @@ pub struct Deauthentication {
     channel    : i32,
     ap_mac     : Mac,
     target_mac : Mac,
-    delay      : u64
+    delay      : u64,
 }
 
 
@@ -73,7 +73,8 @@ impl Deauthentication {
 
 
     fn send_endlessly(&mut self) {
-        let running = Arc::new(AtomicBool::new(true));
+        let mut shots = 0u8;
+        let running   = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());
         
         let init = Instant::now();
@@ -82,6 +83,12 @@ impl Deauthentication {
         while running.load(Ordering::SeqCst) {
             self.send_frame(self.target_mac, self.ap_mac);
             self.send_frame(self.ap_mac, self.target_mac);
+            shots += 2;
+            
+            if shots >= 128 {
+                shots = 0;
+                thread::sleep(Duration::from_millis(self.delay));
+            }
         }
 
         let time = init.elapsed().as_secs_f64();
@@ -103,8 +110,6 @@ impl Deauthentication {
         self.socket.send(frame);
         self.update_seq_num();
         self.frms_sent += 1;
-
-        thread::sleep(Duration::from_millis(self.delay));
     }
 
 
