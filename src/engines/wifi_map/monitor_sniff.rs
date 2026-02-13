@@ -173,7 +173,7 @@ impl<'a> MonitorSniff<'a> {
         let mut err: Vec<i32> = Vec::new();
 
         for chnl in channels {
-            let done = IfaceManager::set_channel(self.iface.name(), chnl);
+            let done = IfaceManager::try_to_set_channel(&self.iface, chnl);
 
             if !done {
                 err.push(chnl);

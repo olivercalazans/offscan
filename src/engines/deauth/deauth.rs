@@ -2,10 +2,10 @@ use std::{thread, time::{Duration, Instant}};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use crate::engines::DeauthArgs;
-use crate::iface::{Iface, IfaceManager};
+use crate::iface::IfaceManager;
 use crate::builders::DeauthFrame;
 use crate::sockets::Layer2Socket;
-use crate::utils::{CtrlCHandler, abort, Mac};
+use crate::utils::{CtrlCHandler, Mac};
 
 
 
@@ -15,8 +15,6 @@ pub struct Deauthentication {
     frms_sent  : usize,
     seq_num    : u16,
     socket     : Layer2Socket,
-    iface      : Iface,
-    channel    : i32,
     ap_mac     : Mac,
     target_mac : Mac,
     delay      : u64,
@@ -26,53 +24,32 @@ pub struct Deauthentication {
 impl Deauthentication {
 
     pub fn new(args: DeauthArgs) -> Self {
-        let ap_mac = Mac::from_slice(args.bssid.bytes());
+        IfaceManager::set_channel_or_abort(&args.iface, args.channel);
+        Self::display_exec_info(&args);
 
-        Self { 
+        Self {
             builder    : DeauthFrame::new(args.bssid),
             frms_sent  : 0,
             seq_num    : 1,
             socket     : Layer2Socket::new(&args.iface),
-            iface      : args.iface,
-            channel    : args.channel,
             target_mac : args.target_mac,
             delay      : args.delay,
-            ap_mac,
+            ap_mac     : Mac::from_slice(args.bssid.bytes())
         }
+    }
+
+
+
+    fn display_exec_info(args: &DeauthArgs) {
+        println!("[*] IFACE...: {}", args.iface.name());
+        println!("[*] BSSID...: {}", args.bssid.to_string());
+        println!("[*] TARGET..: {}", args.target_mac.to_string());
+        println!("[*] CHANNEL.: {}", args.channel);
     }
 
 
 
     pub fn execute(&mut self) {
-        self.set_channel();
-        self.display_exec_info();
-        self.send_endlessly();
-    }
-
-
-
-    fn set_channel(&self) {
-        if !IfaceManager::set_channel(self.iface.name(), self.channel) {
-            abort(
-                format!(
-                    "Uneable to set channel {} on interface {}", 
-                    self.iface.name(), self.channel
-                )
-            )
-        }
-    }
-
-
-
-    fn display_exec_info(&self) {
-        println!("[*] BSSID...: {}", self.ap_mac.to_string());
-        println!("[*] TARGET..: {}", self.target_mac.to_string());
-        println!("[*] CHANNEL.: {}", self.channel);
-    }
-
-
-
-    fn send_endlessly(&mut self) {
         let mut shots = 0u8;
         let running   = Arc::new(AtomicBool::new(true));
         CtrlCHandler::setup(running.clone());

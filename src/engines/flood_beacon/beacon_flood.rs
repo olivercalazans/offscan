@@ -2,16 +2,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use crate::engines::BcFloodArgs;
-use crate::iface::{Iface, IfaceManager};
+use crate::iface::IfaceManager;
 use crate::builders::Beacon;
 use crate::sockets::Layer2Socket;
 use crate::generators::RandomValues;
-use crate::utils::{CtrlCHandler, abort, Bssid};
+use crate::utils::{CtrlCHandler, Bssid};
 
 
 
 pub struct BeaconFlood {
-    iface   : Iface,
     channel : u8,
     ssid    : String,
     bc_sent : usize,
@@ -23,11 +22,12 @@ pub struct BeaconFlood {
 impl BeaconFlood {
 
     pub fn new(args: BcFloodArgs) -> Self {
+        IfaceManager::set_channel_or_abort(&args.iface, args.channel);
+        
         Self { 
             bc_sent : 0,
             builder : Beacon::new(),
             socket  : Layer2Socket::new(&args.iface),
-            iface   : args.iface,
             channel : args.channel as u8,
             ssid    : args.ssid,
         }
@@ -36,22 +36,7 @@ impl BeaconFlood {
 
 
     pub fn execute(&mut self) {
-        self.set_channel();
         self.send_endlessly();
-    }
-
-
-
-    fn set_channel(&self) {
-        if !IfaceManager::set_channel(self.iface.name(), self.channel as i32) {
-            abort(
-                format!(
-                    "Uneable to set channel {} on interface {}", 
-                    self.iface.name(),
-                    self.channel
-                )
-            )
-        }
     }
 
 
