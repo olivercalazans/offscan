@@ -3,6 +3,7 @@ package sockets
 import (
 	"fmt"
 	"net"
+	"offscan/iface"
 	"offscan/utils"
 
 	"golang.org/x/sys/unix"
@@ -16,7 +17,7 @@ type Layer3Socket struct {
 
 
 
-func New(iface *Iface) *Layer3Socket {
+func New(iface *iface.Iface) *Layer3Socket {
     fd, err := unix.Socket(unix.AF_INET, unix.SOCK_RAW, unix.IPPROTO_RAW)
 
 	if err != nil {

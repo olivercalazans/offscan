@@ -2,6 +2,7 @@ package sockets
 
 import (
 	"fmt"
+	"offscan/iface"
 	"offscan/utils"
 
 	"golang.org/x/sys/unix"
@@ -16,7 +17,7 @@ type Layer2Socket struct {
 
 
 
-func New(iface *Iface) *Layer2Socket {
+func New(iface *iface.Iface) *Layer2Socket {
     fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, int(htons(unix.ETH_P_ALL)))
 
 	if err != nil {

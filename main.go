@@ -2,17 +2,34 @@ package main
 
 import (
 	"fmt"
-	"offscan/iface"
+	"net"
 )
 
 func main() {
-	ifaceName := "wmon"
-	canal := 2 // Canal 11
+	// Nome da interface desejada
+	ifaceName := "wlp2s0"
 
-	err := iface.SetChannel(ifaceName, canal)
+	iface, err := net.InterfaceByName(ifaceName)
 	if err != nil {
-		fmt.Printf("Erro: %v\n", err)
+		fmt.Printf("Erro ao obter interface %s: %v\n", ifaceName, err)
 		return
 	}
-	fmt.Printf("Sucesso: Canal de %s alterado para %d via syscall!\n", ifaceName, canal)
+
+	addrs, err := iface.Addrs()
+	if err != nil {
+		fmt.Printf("Erro ao obter endereços: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Interface: %s\n", iface.Name)
+	for _, addr := range addrs {
+		ipNet, ok := addr.(*net.IPNet)
+		if !ok {
+			continue
+		}
+		ip := ipNet.IP
+		if ip.To4() != nil { // é IPv4
+			fmt.Println("  IPv4:", ip)
+		}
+	}
 }

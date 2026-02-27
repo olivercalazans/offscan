@@ -29,8 +29,52 @@ func New(name string) *Iface {
 
 
 
+func (i *Iface) Name() string {
+    return i.Interface.Name
+}
+
+
+
+func (i *Iface) Index() int {
+    return i.Interface.Index
+}
+
+
+
+func (i *Iface) MAC() net.HardwareAddr {
+    return i.Interface.HardwareAddr
+}
+
+
+
+func (i *Iface) IPv4() (net.IP, error) {
+    addrs, err := i.Addrs()
+    if err != nil {
+        return nil, fmt.Errorf("unable to get interface IPs: %w", err)
+    }
+
+    for _, addr := range addrs {
+        ipNet, ok := addr.(*net.IPNet)
+     
+        if !ok {
+            continue
+        }
+     
+        ip := ipNet.IP
+        if ip.To4() == nil {
+            continue
+        }
+     
+        return ip, nil
+    }
+    
+    return nil, fmt.Errorf("no IPv4 address found on interface")
+}
+
+
+
 func (i *Iface) State() (string, error) {
-    data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/operstate", i.Name))
+    data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/operstate", i.Interface.Name))
 
 	if err != nil {
         return "", err
@@ -42,7 +86,7 @@ func (i *Iface) State() (string, error) {
 
 
 func (i *Iface) IsWireless() bool {
-    _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/wireless", i.Name))
+    _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/wireless", i.Interface.Name))
     return err == nil
 }
 
@@ -53,7 +97,7 @@ func (i *Iface) Type() string {
         return "Wireless"
     }
 
-	data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/type", i.Name))
+	data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/type", i.Interface.Name))
 
 	if err != nil {
         return "Unknown"
@@ -66,31 +110,6 @@ func (i *Iface) Type() string {
     	case "772": return "Loopback"
     	default:    return "Type-" + typ
     }
-}
-
-
-
-func (i *Iface) IPs() ([]net.IP, error) {
-    addrs, err := i.Addrs()
-    
-	if err != nil {
-        return nil, err
-    }
-    
-	var ips []net.IP
-    for _, addr := range addrs {
-        ipnet, ok := addr.(*net.IPNet)
-    
-		if !ok {
-            continue
-        }
-    
-		if ipnet.IP.To4() != nil {
-            ips = append(ips, ipnet.IP)
-        }
-    }
-    
-	return ips, nil
 }
 
 
@@ -134,7 +153,7 @@ func (i *Iface) GatewayIP() (net.IP, error) {
             continue
         }
         
-		if fields[0] != i.Name {
+		if fields[0] != i.Interface.Name {
             continue
         }
 
@@ -171,7 +190,7 @@ func (i *Iface) GatewayMAC() (net.HardwareAddr, error) {
             continue
         }
 
-		if fields[5] != i.Name {
+		if fields[5] != i.Interface.Name {
             continue
         }
 
