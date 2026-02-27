@@ -1,4 +1,4 @@
-package frames80211
+package frame80211
 
 import (
 	"encoding/binary"

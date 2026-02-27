@@ -91,6 +91,6 @@ func (s *Sniffer) Stop() {
 
 	fmt.Printf(
         "[$] Packets received = %d, dropped = %d, if_dropped = %d\n",
-        s.stats.PacketsReceived, s.stats.PacketsDropped, s.stats.PacketsIfDropped
+        s.stats.PacketsReceived, s.stats.PacketsDropped, s.stats.PacketsIfDropped,
     )
 }
