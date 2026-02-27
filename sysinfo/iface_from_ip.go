@@ -1,0 +1,40 @@
+package sysinfo
+
+import (
+	"net"
+	"offscan/utils"
+)
+
+func MustIfaceFromIP(ip net.IP) string {
+    if ip.To4() == nil {
+        utils.Abort("Expected an IPv4 address, but got IPv6")
+    }
+
+    interfaces := MustIfaces()
+
+    for _, iface := range interfaces {
+        if iface.Flags&net.FlagUp == 0 {
+            continue
+        }
+
+        addrs, err := iface.Addrs()
+        if err != nil {
+            continue
+        }
+
+        for _, addr := range addrs {
+            ipNet, ok := addr.(*net.IPNet)
+
+			if !ok {
+                continue
+            }
+
+			if ipNet.IP.Equal(ip) {
+                return iface.Name
+            }
+        }
+    }
+
+    utils.Abort("Could not find any interface with IP " + ip.String())
+    return ""
+}
