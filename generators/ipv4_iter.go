@@ -1,4 +1,4 @@
-package random
+package generators
 
 import (
 	"encoding/binary"
@@ -188,7 +188,7 @@ func parseWildcardRange(
         return usableStart, usableStart
 
     default:
-        utils.Abort(fmt.Sprintf("unexpected wildcard parsing"))
+        utils.Abort("Unexpected wildcard parsing")
         return 0, 0
     }
 }
