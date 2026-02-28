@@ -1,8 +1,7 @@
-package ifaceinfo
+package ifconfig
 
 import (
 	"fmt"
-	"offscan/utils"
 	"syscall"
 	"unsafe"
 )
@@ -31,7 +30,7 @@ type iw_freq struct {
 
 
 
-func SetChannel(ifaceName string, channel int) error {
+func TrySetChannel(ifaceName string, channel int) error {
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
 	
 	if err != nil {
@@ -57,12 +56,4 @@ func SetChannel(ifaceName string, channel int) error {
 	}
 
 	return nil
-}
-
-
-
-func MustSetChannel(ifaceName string, channel int) {
-	if err := SetChannel(ifaceName, channel); err != nil {
-		utils.Abort(fmt.Sprintf("Unable to set channel %d on interface %s: %s", channel, ifaceName, err))
-	}
 }
