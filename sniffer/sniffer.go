@@ -65,7 +65,10 @@ func (s *Sniffer) captureLoop() {
         select {
         
 		case <-s.stopChan:
-            s.stats, _ = handle.Stats()
+            statsPtr, err := handle.Stats()
+            if err == nil {
+                s.stats = *statsPtr
+            }
             return
         
 		default:
