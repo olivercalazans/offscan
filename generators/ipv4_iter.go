@@ -77,7 +77,7 @@ func parseCIDR(cidr string) (network, broadcast uint32) {
 
     prefix, err := strconv.Atoi(parts[1])
     if err != nil || prefix < 0 || prefix > 32 {
-        utils.Abort(fmt.Sprintf("invalid prefix in CIDR '%s'", cidr))
+        utils.Abort(fmt.Sprintf("Invalid prefix in CIDR '%s'", cidr))
     }
 
     ipU32 := binary.BigEndian.Uint32(ip)
@@ -198,7 +198,7 @@ func parseWildcardRange(
 func parseIPAddress(ipStr string) net.IP {
     ip := net.ParseIP(ipStr)
     if ip == nil {
-        utils.Abort(fmt.Sprintf("invalid IP address '%s'", ipStr))
+        utils.Abort(fmt.Sprintf("Invalid IP address '%s'", ipStr))
     }
 
     ip4 := ip.To4()

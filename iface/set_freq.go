@@ -63,6 +63,6 @@ func SetChannel(ifaceName string, channel int) error {
 
 func MustSetChannel(ifaceName string, channel int) {
 	if err := SetChannel(ifaceName, channel); err != nil {
-		utils.Abort(fmt.Sprintf("Uneable to set channel %d on interface %s: %s", channel, ifaceName, err))
+		utils.Abort(fmt.Sprintf("Unable to set channel %d on interface %s: %s", channel, ifaceName, err))
 	}
 }

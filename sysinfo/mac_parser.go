@@ -25,7 +25,7 @@ func ResolveMac(inputMac *string, iface *iface.Iface) net.HardwareAddr {
     }
 
     if err != nil {
-        utils.Abort(fmt.Sprintf("Uneable to pasr MAC address: %v", err))
+        utils.Abort(fmt.Sprintf("Unable to parse MAC address: %v", err))
     }
 
     return mac

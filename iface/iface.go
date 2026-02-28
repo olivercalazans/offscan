@@ -50,7 +50,7 @@ func (i *Iface) MAC() net.HardwareAddr {
 func (i *Iface) IPv4() (net.IP, error) {
     addrs, err := i.Addrs()
     if err != nil {
-        return nil, fmt.Errorf("unable to get interface IPs: %w", err)
+        return nil, fmt.Errorf("Unable to get interface IPs: %w", err)
     }
 
     for _, addr := range addrs {
@@ -68,7 +68,7 @@ func (i *Iface) IPv4() (net.IP, error) {
         return ip, nil
     }
     
-    return nil, fmt.Errorf("no IPv4 address found on interface")
+    return nil, fmt.Errorf("No IPv4 address found on interface")
 }
 
 
@@ -133,7 +133,7 @@ func (i *Iface) CIDR() (string, error) {
         }
     }
     
-	return "", fmt.Errorf("no IPv4 address found")
+	return "", fmt.Errorf("No IPv4 address found")
 }
 
 
@@ -170,7 +170,7 @@ func (i *Iface) GatewayIP() (net.IP, error) {
 		return ip, nil
     }
 
-	return nil, fmt.Errorf("gateway not found")
+	return nil, fmt.Errorf("Gateway not found")
 }
 
 
@@ -207,14 +207,14 @@ func (i *Iface) GatewayMAC() (net.HardwareAddr, error) {
 		return mac, nil
     }
 
-	return nil, fmt.Errorf("gateway MAC not found")
+	return nil, fmt.Errorf("Gateway MAC not found")
 }
 
 
 
 func hexToIP(hex string) (net.IP, error) {
     if len(hex) != 8 {
-        return nil, fmt.Errorf("invalid hex length")
+        return nil, fmt.Errorf("Invalid hex length")
     }
 
 	b := make([]byte, 4)

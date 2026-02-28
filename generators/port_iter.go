@@ -105,14 +105,14 @@ func parsePortRange(rangeStr string) []uint16 {
     parts := strings.SplitN(rangeStr, "-", 2)
     
 	if len(parts) != 2 {
-        utils.Abort(fmt.Sprintf("invalid port range format: %s", rangeStr))
+        utils.Abort(fmt.Sprintf("Invalid port range format: %s", rangeStr))
     }
 
     start := validatePort(strings.TrimSpace(parts[0]))
     end   := validatePort(strings.TrimSpace(parts[1]))
 
     if start >= end {
-        utils.Abort(fmt.Sprintf("invalid range: %d-%d (start must be less than end)", start, end))
+        utils.Abort(fmt.Sprintf("Invalid range: %d-%d (start must be less than end)", start, end))
     }
 
     ports := make([]uint16, 0, end-start+1)

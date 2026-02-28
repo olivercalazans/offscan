@@ -56,7 +56,7 @@ func (s *Sniffer) captureLoop() {
     defer handle.Close()
 
     if err := handle.SetBPFFilter(s.filter); err != nil {
-        utils.Abort(fmt.Sprintf("[ ERROR ] Failed to set filter: %v", err))
+        utils.Abort(fmt.Sprintf("Failed to set filter: %v", err))
     }
 
     source := gopacket.NewPacketSource(handle, handle.LinkType())
