@@ -3,7 +3,6 @@ package sockets
 import (
 	"fmt"
 	"net"
-	"offscan/iface"
 	"offscan/utils"
 
 	"golang.org/x/sys/unix"
@@ -17,7 +16,7 @@ type Layer3Socket struct {
 
 
 
-func NewL3Socket(iface *iface.Iface) *Layer3Socket {
+func NewL3Socket(iface *net.Interface) *Layer3Socket {
     fd := createL3Socket()
     
     enableIPHdrIncl(fd)
@@ -49,8 +48,8 @@ func enableIPHdrIncl(fd int) {
 
 
 
-func bindL3SocketToDevice(fd int, iface *iface.Iface) {
-    if err := unix.SetsockoptString(fd, unix.SOL_SOCKET, unix.SO_BINDTODEVICE, iface.Name()); err != nil {
+func bindL3SocketToDevice(fd int, iface *net.Interface) {
+    if err := unix.SetsockoptString(fd, unix.SOL_SOCKET, unix.SO_BINDTODEVICE, iface.Name); err != nil {
         unix.Close(fd)
         utils.Abort(fmt.Sprintf("Failed to bind socket to interface: %v", err))
     }

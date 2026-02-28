@@ -3,13 +3,13 @@ package sysinfo
 import (
 	"fmt"
 	"net"
-	"offscan/iface"
+	"offscan/ifaceinfo"
 	"offscan/utils"
 )
 
 
 
-func ResolveMac(inputMac *string, iface *iface.Iface) net.HardwareAddr {
+func ResolveMac(inputMac *string, iface *net.Interface) net.HardwareAddr {
     if inputMac == nil {
         return nil
     }
@@ -19,8 +19,8 @@ func ResolveMac(inputMac *string, iface *iface.Iface) net.HardwareAddr {
     var err error
 
     switch macStr {
-    	case "gateway": mac, err = iface.GatewayMAC()
-    	case "local":   mac, err = iface.MAC(), nil
+    	case "gateway": mac, err = ifaceinfo.GatewayMAC(iface)
+    	case "local":   mac, err = iface.HardwareAddr, nil
     	default:        mac, err = net.ParseMAC(macStr)
     }
 

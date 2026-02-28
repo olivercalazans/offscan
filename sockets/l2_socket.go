@@ -2,7 +2,7 @@ package sockets
 
 import (
 	"fmt"
-	"offscan/iface"
+	"net"
 	"offscan/utils"
 
 	"golang.org/x/sys/unix"
@@ -17,7 +17,7 @@ type Layer2Socket struct {
 
 
 
-func NewL2Socket(iface *iface.Iface) *Layer2Socket {
+func NewL2Socket(iface *net.Interface) *Layer2Socket {
     fd := createL2Socket()
     
     bindL2SocketToDevice(fd, iface)
@@ -25,7 +25,7 @@ func NewL2Socket(iface *iface.Iface) *Layer2Socket {
 
     addr := unix.SockaddrLinklayer{
         Protocol : htons(unix.ETH_P_ALL),
-        Ifindex  : iface.Index(),
+        Ifindex  : iface.Index,
         Halen    : 6,
     }
 
@@ -46,8 +46,8 @@ func createL2Socket() int {
 
 
 
-func bindL2SocketToDevice(fd int, iface *iface.Iface) {
-    if err := unix.SetsockoptString(fd, unix.SOL_SOCKET, unix.SO_BINDTODEVICE, iface.Name()); err != nil {
+func bindL2SocketToDevice(fd int, iface *net.Interface) {
+    if err := unix.SetsockoptString(fd, unix.SOL_SOCKET, unix.SO_BINDTODEVICE, iface.Name); err != nil {
         unix.Close(fd)
         utils.Abort(fmt.Sprintf("Failed to bind socket to interface: %v", err))
     }
