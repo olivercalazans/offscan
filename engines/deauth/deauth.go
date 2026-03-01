@@ -25,8 +25,8 @@ type Deauthentication struct {
 
 
 
-func NewDeauthentication(argsList []string) *Deauthentication {
-    args := ParseArgs(argsList)
+func NewDeauthentication(argList []string) *Deauthentication {
+    args := ParseArgs(argList)
     
     ifconfig.MustSetChannel(args.Iface, args.Channel)
     displayExecInfo(args)

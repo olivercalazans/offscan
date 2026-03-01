@@ -30,14 +30,14 @@ type Args struct {
 
 
 
-func ParseArgs(args []string) *DeauthArgs {
+func ParseArgs(argList []string) *DeauthArgs {
     var opts Args
     
     parser := flags.NewParser(&opts, flags.None)
-    _, err := parser.ParseArgs(args)
+    _, err := parser.ParseArgs(argList)
     
     if err != nil {
-        utils.Abort(fmt.Sprintf("Unable to create the deauth argument parser: %v", err))
+        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
     deauthArgs := &DeauthArgs{

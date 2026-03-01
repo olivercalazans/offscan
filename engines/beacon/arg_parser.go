@@ -27,14 +27,14 @@ type Args struct {
 
 
 
-func parseArgs(argsList []string) *BcFloodArgs {
+func parseArgs(argList []string) *BcFloodArgs {
     var opts Args
 
 	parser := flags.NewParser(&opts, flags.None)
-    _, err := parser.ParseArgs(argsList)
+    _, err := parser.ParseArgs(argList)
 
 	if err != nil {
-        utils.Abort(fmt.Sprintf("failed to parse arguments: %v", err))
+        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
 	bcArgs := &BcFloodArgs{

@@ -12,7 +12,7 @@ func MustIfaceFromIP(ip net.IP) *net.Interface {
         utils.Abort("Expected an IPv4 address, but got IPv6")
     }
 
-    interfaces := MustIfaces()
+    interfaces := MustAllIfaces()
 
     for _, iface := range interfaces {
         if iface.Flags&net.FlagUp == 0 {

@@ -16,7 +16,7 @@ func MustDefaultInterface() *net.Interface {
     defer conn.Close()
 
     localAddr  := conn.LocalAddr().(*net.UDPAddr)
-    interfaces := MustIfaces()
+    interfaces := MustAllIfaces()
 
     for _, iface := range interfaces {
         if iface.Flags&net.FlagUp == 0 {

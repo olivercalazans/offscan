@@ -24,8 +24,8 @@ type BeaconFlood struct {
 
 
 
-func New(args []string) *BeaconFlood {
-	bcArgs := parseArgs(args)
+func New(argList []string) *BeaconFlood {
+	bcArgs := parseArgs(argList)
 
     ifconfig.MustSetChannel(bcArgs.Iface, bcArgs.Channel)
 

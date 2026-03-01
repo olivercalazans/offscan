@@ -65,7 +65,7 @@ type CommandHandler struct {
 var registry = map[string]CommandHandler{
     "beacon": {
         Description: "Beacon Flood",
-        Run:         beacon.Run,
+        Run:         beacon.Execute,
     },
     "deauth": {
         Description: "Deauthentication attack",

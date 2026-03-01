@@ -8,7 +8,7 @@ import (
 
 
 
-func MustIfaces() []net.Interface {
+func MustAllIfaces() []net.Interface {
 	interfaces, err := net.Interfaces()
     
 	if err != nil {
