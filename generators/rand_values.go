@@ -65,7 +65,6 @@ func (rv *RandomValues) RandomIP() net.IP {
 
 
 
-
 func (rv *RandomValues) randomU8Array() [6]byte {
     var bytes [6]byte
     rv.rng.Read(bytes[:])
