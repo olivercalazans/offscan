@@ -27,11 +27,11 @@ type Args struct {
 
 
 
-func parseArgs(args []string) *BcFloodArgs {
+func parseArgs(argsList []string) *BcFloodArgs {
     var opts Args
 
 	parser := flags.NewParser(&opts, flags.None)
-    _, err := parser.ParseArgs(args)
+    _, err := parser.ParseArgs(argsList)
 
 	if err != nil {
         utils.Abort(fmt.Sprintf("failed to parse arguments: %v", err))

@@ -39,6 +39,7 @@ func New(args []string) *BeaconFlood {
 }
 
 
+
 func (b *BeaconFlood) Execute() {
     ctx     := utils.SignalContext()
     randGen := generators.NewRandomValues(nil, nil)

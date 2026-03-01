@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"offscan/conv"
 	"offscan/frame80211"
 	"offscan/ifconfig"
 	"offscan/sockets"
@@ -27,32 +26,28 @@ type Deauthentication struct {
 
 
 func NewDeauthentication(argsList []string) *Deauthentication {
-    args  := ParseArgs(argsList)
-    iface := conv.MustGetIface(args.Iface)
-    bssid := conv.MustStrToMac(args.Bssid)
+    args := ParseArgs(argsList)
+    
+    ifconfig.MustSetChannel(args.Iface, args.Channel)
+    displayExecInfo(args)
 
-    ifconfig.MustSetChannel(iface, args.Channel)
-
-    deauth := &Deauthentication{
-        builder:   frame80211.NewDeauthFrame(bssid),
+    return &Deauthentication{
+        builder:   frame80211.NewDeauthFrame(args.Bssid),
         frmsSent:  0,
         seqNum:    1,
-        socket:    sockets.NewL2Socket(iface),
-        targetMac: conv.MustStrToMac(args.TargetMac),
-        apMac:     bssid,
+        socket:    sockets.NewL2Socket(args.Iface),
+        targetMac: args.TargetMac,
+        apMac:     args.Bssid,
         delay:     time.Duration(args.Delay) * time.Millisecond,
     }
-
-    displayExecInfo(args)
-    return deauth
 }
 
 
 
 func displayExecInfo(args *DeauthArgs) {
-    fmt.Printf("[*] IFACE...: %s\n", args.Iface)
-    fmt.Printf("[*] BSSID...: %s\n", args.Bssid)
-    fmt.Printf("[*] TARGET..: %s\n", args.TargetMac)
+    fmt.Printf("[*] IFACE...: %s\n", args.Iface.Name)
+    fmt.Printf("[*] BSSID...: %s\n", args.Bssid.String())
+    fmt.Printf("[*] TARGET..: %s\n", args.TargetMac.String())
     fmt.Printf("[*] CHANNEL.: %d\n", args.Channel)
 }
 
