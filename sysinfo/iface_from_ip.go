@@ -5,7 +5,9 @@ import (
 	"offscan/utils"
 )
 
-func MustIfaceFromIP(ip net.IP) string {
+
+
+func MustIfaceFromIP(ip net.IP) *net.Interface {
     if ip.To4() == nil {
         utils.Abort("Expected an IPv4 address, but got IPv6")
     }
@@ -30,11 +32,11 @@ func MustIfaceFromIP(ip net.IP) string {
             }
 
 			if ipNet.IP.Equal(ip) {
-                return iface.Name
+                return &iface
             }
         }
     }
 
     utils.Abort("Could not find any interface with IP " + ip.String())
-    return ""
+    return nil
 }

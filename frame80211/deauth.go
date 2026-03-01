@@ -15,11 +15,11 @@ type Deauth struct {
 
 
 
-func New(bssid Mac) Deauth {
+func NewDeauthFrame(bssid Mac) *Deauth {
 	deauth := Deauth{}
 	buildFixed(deauth.buffer[:], bssid)
 	
-	return deauth
+	return &deauth
 }
 
 
@@ -40,7 +40,7 @@ func buildFixed(buffer []byte, bssid Mac) {
 
 
 
-func (d *Deauth) frame(srcMac, dstMac Mac, seq uint16) [] byte {
+func (d *Deauth) Frame(srcMac, dstMac Mac, seq uint16) [] byte {
     copy(d.buffer[16:22], dstMac)
     copy(d.buffer[22:28], srcMac)
 

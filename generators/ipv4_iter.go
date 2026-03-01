@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"offscan/conv"
 	"offscan/utils"
 	"strconv"
 	"strings"
@@ -165,7 +166,7 @@ func parseWildcardRange(
 
     case startPart != "" && endPart == "":
         if !startInCidr {
-    		ip := utils.U32ToIP(*startIP)
+    		ip := conv.U32ToIP(*startIP)
 		    utils.Abort(fmt.Sprintf("Start IP %s is outside CIDR range. When using 'IP*', the IP must be within the CIDR", ip.String()))
 		}
         
@@ -173,7 +174,7 @@ func parseWildcardRange(
 
     case startPart == "" && endPart != "":
         if !endInCidr {
-            ip := utils.U32ToIP(*endIP)
+            ip := conv.U32ToIP(*endIP)
             utils.Abort(
                 fmt.Sprintf("End IP %s is outside CIDR range. When using '*IP', the IP must be within the CIDR", ip.String()),
             )
@@ -216,7 +217,7 @@ func (it *Ipv4Iter) Next() (net.IP, bool) {
         return nil, false
     }
 
-    ip := utils.U32ToIP(it.current)
+    ip := conv.U32ToIP(it.current)
     it.current++
     return ip, true
 }

@@ -2,58 +2,97 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"os"
+
+	"offscan/engines/beacon"
+	"offscan/engines/deauth"
+	"offscan/engines/netinfo"
+	"offscan/engines/netmap"
+	"offscan/engines/ping"
+	"offscan/engines/pscan"
+	"offscan/engines/tcp"
+	"offscan/engines/wmap"
+	"offscan/utils"
 )
 
-// DefaultInterface retorna o nome da interface de rede padrão.
-func DefaultInterface() (string, error) {
-    // Conecta a um servidor externo (não precisa enviar dados)
-    conn, err := net.Dial("udp", "8.8.8.8:80")
-    if err != nil {
-        return "", fmt.Errorf("falha ao determinar interface padrão: %w", err)
-    }
-    defer conn.Close()
 
-    // Obtém o endereço local da conexão
-    localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-    // Percorre as interfaces procurando aquela que possui esse IP
-    interfaces, err := net.Interfaces()
-    if err != nil {
-        return "", err
-    }
-
-    for _, iface := range interfaces {
-        // Verifica se a interface está ativa
-        if iface.Flags&net.FlagUp == 0 {
-            continue
-        }
-
-        addrs, err := iface.Addrs()
-        if err != nil {
-            continue
-        }
-
-        for _, addr := range addrs {
-            ipNet, ok := addr.(*net.IPNet)
-            if !ok {
-                continue
-            }
-            if ipNet.IP.Equal(localAddr.IP) {
-                return iface.Name, nil
-            }
-        }
-    }
-
-    return "", fmt.Errorf("nenhuma interface encontrada com o IP %s", localAddr.IP)
-}
 
 func main() {
-    ifaceName, err := DefaultInterface()
-    if err != nil {
-        fmt.Println("Erro:", err)
+    args := os.Args[1:]
+
+    if len(args) == 0 {
+        utils.Abort("No input found")
+    }
+
+    cmdName := args[0]
+
+    if cmdName == "-h" || cmdName == "--help" {
+        displayCommands()
         return
     }
-    fmt.Printf("Interface padrão: %s\n", ifaceName)
+
+    handler, ok := registry[cmdName]
+    if !ok {
+        utils.Abort(fmt.Sprintf("No command '%s'", cmdName))
+    }
+
+    if err := handler.Run(args[1:]); err != nil {
+        utils.Abort(err.Error())
+    }
 }
 
+
+
+func displayCommands() {
+    fmt.Println("# Available commands:")
+ 
+    for name, handler := range registry {
+        fmt.Printf("  %-6s -> %s\n", name, handler.Description)
+    }
+ 
+    fmt.Println()
+}
+
+
+
+type CommandHandler struct {
+    Description string
+    Run         func(args []string) error
+}
+
+
+
+var registry = map[string]CommandHandler{
+    "beacon": {
+        Description: "Beacon Flood",
+        Run:         beacon.Run,
+    },
+    "deauth": {
+        Description: "Deauthentication attack",
+        Run:         deauth.Execute,
+    },
+    "info": {
+        Description: "Network Information",
+        Run:         netinfo.Run,
+    },
+    "netmap": {
+        Description: "Network Mapping",
+        Run:         netmap.Run,
+    },
+    "ping": {
+        Description: "Ping Flooding",
+        Run:         ping.Run,
+    },
+    "pscan": {
+        Description: "Port Scanning",
+        Run:         pscan.Run,
+    },
+    "tcp": {
+        Description: "TCP Flooding",
+        Run:         tcp.Run,
+    },
+    "wmap": {
+        Description: "Wifi Mapping",
+        Run:         wmap.Run,
+    },
+}

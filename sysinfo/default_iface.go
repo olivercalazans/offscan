@@ -8,7 +8,7 @@ import (
 
 
 
-func MustDefaultInterface() string {
+func MustDefaultInterface() *net.Interface {
     conn, err := net.Dial("udp", "8.8.8.8:80")
     if err != nil {
         utils.Abort(fmt.Sprintf("Failed to bind UDP socket: %v", err))
@@ -36,11 +36,11 @@ func MustDefaultInterface() string {
             }
             
 			if ipNet.IP.Equal(localAddr.IP) {
-                return iface.Name
+                return &iface
             }
         }
     }
 
     utils.Abort(fmt.Sprintf("No interface found with IP %s", localAddr.IP))
-	return ""
+	return nil
 }
