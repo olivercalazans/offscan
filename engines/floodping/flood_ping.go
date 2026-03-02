@@ -20,12 +20,12 @@ type PingFlooder struct {
     rand      *generators.RandomValues
     builder   *packet.IcmpPkt
     iface     *net.Interface
-    pktsSent  int
-    srcIP     net.IP
-    srcMAC    net.HardwareAddr
-    dstIP     net.IP
-    dstMAC    net.HardwareAddr
-    duration  float64
+    pktsSent   int
+    srcIP      net.IP
+    srcMAC     net.HardwareAddr
+    dstIP      net.IP
+    dstMAC     net.HardwareAddr
+    duration   float64
 }
 
 
