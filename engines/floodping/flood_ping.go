@@ -1,4 +1,4 @@
-package pingflood
+package floodping
 
 import (
 	"fmt"
@@ -36,7 +36,7 @@ func New(argList []string) *PingFlooder {
 	dstIP  := conv.MustStrToIPv4(args.DstIP)
 	dstMAC := conv.MustStrToMac(args.DstMAC)
 
-	iface  := sysinfo.MustIfaceFromIP(dstIP)
+	iface  := sysinfo.MustRouteIfaceForDstIP(dstIP)
     cidr   := ifaceinfo.MustCIDR(iface)
 	
 	srcIP  := net.ParseIP(args.SrcIP)

@@ -37,7 +37,7 @@ func New(argList []string) *TcpFlooder {
 	dstIP  := conv.MustStrToIPv4(args.DstIP)
 	dstMAC := conv.MustStrToMac(args.DstMAC)
 
-	iface  := sysinfo.MustIfaceFromIP(dstIP)
+	iface  := sysinfo.MustRouteIfaceForDstIP(dstIP)
     cidr   := ifaceinfo.MustCIDR(iface)
 	
 	srcIP  := net.ParseIP(args.SrcIP)

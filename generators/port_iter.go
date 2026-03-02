@@ -18,7 +18,7 @@ type PortIter struct {
 
 
 
-func NewPortIter(portsStr *string, random bool) (*PortIter, error) {
+func NewPortIter(portsStr *string, random bool) *PortIter {
     var portsSet map[uint16]bool
 
     if portsStr == nil || *portsStr == "" {
@@ -45,7 +45,7 @@ func NewPortIter(portsStr *string, random bool) (*PortIter, error) {
     return &PortIter{
         ports: ports,
         index: 0,
-    }, nil
+    }
 }
 
 
@@ -73,10 +73,9 @@ func getDefaultPortsSet() map[uint16]bool {
 
 
 func parsePorts(portsStr string) map[uint16]bool {
-    set   := make(map[uint16]bool)
-    parts := strings.Split(portsStr, ",")
+    set := make(map[uint16]bool)
 
-    for _, part := range parts {
+    for part := range strings.SplitSeq(portsStr, ",") {
         part = strings.TrimSpace(part)
         
 		if part == "" {

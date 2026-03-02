@@ -10,7 +10,7 @@ import (
 	"offscan/conv"
 	"offscan/generators"
 	"offscan/ifaceinfo"
-	"offscan/sniffer"
+	"offscan/pktsniff"
 	"offscan/sysinfo"
 	"offscan/utils"
 )
@@ -36,7 +36,7 @@ type NetworkMapper struct {
     icmp           bool
     tcp            bool
     udp            bool
-    sniffer       *sniffer.Sniffer
+    sniffer       *pktsniff.Sniffer
 	snifferCancel  context.CancelFunc
     snifferCh      <-chan []byte
 }

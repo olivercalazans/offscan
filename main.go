@@ -6,11 +6,11 @@ import (
 
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
+	"offscan/engines/floodping"
+	"offscan/engines/floodtcp"
 	"offscan/engines/netinfo"
 	"offscan/engines/netmap"
-	"offscan/engines/ping"
-	"offscan/engines/pscan"
-	"offscan/engines/tcp"
+	"offscan/engines/portscan"
 	"offscan/engines/wmap"
 	"offscan/utils"
 )
@@ -81,15 +81,15 @@ var registry = map[string]CommandHandler{
     },
     "ping": {
         Description: "Ping Flooding",
-        Run:         ping.Run,
+        Run:         floodping.Run,
     },
     "pscan": {
         Description: "Port Scanning",
-        Run:         pscan.Run,
+        Run:         portscan.Run,
     },
     "tcp": {
         Description: "TCP Flooding",
-        Run:         tcp.Run,
+        Run:         floodtcp.Run,
     },
     "wmap": {
         Description: "Wifi Mapping",

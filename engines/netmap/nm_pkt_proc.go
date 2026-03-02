@@ -7,13 +7,13 @@ import (
 	"net"
 	"offscan/conv"
 	"offscan/dissectors"
-	"offscan/sniffer"
+	"offscan/pktsniff"
 )
 
 
 
 func (nm *NetworkMapper) startPacketProcessor() {
-    nm.sniffer   = sniffer.NewSniffer(nm.iface, nm.getBPFFilter(), false)
+    nm.sniffer   = pktsniff.NewSniffer(nm.iface, nm.getBPFFilter(), false)
     nm.snifferCh = nm.sniffer.Start()
 
     ctx, cancel     := context.WithCancel(context.Background())

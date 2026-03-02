@@ -7,7 +7,7 @@ import (
 
 
 
-func MustIfaceFromIP(ip net.IP) *net.Interface {
+func MustRouteIfaceForDstIP(ip net.IP) *net.Interface {
     if ip.To4() == nil {
         utils.Abort("Expected an IPv4 address, but got IPv6")
     }

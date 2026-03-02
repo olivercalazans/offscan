@@ -1,4 +1,4 @@
-package pingflood
+package floodping
 
 import (
 	"fmt"
