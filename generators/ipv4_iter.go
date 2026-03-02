@@ -1,7 +1,6 @@
 package generators
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
 	"offscan/conv"
@@ -48,6 +47,7 @@ func NewIpv4Iter(cidr string, rangeStr *string) *Ipv4Iter {
     }
 
     total := uint64(endRange - startRange + 1)
+    
     return &Ipv4Iter{
         current:  startRange,
         end:      endRange,
@@ -81,7 +81,7 @@ func parseCIDR(cidr string) (network, broadcast uint32) {
         utils.Abort(fmt.Sprintf("Invalid prefix in CIDR '%s'", cidr))
     }
 
-    ipU32 := binary.BigEndian.Uint32(ip)
+    ipU32 := conv.IPToU32(ip)
 
     var mask uint32
     if prefix == 0 {
@@ -117,7 +117,7 @@ func parseRange(
 
 func parseSingleIPRange(ipStr string) (uint32, uint32) {
     ip    := parseIPAddress(ipStr)
-	ipU32 := binary.BigEndian.Uint32(ip)
+	ipU32 := conv.IPToU32(ip)
     return ipU32, ipU32
 }
 
@@ -145,7 +145,7 @@ func parseWildcardRange(
 
 	if startPart != "" {
         ip         := parseIPAddress(startPart)
-		ipU32      := binary.BigEndian.Uint32(ip)
+		ipU32      := conv.IPToU32(ip)
         startIP     = &ipU32
         startInCidr = cidrHasUsable && ipU32 >= usableStart && ipU32 <= usableEnd
     }
@@ -155,7 +155,7 @@ func parseWildcardRange(
 
 	if endPart != "" {
         ip       := parseIPAddress(endPart)
-		ipU32 	 := binary.BigEndian.Uint32(ip)
+		ipU32 	 := conv.IPToU32(ip)
         endIP     = &ipU32
         endInCidr = cidrHasUsable && ipU32 >= usableStart && ipU32 <= usableEnd
     }

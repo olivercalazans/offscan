@@ -21,9 +21,9 @@ type DelayMode struct {
 
 
 type DelayIter struct {
-    mode      DelayMode
-    remaining int
-    rng       *rand.Rand
+    mode        DelayMode
+    remaining   int
+    rng        *rand.Rand
 }
 
 

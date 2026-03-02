@@ -3,6 +3,7 @@ package ifaceinfo
 import (
 	"fmt"
 	"net"
+	"offscan/utils"
 )
 
 
@@ -29,4 +30,16 @@ func IPv4(iface *net.Interface) (net.IP, error) {
     }
     
     return nil, fmt.Errorf("No IPv4 address found on interface")
+}
+
+
+
+func MustIPv4(iface *net.Interface) net.IP {
+    ip, err := IPv4(iface)
+
+    if err != nil {
+        utils.Abort(fmt.Sprintf("%v", err))
+    }
+
+    return ip
 }

@@ -2,6 +2,7 @@ package sniffer
 
 import (
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -13,18 +14,18 @@ import (
 
 
 type Sniffer struct {
-    iface    string
-    filter   string
-    promisc  bool
-    stopChan chan struct{}
-    resultCh chan []byte
-    wg       sync.WaitGroup
-    stats    pcap.Stats
+    iface     *net.Interface
+    filter     string
+    promisc    bool
+    stopChan   chan struct{}
+    resultCh   chan []byte
+    wg         sync.WaitGroup
+    stats      pcap.Stats
 }
 
 
 
-func New(iface, filter string, promisc bool) *Sniffer {
+func NewSniffer(iface *net.Interface, filter string, promisc bool) *Sniffer {
     return &Sniffer{
         iface    : iface,
         filter   : filter,
@@ -48,10 +49,10 @@ func (s *Sniffer) captureLoop() {
     defer s.wg.Done()
     defer close(s.resultCh)
 
-    handle, err := pcap.OpenLive(s.iface, 65536, s.promisc, 100 * time.Millisecond)
+    handle, err := pcap.OpenLive(s.iface.Name, 65536, s.promisc, 100 * time.Millisecond)
 
 	if err != nil {
-        utils.Abort(fmt.Sprintf("Failed to open interface %s: %v", s.iface, err))
+        utils.Abort(fmt.Sprintf("Failed to open interface %s: %v", s.iface.Name, err))
     }
     defer handle.Close()
 
