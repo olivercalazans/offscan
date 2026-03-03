@@ -57,10 +57,9 @@ func (wm *WifiMapper) displayResults() {
         }
     }
 
-    wifis := wm.wifis
+    wifis   := wm.wifis
     wm.wifis = make(map[string]WifiData)
 
-    channels := make(map[uint8]bool)
     wm.displayHeader(maxLen)
 
     ssids := make([]string, 0, len(wifis))
@@ -72,22 +71,13 @@ func (wm *WifiMapper) displayResults() {
     for _, ssid := range ssids {
         info := wifis[ssid]
         wm.displayWifiInfo(ssid, &info, maxLen)
-        channels[info.Channel] = true
     }
-
-    chList := make([]int, 0, len(channels))
-    for ch := range channels {
-        chList = append(chList, int(ch))
-    }
-
-	sort.Ints(chList)
-    fmt.Printf("\n# Channels found: %v\n", chList)
 }
 
 
 
 func (wm *WifiMapper) displayHeader(maxLen int) {
-    fmt.Printf("\n%-*s  %-17s  %s  %s  %s\n",
+    fmt.Printf("\n%-*s  %-17s  %s  %s   %s\n",
         maxLen, "SSID", "BSSID", "Channel", "Sec", "Freq")
 
 		fmt.Printf("%s  %s  %s  %s  %s\n",
@@ -101,23 +91,28 @@ func (wm *WifiMapper) displayHeader(maxLen int) {
 
 
 func (wm *WifiMapper) displayWifiInfo(ssid string, info *WifiData, maxLen int) {
-	bssidStrs := make([]string, len(info.BSSIDs))
-
-	for bssid := range info.BSSIDs {
-        tmpSlice  := append(bssidStrs, bssid)
-		bssidStrs  = tmpSlice
+    // Coleta todas as chaves (BSSIDs) em um slice vazio
+    bssidStrs := make([]string, 0, len(info.BSSIDs))
+    for bssid := range info.BSSIDs {
+        bssidStrs = append(bssidStrs, bssid)
     }
+    // Ordena para consistência (opcional, mas recomendado)
+    sort.Strings(bssidStrs)
 
     firstBSSID := "N/A"
-
-	if len(bssidStrs) > 0 {
+    if len(bssidStrs) > 0 {
         firstBSSID = bssidStrs[0]
     }
 
-	fmt.Printf("%-*s  %-17s  %-7d  %-4s  %sG\n",
+    line := fmt.Sprintf("%-*s  %-17s  %-7d  %-4s  %sG\n",
         maxLen, ssid, firstBSSID, info.Channel, info.Sec, info.Freq)
+    
+    fmt.Print(line)
 
     for i := 1; i < len(bssidStrs); i++ {
         fmt.Printf("%-*s  %-17s\n", maxLen, "", bssidStrs[i])
     }
+
+    sepLine := strings.Repeat("-", len(line))
+    fmt.Println(sepLine)
 }

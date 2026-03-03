@@ -2,6 +2,7 @@ package wifimap
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ type MonitorSniff struct {
     cancel     chan struct{}
     wg         sync.WaitGroup
 	dissec    *dissectors.BeaconDissector
+    sniffer   *pktsniff.Sniffer
 }
 
 
@@ -48,32 +50,25 @@ func (m *MonitorSniff) ExecuteMonitorSniff() {
 
 
 func (m *MonitorSniff) startBeaconProcessor() {
-    sniffer  := pktsniff.NewSniffer(m.iface, getBPFFilter(), false)
-    packetCh := sniffer.Start()
+    m.dissec   = dissectors.NewBeaconDissector() 
+    m.sniffer  = pktsniff.NewSniffer(m.iface, getBPFFilter(), false)
+    packetCh  := m.sniffer.Start()
 
     m.wg.Add(1)
     go func() {
         defer m.wg.Done()
+
         tempBuf := make(map[string]WifiData)
         
 		for {
-            select {
-            case <-m.cancel:
-                sniffer.Stop()
-                m.mut.Lock()
-
-				for k, v := range tempBuf {
-                    m.buffer[k] = v
-                }
-
-				m.mut.Unlock()
-                return
-
-			case pkt, ok := <-packetCh:
-                if !ok { return }
-                m.dissectAndUpdate(tempBuf, pkt)
-            }
+			pkt, ok := <-packetCh
+            if !ok { break }
+            m.dissectAndUpdate(tempBuf, pkt)
         }
+
+        m.mut.Lock()
+        maps.Copy(m.buffer, tempBuf)
+		m.mut.Unlock()
     }()
 }
 
@@ -103,6 +98,7 @@ func (m *MonitorSniff) dissectAndUpdate(tempBuf map[string]WifiData, beacon []by
 }
 
 
+
 func getFrequency(chnl uint8) string {
     if chnl <= 14 {
         return "2.4"
@@ -129,6 +125,7 @@ func (m *MonitorSniff) addInfo(
 
         existing.BSSIDs[bssid] = struct{}{} 
         tempBuf[ssid]          = existing
+
     } else {
         tempBuf[ssid] = WifiData{
    			BSSIDs:   map[string]struct{}{bssid: {}},
@@ -150,9 +147,8 @@ func (m *MonitorSniff) sniff2GChannels() {
 
 func (m *MonitorSniff) sniff5GChannels() {
     channels := []int{
-        36, 40, 44, 48, 52, 56, 60, 64, 100, 104,
-        108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
-        149, 153, 157, 161, 165,
+        36,  40,  44,  48,  52,  56,  60,  64,  100, 104, 108, 112, 116, 120, 
+        124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165,
     }
     m.sniffChannels(channels, "5")
 }
@@ -181,7 +177,7 @@ func (m *MonitorSniff) sniffChannels(channels []int, freq string) {
 
 
 func (m *MonitorSniff) stopBeaconProcessor() {
-    close(m.cancel)
+    m.sniffer.Stop()
     m.wg.Wait()
 }
 
