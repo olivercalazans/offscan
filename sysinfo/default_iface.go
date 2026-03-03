@@ -1,0 +1,46 @@
+package sysinfo
+
+import (
+	"fmt"
+	"net"
+	"offscan/utils"
+)
+
+
+
+func MustDefaultInterface() *net.Interface {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        utils.Abort(fmt.Sprintf("Failed to bind UDP socket: %v", err))
+    }
+    defer conn.Close()
+
+    localAddr  := conn.LocalAddr().(*net.UDPAddr)
+    interfaces := MustAllIfaces()
+
+    for _, iface := range interfaces {
+        if iface.Flags&net.FlagUp == 0 {
+            continue
+        }
+
+        addrs, err := iface.Addrs()
+        if err != nil {
+            continue
+        }
+
+        for _, addr := range addrs {
+            ipNet, ok := addr.(*net.IPNet)
+            
+			if !ok {
+                continue
+            }
+            
+			if ipNet.IP.Equal(localAddr.IP) {
+                return &iface
+            }
+        }
+    }
+
+    utils.Abort(fmt.Sprintf("No interface found with IP %s", localAddr.IP))
+	return nil
+}
