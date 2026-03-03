@@ -1,8 +1,8 @@
 package netmap
 
 import (
-	"context"
 	"fmt"
+	"maps"
 	"math/bits"
 	"net"
 	"offscan/conv"
@@ -16,30 +16,18 @@ func (nm *NetworkMapper) startPacketProcessor() {
     nm.sniffer   = pktsniff.NewSniffer(nm.iface, nm.getBPFFilter(), false)
     nm.snifferCh = nm.sniffer.Start()
 
-    ctx, cancel     := context.WithCancel(context.Background())
-    nm.snifferCancel = cancel
-
     go func() {
         tempMap := make(map[[4]byte]Info)
         
 		for {
-            select {
-            case <-ctx.Done():
-                nm.sniffer.Stop()
-                nm.mut.Lock()
-
-				for k, v := range tempMap {
-                    nm.activeIPs[k] = v
-                }
-
-				nm.mut.Unlock()
-                return
-
-			case pkt, ok := <-nm.snifferCh:
-                if !ok { return }
-                nm.dissectAndUpdate(pkt, tempMap)
-            }
+            pkt, ok := <-nm.snifferCh
+            if !ok { break }
+            nm.dissectAndUpdate(pkt, tempMap)
         }
+
+        nm.mut.Lock()
+		maps.Copy(nm.activeIPs, tempMap)
+		nm.mut.Unlock()
     }()
 }
 
@@ -105,12 +93,4 @@ func (nm *NetworkMapper) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) 
 func (nm *NetworkMapper) isInRange(ip net.IP) bool {
     ipU32 := conv.IPToU32(ip)
     return ipU32 >= nm.ips.StartU32 && ipU32 <= nm.ips.EndU32
-}
-
-
-
-func (nm *NetworkMapper) stopPacketProcessor() {
-    if nm.snifferCancel != nil {
-        nm.snifferCancel()
-    }
 }

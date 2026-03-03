@@ -1,11 +1,11 @@
 package netmap
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"offscan/conv"
 	"offscan/generators"
@@ -35,7 +35,6 @@ type NetworkMapper struct {
     mut            sync.Mutex
     ips           *generators.Ipv4Iter
     myIP           net.IP
-    socketCancel   context.CancelFunc
     wg             sync.WaitGroup
     iface         *net.Interface
     delay          string
@@ -43,8 +42,8 @@ type NetworkMapper struct {
     tcp            bool
     udp            bool
     sniffer       *pktsniff.Sniffer
-	snifferCancel  context.CancelFunc
     snifferCh      <-chan []byte
+    running        atomic.Bool
 }
 
 
@@ -78,13 +77,9 @@ func New(argList []string) *NetworkMapper {
 func (nm *NetworkMapper) Execute() {
     nm.validateProtocolFlags()
     nm.displayExecInfo()
-
     nm.startPacketProcessor()
-    defer nm.stopPacketProcessor()
-
     nm.createGoroutines()
-	defer nm.stopSockets()
-
+    nm.sniffer.Stop()
     nm.resolveNames()
     nm.displayResult()
 }
@@ -136,7 +131,8 @@ func (nm *NetworkMapper) resolveNames() {
 
 
 func (nm *NetworkMapper) displayResult() {
-    fmt.Println("\nIP Address       MAC Address        Hostname")
+    fmt.Println("")
+    fmt.Println("IP Address       MAC Address        Hostname")
     fmt.Println("---------------  -----------------  --------")
 
 	nm.mut.Lock()
@@ -144,6 +140,6 @@ func (nm *NetworkMapper) displayResult() {
 
 	for ipBytes, info := range nm.activeIPs {
         ip := net.IP(ipBytes[:])
-        fmt.Printf("%-15s %-17s %s\n", ip.String(), info.Mac.String(), info.Name)
+        fmt.Printf("%-15s  %-17s  %s\n", ip.String(), info.Mac.String(), info.Name)
     }
 }

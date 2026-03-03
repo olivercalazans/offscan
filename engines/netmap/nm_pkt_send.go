@@ -1,7 +1,6 @@
 package netmap
 
 import (
-	"context"
 	"fmt"
 	"offscan/generators"
 	"offscan/packet"
@@ -13,22 +12,19 @@ import (
 
 
 func (nm *NetworkMapper) createGoroutines() {
-	ctx, cancel     := context.WithCancel(context.Background())
-    nm.socketCancel  = cancel
-
     if nm.icmp {
         nm.wg.Add(1)
-        go nm.sendProbes("icmp", ctx, *nm.ips)
+        go nm.sendProbes("icmp", *nm.ips)
     }
     
 	if nm.tcp {
         nm.wg.Add(1)
-        go nm.sendProbes("tcp", ctx, *nm.ips)
+        go nm.sendProbes("tcp", *nm.ips)
     }
     
 	if nm.udp {
         nm.wg.Add(1)
-        go nm.sendProbes("udp", ctx, *nm.ips)
+        go nm.sendProbes("udp", *nm.ips)
     }
 
     nm.wg.Wait()
@@ -37,14 +33,13 @@ func (nm *NetworkMapper) createGoroutines() {
 
 
 
-func (nm *NetworkMapper) sendProbes(proto string, ctx context.Context, ips generators.Ipv4Iter) {
+func (nm *NetworkMapper) sendProbes(proto string, ips generators.Ipv4Iter) {
     defer nm.wg.Done()
 
     delays  := generators.NewDelayIter(nm.delay, int(ips.Total()))
     randGen := generators.NewRandomValues(nil, nil)
     socket  := sockets.NewL3Socket(nm.iface)
 
-    // Prepara os construtores de pacotes
     icmpPkt := packet.NewIcmpPkt()
     tcpPkt  := packet.NewTcpPkt()
     udpPkt  := packet.NewUdpPkt()
@@ -58,12 +53,6 @@ func (nm *NetworkMapper) sendProbes(proto string, ctx context.Context, ips gener
 		delay, ok := delays.Next()
         if !ok {
             break
-        }
-
-        select {
-        case <-ctx.Done():
-            return
-        default:
         }
 
         var pkt []byte
@@ -86,13 +75,5 @@ func (nm *NetworkMapper) sendProbes(proto string, ctx context.Context, ips gener
 
         socket.SendTo(pkt, dstIP)
         time.Sleep(time.Duration(delay * float64(time.Second)))
-    }
-}
-
-
-
-func (nm *NetworkMapper) stopSockets() {
-    if nm.socketCancel != nil {
-        nm.socketCancel()
     }
 }

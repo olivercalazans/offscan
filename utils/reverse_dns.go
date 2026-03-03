@@ -10,7 +10,7 @@ import (
 func GetHostName(ip string) string {
     names, err := net.LookupAddr(ip)
 
-	if err != nil || len(names) == 0 {
+	if err != nil || len(names) < 1 {
         return "Unknown"
     }
 

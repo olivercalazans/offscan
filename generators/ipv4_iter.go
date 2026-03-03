@@ -32,7 +32,7 @@ func NewIpv4Iter(cidr string, rangeStr *string) *Ipv4Iter {
     
     if rangeStr != nil && *rangeStr != "" {
         s := strings.TrimSpace(*rangeStr)
-        startRange, endRange  = parseRange(s, networkU32, broadcastU32, usableStart, usableEnd, cidrHasUsable)
+        startRange, endRange  = parseRange(s, usableStart, usableEnd, cidrHasUsable)
     
 	} else {
         if cidrHasUsable {
@@ -99,15 +99,13 @@ func parseCIDR(cidr string) (network, broadcast uint32) {
 
 
 func parseRange(
-	r 			  string, 
-	networkU32    uint32, 
-	broadcastU32  uint32, 
+	r 			  string,  
 	usableStart   uint32, 
 	usableEnd     uint32, 
 	cidrHasUsable bool,
 ) (uint32, uint32) {
     if strings.Contains(r, "*") {
-        return parseWildcardRange(r, networkU32, broadcastU32, usableStart, usableEnd, cidrHasUsable)
+        return parseWildcardRange(r, usableStart, usableEnd, cidrHasUsable)
     }
 
 	return parseSingleIPRange(r)
@@ -125,8 +123,6 @@ func parseSingleIPRange(ipStr string) (uint32, uint32) {
 
 func parseWildcardRange(
 	rangeStr      string, 
-	networkU32    uint32, 
-	broadcastU32  uint32, 
 	usableStart   uint32, 
 	usableEnd     uint32, 
 	cidrHasUsable bool,
