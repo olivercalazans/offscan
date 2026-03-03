@@ -32,18 +32,19 @@ type Info struct {
 
 type NetworkMapper struct {
     activeIPs      map[[4]byte]Info
-    mut            sync.Mutex
-    ips           *generators.Ipv4Iter
-    myIP           net.IP
-    wg             sync.WaitGroup
-    iface         *net.Interface
     delay          string
+    ips           *generators.Ipv4Iter
+    iface         *net.Interface
+    mut            sync.Mutex
+    myIP           net.IP
     icmp           bool
     tcp            bool
     udp            bool
+    running        atomic.Bool
     sniffer       *pktsniff.Sniffer
     snifferCh      <-chan []byte
-    running        atomic.Bool
+    wgSocks        sync.WaitGroup
+    wgPktProc      sync.WaitGroup
 }
 
 
@@ -75,18 +76,18 @@ func New(argList []string) *NetworkMapper {
 
 
 func (nm *NetworkMapper) Execute() {
-    nm.validateProtocolFlags()
+    nm.validateProtoFlags()
     nm.displayExecInfo()
     nm.startPacketProcessor()
     nm.createGoroutines()
-    nm.sniffer.Stop()
+    nm.stopPacketProcessor()
     nm.resolveNames()
     nm.displayResult()
 }
 
 
 
-func (nm *NetworkMapper) validateProtocolFlags() {
+func (nm *NetworkMapper) validateProtoFlags() {
     if !nm.icmp && !nm.tcp && !nm.udp {
         nm.icmp = true
         nm.tcp  = true

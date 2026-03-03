@@ -1,8 +1,8 @@
 package portscan
 
 import (
-	"context"
 	"fmt"
+	"maps"
 	"net"
 	"strings"
 	"sync"
@@ -37,8 +37,8 @@ type PortScanner struct {
     udp         bool
     openPorts   map[uint16]bool
     mut         sync.Mutex
-    cancel      context.CancelFunc 
     wg          sync.WaitGroup
+    sniffer    *pktsniff.Sniffer
 }
 
 
@@ -88,38 +88,25 @@ func (ps *PortScanner) displayInfo() {
 
 
 func (ps *PortScanner) startPacketProcessor() {
-    sniffer  := pktsniff.NewSniffer(ps.iface, ps.getBPFFilter(), false)
-    packetCh := sniffer.Start()
-
-    ctx, cancel := context.WithCancel(context.Background())
-    ps.cancel    = cancel
+    ps.sniffer = pktsniff.NewSniffer(ps.iface, ps.getBPFFilter(), false)
+    packetCh  := ps.sniffer.Start()
 
     ps.wg.Add(1)
     go func() {
         defer ps.wg.Done()
+        
         tempPorts := make(map[uint16]bool)
         dissector := dissectors.NewPacketDissector()
 
         for {
-            select {
-            case <-ctx.Done():
-                sniffer.Stop()
-                ps.mut.Lock()
-            
-				for p := range tempPorts {
-                    ps.openPorts[p] = true
-                }
-            
-				ps.mut.Unlock()
-                return
-            
-			case pkt, ok := <-packetCh:
-                if !ok {
-                    return
-                }
-                ps.dissectAndUpdate(dissector, tempPorts, pkt)
-            }
+			pkt, ok := <-packetCh
+            if !ok { break }
+            ps.dissectAndUpdate(dissector, tempPorts, pkt)
         }
+
+        ps.mut.Lock()
+        maps.Copy(ps.openPorts, tempPorts)
+		ps.mut.Unlock()
     }()
 }
 
@@ -160,11 +147,10 @@ func (ps *PortScanner) dissectAndUpdate(dissector *dissectors.PacketDissector, t
 
 
 func (ps *PortScanner) stopPacketProcessor() {
-    if ps.cancel != nil {
-        ps.cancel()
-    }
+    ps.sniffer.Stop()
     ps.wg.Wait()
 }
+
 
 
 func (ps *PortScanner) sendProbes() {
@@ -189,14 +175,10 @@ func (ps *PortScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *gene
 
     for {
         port, ok := portIter.Next()
-        if !ok {
-            break
-        }
+        if !ok { break }
         
 		delay, ok := delayIter.Next()
-        if !ok {
-            break
-        }
+        if !ok { break }
         
 		srcPort := randGen.RandomPort()
         pkt     := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, port)
@@ -216,11 +198,11 @@ func (ps *PortScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *gene
 
     for _, entry := range entries {
         delay, ok := delayIter.Next()
-        if !ok {
-            break
-        }
+        if !ok { break }
+
         srcPort := randGen.RandomPort()
-        pkt := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, entry.Port, entry.Payload)
+        pkt     := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, entry.Port, entry.Payload)
+        
         socket.SendTo(pkt, ps.targetIP)
         time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
     }

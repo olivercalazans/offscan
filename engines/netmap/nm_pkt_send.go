@@ -13,28 +13,28 @@ import (
 
 func (nm *NetworkMapper) createGoroutines() {
     if nm.icmp {
-        nm.wg.Add(1)
+        nm.wgSocks.Add(1)
         go nm.sendProbes("icmp", *nm.ips)
     }
     
 	if nm.tcp {
-        nm.wg.Add(1)
+        nm.wgSocks.Add(1)
         go nm.sendProbes("tcp", *nm.ips)
     }
     
 	if nm.udp {
-        nm.wg.Add(1)
+        nm.wgSocks.Add(1)
         go nm.sendProbes("udp", *nm.ips)
     }
 
-    nm.wg.Wait()
+    nm.wgSocks.Wait()
     time.Sleep(3 * time.Second)
 }
 
 
 
 func (nm *NetworkMapper) sendProbes(proto string, ips generators.Ipv4Iter) {
-    defer nm.wg.Done()
+    defer nm.wgSocks.Done()
 
     delays  := generators.NewDelayIter(nm.delay, int(ips.Total()))
     randGen := generators.NewRandomValues(nil, nil)

@@ -16,7 +16,10 @@ func (nm *NetworkMapper) startPacketProcessor() {
     nm.sniffer   = pktsniff.NewSniffer(nm.iface, nm.getBPFFilter(), false)
     nm.snifferCh = nm.sniffer.Start()
 
+    nm.wgPktProc.Add(1)
     go func() {
+        defer nm.wgPktProc.Done()
+
         tempMap := make(map[[4]byte]Info)
         
 		for {
@@ -93,4 +96,11 @@ func (nm *NetworkMapper) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) 
 func (nm *NetworkMapper) isInRange(ip net.IP) bool {
     ipU32 := conv.IPToU32(ip)
     return ipU32 >= nm.ips.StartU32 && ipU32 <= nm.ips.EndU32
+}
+
+
+
+func (nm *NetworkMapper) stopPacketProcessor() {
+    nm.sniffer.Stop()
+    nm.wgPktProc.Wait()
 }
