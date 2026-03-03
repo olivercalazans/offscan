@@ -124,13 +124,15 @@ func (ni *NetworkInfo) setCIDR() {
 func (ni *NetworkInfo) setHostLen() {
     parts := strings.Split(ni.cidr, "/")
     
-	if len(parts) != 2 {
+	if len(parts) < 2 {
         ni.hostLen = "None"
+        return
     }
 
     cidrVal, err := strconv.Atoi(parts[1])
     if err != nil || cidrVal > 32 {
         ni.hostLen = "Unknown"
+        return
     }
 
     hostBits   := 32 - cidrVal
@@ -178,6 +180,7 @@ func (ni *NetworkInfo) setGatewayIP() {
 func (ni *NetworkInfo) setBroadcast() {
     if ni.ifType == "Loopback" {
         ni.broadcast = "None"
+        return
     }
 
 	ip, err := ifaceinfo.BroadcastFromCIDR(ni.cidr)
