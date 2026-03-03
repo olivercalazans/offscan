@@ -1,6 +1,6 @@
 <h1 align="center"> OffScan </h1>
 
-**OffScan** is a command-line tool developed in Rust for network exploration, device enumeration, and offensive security testing on Linux. It provides a compact, efficient interface for scanning, probing, and capturing network data, aimed at defenders and red‑teamers alike. What it can do:
+**OffScan** is a command-line tool developed in Go for network exploration, device enumeration, and offensive security testing on Linux. It provides a compact, efficient interface for scanning, probing, and capturing network data, aimed at defenders and red‑teamers alike. What it can do:
 
 <br>
 
@@ -34,29 +34,16 @@
 
 <br>
 
-
 ## Dependencies
 
-This project uses **Cargo**, Rust's package manager and build system, to manage its Rust dependencies.  
-If you don't have Cargo installed, follow the steps on the [official Rust installation page](https://www.rust-lang.org/tools/install).
+This project uses **Go modules** to manage its dependencies.  
+If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/).
 
-All Rust dependencies are managed automatically by Cargo — no manual installation required.  
-You can find them listed in the [Cargo.toml](https://github.com/olivercalazans/offscan/blob/main/Cargo.toml) file.
-
-In addition to Cargo-managed crates, this project requires some **system-level dependencies**:
-- A C compiler and linker (`build-essential` has everyting) — required to build and link Rust binaries.
-- `libpcap-dev` — required for network packet capture.
-- `libnl-3-dev` and `libnl-genl-3-dev` — required for wireless interface controll.
-  
-``` bash
-sudo apt install build-essential libpcap-dev libnl-3-dev libnl-genl-3-dev
-```
-   
- Make sure these are installed before building.
+All Go dependencies are managed automatically via the `go.mod` file – no manual installation required.  
+You can find them listed in the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file.
 
 > [!WARNING]
 > The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
-
 
 <br>
 
@@ -74,10 +61,9 @@ sudo apt install build-essential libpcap-dev libnl-3-dev libnl-genl-3-dev
 > 2. Comply with **all applicable laws**
 > 3. Assume **full liability** for misuse
 > 
-> **The Developer assume NO liability. See [LEGAL.md](LEGAL.md) for full policy.**
+> **The Developer assumes NO liability. See [LEGAL.md](LEGAL.md) for full policy.**
 
 <br>
-
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
