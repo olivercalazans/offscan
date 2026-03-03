@@ -2,6 +2,8 @@ package ifconfig
 
 import (
 	"fmt"
+	"net"
+	"offscan/utils"
 	"syscall"
 	"unsafe"
 )
@@ -30,7 +32,7 @@ type iw_freq struct {
 
 
 
-func TrySetChannel(ifaceName string, channel int) error {
+func TrySetChannel(iface *net.Interface, channel int) error {
 	validateChannel(channel)
 
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
@@ -41,7 +43,7 @@ func TrySetChannel(ifaceName string, channel int) error {
 	defer syscall.Close(fd)
 
 	var wrq iwreq
-	copy(wrq.ifrName[:], ifaceName)
+	copy(wrq.ifrName[:], []byte(iface.Name))
 
 	freq := iw_freq{
 		m: int32(channel),
@@ -58,4 +60,12 @@ func TrySetChannel(ifaceName string, channel int) error {
 	}
 
 	return nil
+}
+
+
+
+func MustSetChannel(iface *net.Interface, channel int) {
+	if err := TrySetChannel(iface, channel); err != nil {
+		utils.Abort(fmt.Sprintf("Unable to set channel %d on interface %s: %s", channel, iface.Name, err))
+	}
 }

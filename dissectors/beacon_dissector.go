@@ -9,17 +9,29 @@ import (
 
 
 
-type BeaconDissector struct{}
+type BeaconDissector struct {
+    frame []byte
+}
 
-func (bd *BeaconDissector) ParseBeacon(beacon []byte) ([]string, bool) {
-    offset := bd.findFrameOffset(beacon)
-    frame  := beacon[offset:]
+
+
+func NewBeaconDissector() *BeaconDissector {
+    return &BeaconDissector{}
+}
+
+
+
+func (bd *BeaconDissector) DissecBeacon(beacon []byte) ([]string, bool) {
+    bd.frame = beacon
+
+    offset   := bd.findFrameOffset()
+    bd.frame  = beacon[offset:]
     
-	if len(frame) < 24 {
+	if len(bd.frame) < 24 {
         return nil, false
     }
     
-	frameCtrl    := binary.LittleEndian.Uint16(frame[0:2])
+	frameCtrl    := binary.LittleEndian.Uint16(bd.frame[0:2])
     frameType    := (frameCtrl >> 2) & 0x03
     frameSubtype := (frameCtrl >> 4) & 0x0F
     
@@ -27,26 +39,26 @@ func (bd *BeaconDissector) ParseBeacon(beacon []byte) ([]string, bool) {
         return nil, false
     }
     
-	bssid   := bd.getBSSID(frame)
-    ssid    := bd.getSSID(frame)
-    channel := bd.getChannel(frame)
-    sec     := bd.getSecType(frame)
+	bssid   := bd.getBSSID()
+    ssid    := bd.getSSID()
+    channel := bd.getChannel()
+    sec     := bd.getSecType()
     
 	return []string{ssid, bssid, channel, sec}, true
 }
 
 
 
-func (bd *BeaconDissector) findFrameOffset(beacon []byte) int {
-    if offset, ok := bd.findFrameStartByType(beacon); ok {
+func (bd *BeaconDissector) findFrameOffset() int {
+    if offset, ok := bd.findFrameStartByType(); ok {
         return offset
     }
 
-	if offset, ok := bd.skipRadiotapHeader(beacon); ok {
+	if offset, ok := bd.skipRadiotapHeader(); ok {
         return offset
     }
 
-	if offset, ok := bd.skipCommonHeaders(beacon); ok {
+	if offset, ok := bd.skipCommonHeaders(); ok {
         return offset
     }
 
@@ -55,14 +67,14 @@ func (bd *BeaconDissector) findFrameOffset(beacon []byte) int {
 
 
 
-func (bd *BeaconDissector) findFrameStartByType(beacon []byte) (int, bool) {
-    for i := 0; i+24 <= len(beacon); i++ {
+func (bd *BeaconDissector) findFrameStartByType() (int, bool) {
+    for i := 0; i+24 <= len(bd.frame); i++ {
 
-		if i+2 > len(beacon) {
+		if i+2 > len(bd.frame) {
             continue
         }
 
-		frameCtrl    := binary.LittleEndian.Uint16(beacon[i : i+2])
+		frameCtrl    := binary.LittleEndian.Uint16(bd.frame[i : i+2])
         frameType    := (frameCtrl >> 2) & 0x03
         frameSubtype := (frameCtrl >> 4) & 0x0F
 
@@ -70,11 +82,11 @@ func (bd *BeaconDissector) findFrameStartByType(beacon []byte) (int, bool) {
             continue
         }
 
-		if i+4 > len(beacon) {
+		if i+4 > len(bd.frame) {
             continue
         }
         
-		duration := binary.LittleEndian.Uint16(beacon[i+2 : i+4])
+		duration := binary.LittleEndian.Uint16(bd.frame[i+2 : i+4])
         if duration > 0x3AFF {
             continue
 		}
@@ -87,17 +99,17 @@ func (bd *BeaconDissector) findFrameStartByType(beacon []byte) (int, bool) {
 
 
 
-func (bd *BeaconDissector) skipRadiotapHeader(beacon []byte) (int, bool) {
-    if len(beacon) < 8 || beacon[0] != 0x00 || beacon[1] != 0x00 {
+func (bd *BeaconDissector) skipRadiotapHeader() (int, bool) {
+    if len(bd.frame) < 8 || bd.frame[0] != 0x00 || bd.frame[1] != 0x00 {
         return 0, false
     }
 
-	radiotapLen := int(binary.LittleEndian.Uint16(beacon[2:4]))
-    if radiotapLen < 8 || radiotapLen+24 > len(beacon) {
+	radiotapLen := int(binary.LittleEndian.Uint16(bd.frame[2:4]))
+    if radiotapLen < 8 || radiotapLen+24 > len(bd.frame) {
         return 0, false
     }
 
-	afterRadiotap := beacon[radiotapLen:]
+	afterRadiotap := bd.frame[radiotapLen:]
     if len(afterRadiotap) < 24 {
         return 0, false
     }
@@ -114,15 +126,15 @@ func (bd *BeaconDissector) skipRadiotapHeader(beacon []byte) (int, bool) {
 
 
 
-func (bd *BeaconDissector) skipCommonHeaders(beacon []byte) (int, bool) {
+func (bd *BeaconDissector) skipCommonHeaders() (int, bool) {
     commonOffsets := []int{0, 4, 8, 12, 16, 24, 32, 36}
     
 	for _, offset := range commonOffsets {
-        if offset+24 > len(beacon) {
+        if offset+24 > len(bd.frame) {
             continue
         }
 
-		frame        := beacon[offset:]
+		frame        := bd.frame[offset:]
         frameCtrl    := binary.LittleEndian.Uint16(frame[0:2])
         frameType    := (frameCtrl >> 2) & 0x03
         frameSubtype := (frameCtrl >> 4) & 0x0F
@@ -137,28 +149,28 @@ func (bd *BeaconDissector) skipCommonHeaders(beacon []byte) (int, bool) {
 
 
 
-func (bd *BeaconDissector) getBSSID(frame []byte) string {
-    if len(frame) < 22 {
+func (bd *BeaconDissector) getBSSID() string {
+    if len(bd.frame) < 22 {
         return "00:00:00:00:00:00"
     }
 
-	b := frame[16:22]
+	b := bd.frame[16:22]
     return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", b[0], b[1], b[2], b[3], b[4], b[5])
 }
 
 
 
-func (bd *BeaconDissector) getSSID(frame []byte) string {
+func (bd *BeaconDissector) getSSID() string {
     const hidden = "<hidden>"
 
-	if len(frame) < 38 {
+	if len(bd.frame) < 38 {
         return hidden
     }
 
 	offset := 36
-    for offset+1 < len(frame) {
-        elementID  := frame[offset]
-        elementLen := int(frame[offset+1])
+    for offset+1 < len(bd.frame) {
+        elementID  := bd.frame[offset]
+        elementLen := int(bd.frame[offset+1])
         offset += 2
         
 		if elementID != 0 || elementLen <= 0 {
@@ -166,12 +178,12 @@ func (bd *BeaconDissector) getSSID(frame []byte) string {
             continue
         }
         
-		if offset+elementLen > len(frame) {
+		if offset+elementLen > len(bd.frame) {
             offset += elementLen
             continue
         }
 
-		ssidBytes := frame[offset : offset+elementLen]
+		ssidBytes := bd.frame[offset : offset+elementLen]
         allZero   := true
 
 		for _, b := range ssidBytes {
@@ -233,19 +245,19 @@ func formatSSIDBytes(ssid []byte) string {
 
 
 
-func (bd *BeaconDissector) getChannel(frame []byte) string {
-    if len(frame) < 38 {
+func (bd *BeaconDissector) getChannel() string {
+    if len(bd.frame) < 38 {
         return "0"
     }
 
 	offset := 36
-    for offset+1 < len(frame) {
-        elementID  := frame[offset]
-        elementLen := int(frame[offset+1])
+    for offset+1 < len(bd.frame) {
+        elementID  := bd.frame[offset]
+        elementLen := int(bd.frame[offset+1])
         offset += 2
         
-		if elementID == 3 && elementLen == 1 && offset < len(frame) {
-            return fmt.Sprintf("%d", frame[offset])
+		if elementID == 3 && elementLen == 1 && offset < len(bd.frame) {
+            return fmt.Sprintf("%d", bd.frame[offset])
         }
         
 		offset += elementLen
@@ -256,23 +268,23 @@ func (bd *BeaconDissector) getChannel(frame []byte) string {
 
 
 
-func (bd *BeaconDissector) getSecType(frame []byte) string {
-    if len(frame) < 38 {
+func (bd *BeaconDissector) getSecType() string {
+    if len(bd.frame) < 38 {
         return "????"
     }
 
 	flags  := &secFlags{isOpen: true}
     offset := 36
 
-	for offset+1 < len(frame) {
-        elementID  := frame[offset]
-        elementLen := int(frame[offset+1])
+	for offset+1 < len(bd.frame) {
+        elementID  := bd.frame[offset]
+        elementLen := int(bd.frame[offset+1])
         
-		if offset+2+elementLen > len(frame) {
+		if offset+2+elementLen > len(bd.frame) {
             break
         }
         
-		elementData := frame[offset+2 : offset+2+elementLen]
+		elementData := bd.frame[offset+2 : offset+2+elementLen]
         
 		switch elementID {
         case 0x30: processRSNElement(elementData, flags)
