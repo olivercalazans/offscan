@@ -21,6 +21,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type PortScanner struct {
     iface      *net.Interface
     myIP        net.IP

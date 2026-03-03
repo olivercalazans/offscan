@@ -14,6 +14,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type BeaconFlood struct {
     channel uint8
     ssid    string

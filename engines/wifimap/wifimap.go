@@ -10,6 +10,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type WifiMapper struct {
     wifis   map[string]WifiData
     iface  *net.Interface

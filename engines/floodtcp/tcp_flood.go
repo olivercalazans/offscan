@@ -16,6 +16,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type TcpFlooder struct {
     builder   *packet.TcpPkt
     iface     *net.Interface

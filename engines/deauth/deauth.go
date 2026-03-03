@@ -13,6 +13,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type Deauthentication struct {
     builder    *frame80211.Deauth
     frmsSent   int
@@ -25,7 +31,7 @@ type Deauthentication struct {
 
 
 
-func NewDeauthentication(argList []string) *Deauthentication {
+func New(argList []string) *Deauthentication {
     args := ParseArgs(argList)
     
     ifconfig.MustSetChannel(args.Iface, args.Channel)

@@ -17,6 +17,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type Info struct {
     Mac  net.HardwareAddr
     Name string

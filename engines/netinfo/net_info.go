@@ -13,6 +13,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type NetworkInfo struct {
     ifaceList   []net.Interface
     current     *net.Interface

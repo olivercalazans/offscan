@@ -16,6 +16,12 @@ import (
 
 
 
+func Run(args []string) {
+    New(args).Execute()
+}
+
+
+
 type PingFlooder struct {
     rand      *generators.RandomValues
     builder   *packet.IcmpPkt
