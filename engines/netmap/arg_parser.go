@@ -3,6 +3,7 @@ package netmap
 import (
 	"fmt"
 	"offscan/utils"
+	"os"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -23,10 +24,15 @@ type NetMapArgs struct {
 func ParseNetMapArgs(args []string) *NetMapArgs {
     var opts NetMapArgs
     
-	parser := flags.NewParser(&opts, flags.None)
+	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(args)
     
 	if err != nil {
+        if flags.WroteHelp(err) {
+			fmt.Printf("%v", err)
+			os.Exit(0)
+		}
+        
         utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
     
