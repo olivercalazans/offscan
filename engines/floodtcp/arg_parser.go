@@ -3,6 +3,7 @@ package floodtcp
 import (
 	"fmt"
 	"offscan/utils"
+	"os"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -22,10 +23,15 @@ type TcpArgs struct {
 func ParseTcpArgs(args []string) *TcpArgs {
     var opts TcpArgs
 
-	parser := flags.NewParser(&opts, flags.None)
+	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(args)
 
 	if err != nil {
+        if flags.WroteHelp(err) {
+			fmt.Printf("%v", err)
+			os.Exit(0)
+		}
+        
         utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
     

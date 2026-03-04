@@ -5,6 +5,7 @@ import (
 	"net"
 	"offscan/conv"
 	"offscan/utils"
+	"os"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -30,11 +31,16 @@ type Args struct {
 func parseArgs(argList []string) *BcFloodArgs {
     var opts Args
 
-	parser := flags.NewParser(&opts, flags.None)
+	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(argList)
 
 	if err != nil {
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+		if flags.WroteHelp(err) {
+			fmt.Printf("%v", err)
+			os.Exit(0)
+		}
+		
+		utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
 	bcArgs := &BcFloodArgs{

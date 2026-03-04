@@ -5,6 +5,7 @@ import (
 	"net"
 	"offscan/conv"
 	"offscan/utils"
+	"os"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -22,7 +23,7 @@ type DeauthArgs struct {
 
 type Args struct {
     Iface     string `short:"i" long:"iface" description:"Network interface" required:"true"`
-    TargetMac string `short:"t" long:"target-mac" description:"Target MAC" required:"true"`
+    TargetMac string `short:"t" long:"tmac" description:"Target MAC" required:"true"`
     Bssid     string `short:"b" long:"bssid" description:"BSSID" required:"true"`
     Delay     int    `short:"d" long:"delay" default:"30" description:"Delay in ms"`
     Channel   int    `short:"c" long:"channel" description:"Channel" required:"true"`
@@ -33,10 +34,15 @@ type Args struct {
 func ParseArgs(argList []string) *DeauthArgs {
     var opts Args
     
-    parser := flags.NewParser(&opts, flags.None)
+    parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(argList)
     
     if err != nil {
+        if flags.WroteHelp(err) {
+			fmt.Printf("%v", err)
+			os.Exit(0)
+		}
+        
         utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
