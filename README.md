@@ -53,7 +53,7 @@ You can find them listed in the [`go.mod`](https://github.com/olivercalazans/off
 > 
 > **PROHIBITED:**
 > - Testing without **explicit written permission**
-> - Any illegal activity (CFAA, CMA, etc. apply)
+> - Any illegal activity
 > - Unauthorized access or disruption
 > 
 > **YOU AGREE TO:**
