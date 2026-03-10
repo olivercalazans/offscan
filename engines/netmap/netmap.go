@@ -12,7 +12,6 @@ import (
 	"offscan/ifaceinfo"
 	"offscan/pktsniff"
 	"offscan/sysinfo"
-	"offscan/utils"
 )
 
 
@@ -122,7 +121,7 @@ func (nm *NetworkMapper) resolveNames() {
 
 	for ipBytes, info := range nm.activeIPs {
         ip       := net.IP(ipBytes[:])
-        name     := utils.GetHostName(ip.String())
+        name     := sysinfo.GetHostName(ip.String())
         info.Name = name
         
 		nm.activeIPs[ipBytes] = info

@@ -16,7 +16,6 @@ import (
 	"offscan/pktsniff"
 	"offscan/sockets"
 	"offscan/sysinfo"
-	"offscan/utils"
 )
 
 
@@ -211,7 +210,7 @@ func (ps *PortScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *gene
 
 
 func (ps *PortScanner) displayResult() {
-    deviceName := utils.GetHostName(ps.targetIP.String())
+    deviceName := sysinfo.GetHostName(ps.targetIP.String())
     ports      := ps.formatPorts()
     
 	fmt.Printf("\nOpen ports from %s (%s)\n", deviceName, ps.targetIP.String())
