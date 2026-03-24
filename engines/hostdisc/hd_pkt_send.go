@@ -1,4 +1,4 @@
-package netmap
+package hostdisc
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 
 
 
-func (nm *NetworkMapper) createGoroutines() {
+func (nm *HostDiscovery) createGoroutines() {
     if nm.icmp {
         nm.wgSocks.Add(1)
         go nm.sendProbes("icmp", *nm.ips)
@@ -33,7 +33,7 @@ func (nm *NetworkMapper) createGoroutines() {
 
 
 
-func (nm *NetworkMapper) sendProbes(proto string, ips generators.Ipv4Iter) {
+func (nm *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
     defer nm.wgSocks.Done()
 
     delays  := generators.NewDelayIter(nm.delay, int(ips.Total()))

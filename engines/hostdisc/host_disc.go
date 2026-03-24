@@ -1,4 +1,4 @@
-package netmap
+package hostdisc
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ type Info struct {
 
 
 
-type NetworkMapper struct {
+type HostDiscovery struct {
     activeIPs      map[[4]byte]Info
     delay          string
     ips           *generators.Ipv4Iter
@@ -48,7 +48,7 @@ type NetworkMapper struct {
 
 
 
-func New(argList []string) *NetworkMapper {
+func New(argList []string) *HostDiscovery {
     args := ParseNetMapArgs(argList)
 
 	var iface *net.Interface
@@ -60,7 +60,7 @@ func New(argList []string) *NetworkMapper {
 
 	cidr := ifaceinfo.MustCIDR(iface)
 
-    return &NetworkMapper{
+    return &HostDiscovery{
         activeIPs: make(map[[4]byte]Info),
         ips:       generators.NewIpv4Iter(cidr, args.Range),
         myIP:      ifaceinfo.MustIPv4(iface),
@@ -74,7 +74,7 @@ func New(argList []string) *NetworkMapper {
 
 
 
-func (nm *NetworkMapper) Execute() {
+func (nm *HostDiscovery) Execute() {
     nm.validateProtoFlags()
     nm.displayExecInfo()
     nm.startPacketProcessor()
@@ -86,7 +86,7 @@ func (nm *NetworkMapper) Execute() {
 
 
 
-func (nm *NetworkMapper) validateProtoFlags() {
+func (nm *HostDiscovery) validateProtoFlags() {
     if !nm.icmp && !nm.tcp && !nm.udp {
         nm.icmp = true
         nm.tcp  = true
@@ -96,7 +96,7 @@ func (nm *NetworkMapper) validateProtoFlags() {
 
 
 
-func (nm *NetworkMapper) displayExecInfo() {
+func (nm *HostDiscovery) displayExecInfo() {
     var protocols []string
     if nm.icmp { protocols = append(protocols, "ICMP") }
     if nm.tcp  { protocols = append(protocols, "TCP") }
@@ -115,7 +115,7 @@ func (nm *NetworkMapper) displayExecInfo() {
 
 
 
-func (nm *NetworkMapper) resolveNames() {
+func (nm *HostDiscovery) resolveNames() {
     nm.mut.Lock()
     defer nm.mut.Unlock()
 
@@ -130,7 +130,7 @@ func (nm *NetworkMapper) resolveNames() {
 
 
 
-func (nm *NetworkMapper) displayResult() {
+func (nm *HostDiscovery) displayResult() {
     fmt.Println("")
     fmt.Println("IP Address       MAC Address        Hostname")
     fmt.Println("---------------  -----------------  --------")

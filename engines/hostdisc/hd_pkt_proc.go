@@ -1,4 +1,4 @@
-package netmap
+package hostdisc
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 
 
-func (nm *NetworkMapper) startPacketProcessor() {
+func (nm *HostDiscovery) startPacketProcessor() {
     nm.sniffer   = pktsniff.NewSniffer(nm.iface, nm.getBPFFilter(), false)
     nm.snifferCh = nm.sniffer.Start()
 
@@ -36,13 +36,13 @@ func (nm *NetworkMapper) startPacketProcessor() {
 
 
 
-func (nm *NetworkMapper) getBPFFilter() string {
+func (nm *HostDiscovery) getBPFFilter() string {
     return fmt.Sprintf("dst host %s and src net %s", nm.myIP.String(), nm.cidrForBPFFilter())
 }
 
 
 
-func (nm *NetworkMapper) cidrForBPFFilter() string {
+func (nm *HostDiscovery) cidrForBPFFilter() string {
     xor := nm.ips.StartU32 ^ nm.ips.EndU32
     var leadingZeros int
     
@@ -69,7 +69,7 @@ func (nm *NetworkMapper) cidrForBPFFilter() string {
 
 
 
-func (nm *NetworkMapper) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) {
+func (nm *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) {
     dissector := dissectors.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
@@ -93,14 +93,14 @@ func (nm *NetworkMapper) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) 
 
 
 
-func (nm *NetworkMapper) isInRange(ip net.IP) bool {
+func (nm *HostDiscovery) isInRange(ip net.IP) bool {
     ipU32 := conv.IPToU32(ip)
     return ipU32 >= nm.ips.StartU32 && ipU32 <= nm.ips.EndU32
 }
 
 
 
-func (nm *NetworkMapper) stopPacketProcessor() {
+func (nm *HostDiscovery) stopPacketProcessor() {
     nm.sniffer.Stop()
     nm.wgPktProc.Wait()
 }

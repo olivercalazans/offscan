@@ -1,4 +1,4 @@
-package netmap
+package hostdisc
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 
 
 
-type NetMapArgs struct {
+type HostDiscArgs struct {
     Delay  string  `short:"d" long:"delay" default:"0.03" description:"Add a delay between packet transmissions."`
     Iface *string  `short:"i" long:"iface" description:"Network interface to send packets (default: system default)"`
     Range *string  `short:"r" long:"range" description:"IP range to scan"`
@@ -21,8 +21,8 @@ type NetMapArgs struct {
 
 
 
-func ParseNetMapArgs(args []string) *NetMapArgs {
-    var opts NetMapArgs
+func ParseNetMapArgs(args []string) *HostDiscArgs {
+    var opts HostDiscArgs
     
 	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(args)
