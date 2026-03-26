@@ -25,35 +25,35 @@ type CommandHandler struct {
 
 
 var registry = map[string]CommandHandler{
-	"--beacon": {
+	"beacon": {
 		Description: "Beacon Flood",
 		Run:         beacon.Run,
 	},
-	"--deauth": {
+	"deauth": {
 		Description: "Deauthentication attack",
 		Run:         deauth.Run,
 	},
-	"--info": {
+	"info": {
 		Description: "Network Information",
 		Run:         netinfo.Run,
 	},
-	"--hdisc": {
+	"hdisc": {
 		Description: "Host Discovery",
 		Run:         hostdisc.Run,
 	},
-	"--ping": {
+	"ping": {
 		Description: "Ping Flooding",
 		Run:         floodping.Run,
 	},
-	"--pscan": {
+	"pscan": {
 		Description: "Port Scanning",
 		Run:         portscan.Run,
 	},
-	"--tcp": {
+	"tcp": {
 		Description: "TCP Flooding",
 		Run:         floodtcp.Run,
 	},
-	"--wmap": {
+	"wmap": {
 		Description: "Wifi Mapping",
 		Run:         wifimap.Run,
 	},
