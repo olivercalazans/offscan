@@ -1,4 +1,21 @@
-package netmap
+/*
+ * Copyright (C) 2025 Oliver R. Calazans Jeronimo
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org>.
+ */
+
+package hostdisc
 
 import (
 	"fmt"
@@ -12,7 +29,6 @@ import (
 	"offscan/ifaceinfo"
 	"offscan/pktsniff"
 	"offscan/sysinfo"
-	"offscan/utils"
 )
 
 
@@ -30,7 +46,7 @@ type Info struct {
 
 
 
-type NetworkMapper struct {
+type HostDiscovery struct {
     activeIPs      map[[4]byte]Info
     delay          string
     ips           *generators.Ipv4Iter
@@ -49,7 +65,7 @@ type NetworkMapper struct {
 
 
 
-func New(argList []string) *NetworkMapper {
+func New(argList []string) *HostDiscovery {
     args := ParseNetMapArgs(argList)
 
 	var iface *net.Interface
@@ -61,7 +77,7 @@ func New(argList []string) *NetworkMapper {
 
 	cidr := ifaceinfo.MustCIDR(iface)
 
-    return &NetworkMapper{
+    return &HostDiscovery{
         activeIPs: make(map[[4]byte]Info),
         ips:       generators.NewIpv4Iter(cidr, args.Range),
         myIP:      ifaceinfo.MustIPv4(iface),
@@ -75,7 +91,7 @@ func New(argList []string) *NetworkMapper {
 
 
 
-func (nm *NetworkMapper) Execute() {
+func (nm *HostDiscovery) Execute() {
     nm.validateProtoFlags()
     nm.displayExecInfo()
     nm.startPacketProcessor()
@@ -87,7 +103,7 @@ func (nm *NetworkMapper) Execute() {
 
 
 
-func (nm *NetworkMapper) validateProtoFlags() {
+func (nm *HostDiscovery) validateProtoFlags() {
     if !nm.icmp && !nm.tcp && !nm.udp {
         nm.icmp = true
         nm.tcp  = true
@@ -97,7 +113,7 @@ func (nm *NetworkMapper) validateProtoFlags() {
 
 
 
-func (nm *NetworkMapper) displayExecInfo() {
+func (nm *HostDiscovery) displayExecInfo() {
     var protocols []string
     if nm.icmp { protocols = append(protocols, "ICMP") }
     if nm.tcp  { protocols = append(protocols, "TCP") }
@@ -116,13 +132,13 @@ func (nm *NetworkMapper) displayExecInfo() {
 
 
 
-func (nm *NetworkMapper) resolveNames() {
+func (nm *HostDiscovery) resolveNames() {
     nm.mut.Lock()
     defer nm.mut.Unlock()
 
 	for ipBytes, info := range nm.activeIPs {
         ip       := net.IP(ipBytes[:])
-        name     := utils.GetHostName(ip.String())
+        name     := sysinfo.GetHostName(ip.String())
         info.Name = name
         
 		nm.activeIPs[ipBytes] = info
@@ -131,7 +147,7 @@ func (nm *NetworkMapper) resolveNames() {
 
 
 
-func (nm *NetworkMapper) displayResult() {
+func (nm *HostDiscovery) displayResult() {
     fmt.Println("")
     fmt.Println("IP Address       MAC Address        Hostname")
     fmt.Println("---------------  -----------------  --------")

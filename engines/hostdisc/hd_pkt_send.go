@@ -1,4 +1,21 @@
-package netmap
+/*
+ * Copyright (C) 2025 Oliver R. Calazans Jeronimo
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org>.
+ */
+
+package hostdisc
 
 import (
 	"fmt"
@@ -11,7 +28,7 @@ import (
 
 
 
-func (nm *NetworkMapper) createGoroutines() {
+func (nm *HostDiscovery) createGoroutines() {
     if nm.icmp {
         nm.wgSocks.Add(1)
         go nm.sendProbes("icmp", *nm.ips)
@@ -33,7 +50,7 @@ func (nm *NetworkMapper) createGoroutines() {
 
 
 
-func (nm *NetworkMapper) sendProbes(proto string, ips generators.Ipv4Iter) {
+func (nm *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
     defer nm.wgSocks.Done()
 
     delays  := generators.NewDelayIter(nm.delay, int(ips.Total()))
