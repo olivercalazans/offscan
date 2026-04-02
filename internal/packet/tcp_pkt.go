@@ -66,12 +66,13 @@ func buildFixed(t *TcpPkt) {
 func (t *TcpPkt) etherHeader(srcMac, dstMac net.HardwareAddr) {
     copy(t.buffer[0:6], dstMac[:])
     copy(t.buffer[6:12], srcMac[:])
-
+    // 12:14 - fixed
 }
 
 
 
 func (t *TcpPkt) ipHeader(srcIP, dstIP net.IP) {
+    // 14:23 - fixed
     src := srcIP.To4()
     dst := dstIP.To4()
     copy(t.buffer[26:30], src)
@@ -89,6 +90,7 @@ func (t *TcpPkt) tcpHeader(
 	dstIP   net.IP, 
 	dstPort uint16,
 ) {
+    // 38:54 - fixed
     binary.BigEndian.PutUint16(t.buffer[34:36], srcPort)
     binary.BigEndian.PutUint16(t.buffer[36:38], dstPort)
     binary.BigEndian.PutUint16(t.buffer[50:52], 0)
