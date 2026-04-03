@@ -20,7 +20,7 @@ package hostdisc
 import (
 	"fmt"
 	"offscan/internal/generators"
-	"offscan/internal/packet"
+	"offscan/internal/pktbuilder"
 	"offscan/internal/sockets"
 	"offscan/internal/utils"
 	"time"
@@ -28,38 +28,38 @@ import (
 
 
 
-func (nm *HostDiscovery) createGoroutines() {
-    if nm.icmp {
-        nm.wgSocks.Add(1)
-        go nm.sendProbes("icmp", *nm.ips)
+func (hd *HostDiscovery) createGoroutines() {
+    if hd.icmp {
+        hd.wgSocks.Add(1)
+        go hd.sendProbes("icmp", *hd.ips)
     }
     
-	if nm.tcp {
-        nm.wgSocks.Add(1)
-        go nm.sendProbes("tcp", *nm.ips)
+	if hd.tcp {
+        hd.wgSocks.Add(1)
+        go hd.sendProbes("tcp", *hd.ips)
     }
     
-	if nm.udp {
-        nm.wgSocks.Add(1)
-        go nm.sendProbes("udp", *nm.ips)
+	if hd.udp {
+        hd.wgSocks.Add(1)
+        go hd.sendProbes("udp", *hd.ips)
     }
 
-    nm.wgSocks.Wait()
+    hd.wgSocks.Wait()
     time.Sleep(3 * time.Second)
 }
 
 
 
-func (nm *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
-    defer nm.wgSocks.Done()
+func (hd *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
+    defer hd.wgSocks.Done()
 
-    delays  := generators.NewDelayIter(nm.delay, int(ips.Total()))
+    delays  := generators.NewDelayIter(hd.delay, int(ips.Total()))
     randGen := generators.NewRandomValues(nil, nil)
-    socket  := sockets.NewL3Socket(nm.iface)
+    socket  := sockets.NewL3Socket(hd.iface)
 
-    icmpPkt := packet.NewIcmpPkt()
-    tcpPkt  := packet.NewTcpPkt()
-    udpPkt  := packet.NewUdpPkt()
+    icmpPkt := pktbuilder.NewIcmpPkt()
+    tcpPkt  := pktbuilder.NewTcpPkt()
+    udpPkt  := pktbuilder.NewUdpPkt()
 
     for {
         dstIP, ok := ips.Next()
@@ -76,15 +76,15 @@ func (nm *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
         
 		switch proto {
         case "icmp":
-            pkt = icmpPkt.L3Pkt(nm.myIP, dstIP)
+            pkt = icmpPkt.L3Pkt(hd.myIP, dstIP)
         
 		case "tcp":
             srcPort := randGen.RandomPort()
-            pkt = tcpPkt.L3Pkt(nm.myIP, srcPort, dstIP, 80)
+            pkt = tcpPkt.L3Pkt(hd.myIP, srcPort, dstIP, 80)
         
 		case "udp":
             srcPort := randGen.RandomPort()
-            pkt = udpPkt.L3Pkt(nm.myIP, srcPort, dstIP, 53, []byte{})
+            pkt = udpPkt.L3Pkt(hd.myIP, srcPort, dstIP, 53, []byte{})
         
 		default:
             utils.Abort(fmt.Sprintf("Unknown protocol: %s", proto))

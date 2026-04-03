@@ -25,7 +25,7 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
-	"offscan/internal/packet"
+	"offscan/internal/pktbuilder"
 	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
 	"offscan/internal/utils"
@@ -40,7 +40,7 @@ func Run(args []string) {
 
 
 type TcpFlooder struct {
-    builder   *packet.TcpPkt
+    builder   *pktbuilder.TcpPkt
     iface     *net.Interface
     pktsSent   int
     rand      *generators.RandomValues
@@ -71,7 +71,7 @@ func newTcpFlooder(argList []string) *TcpFlooder {
 	randGen := generators.NewRandomValues(&firstIP, &lastIP)
 
     return &TcpFlooder{
-        builder:   packet.NewTcpPkt(),
+        builder:   pktbuilder.NewTcpPkt(),
         iface:     iface,
         rand:      randGen,
         srcIP:     srcIP,

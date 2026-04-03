@@ -23,44 +23,44 @@ import (
 	"math/bits"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/dissectors"
-	"offscan/internal/pktsniff"
+	"offscan/internal/pktdissector"
+	"offscan/internal/pktsniffer"
 )
 
 
 
-func (nm *HostDiscovery) startPacketProcessor() {
-    nm.sniffer   = pktsniff.NewSniffer(nm.iface, nm.getBPFFilter(), false)
-    nm.snifferCh = nm.sniffer.Start()
+func (hd *HostDiscovery) startPacketProcessor() {
+    hd.sniffer   = pktsniffer.NewSniffer(hd.iface, hd.getBPFFilter(), false)
+    hd.snifferCh = hd.sniffer.Start()
 
-    nm.wgPktProc.Add(1)
+    hd.wgPktProc.Add(1)
     go func() {
-        defer nm.wgPktProc.Done()
+        defer hd.wgPktProc.Done()
 
         tempMap := make(map[[4]byte]Info)
         
 		for {
-            pkt, ok := <-nm.snifferCh
+            pkt, ok := <-hd.snifferCh
             if !ok { break }
-            nm.dissectAndUpdate(pkt, tempMap)
+            hd.dissectAndUpdate(pkt, tempMap)
         }
 
-        nm.mut.Lock()
-		maps.Copy(nm.activeIPs, tempMap)
-		nm.mut.Unlock()
+        hd.mut.Lock()
+		maps.Copy(hd.activeIPs, tempMap)
+		hd.mut.Unlock()
     }()
 }
 
 
 
-func (nm *HostDiscovery) getBPFFilter() string {
-    return fmt.Sprintf("dst host %s and src net %s", nm.myIP.String(), nm.cidrForBPFFilter())
+func (hd *HostDiscovery) getBPFFilter() string {
+    return fmt.Sprintf("dst host %s and src net %s", hd.myIP.String(), hd.cidrForBPFFilter())
 }
 
 
 
-func (nm *HostDiscovery) cidrForBPFFilter() string {
-    xor := nm.ips.StartU32 ^ nm.ips.EndU32
+func (hd *HostDiscovery) cidrForBPFFilter() string {
+    xor := hd.ips.StartU32 ^ hd.ips.EndU32
     var leadingZeros int
     
 	if xor == 0 {
@@ -78,7 +78,7 @@ func (nm *HostDiscovery) cidrForBPFFilter() string {
         mask = ^uint32(0) << (32 - prefixLen)
     }
     
-	networkAddr := nm.ips.StartU32 & mask
+	networkAddr := hd.ips.StartU32 & mask
     ip 			:= conv.U32ToIP(networkAddr)
     
 	return fmt.Sprintf("%s/%d", ip.String(), prefixLen)
@@ -86,8 +86,8 @@ func (nm *HostDiscovery) cidrForBPFFilter() string {
 
 
 
-func (nm *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) {
-    dissector := dissectors.NewPacketDissector()
+func (hd *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) {
+    dissector := pktdissector.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
     srcIP, ok := dissector.GetSrcIP()
@@ -96,7 +96,7 @@ func (nm *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) 
     }
     ipBytes := [4]byte(srcIP.To4())
 
-    if !nm.isInRange(srcIP) {
+    if !hd.isInRange(srcIP) {
         return
     }
 
@@ -110,14 +110,14 @@ func (nm *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) 
 
 
 
-func (nm *HostDiscovery) isInRange(ip net.IP) bool {
+func (hd *HostDiscovery) isInRange(ip net.IP) bool {
     ipU32 := conv.IPToU32(ip)
-    return ipU32 >= nm.ips.StartU32 && ipU32 <= nm.ips.EndU32
+    return ipU32 >= hd.ips.StartU32 && ipU32 <= hd.ips.EndU32
 }
 
 
 
-func (nm *HostDiscovery) stopPacketProcessor() {
-    nm.sniffer.Stop()
-    nm.wgPktProc.Wait()
+func (hd *HostDiscovery) stopPacketProcessor() {
+    hd.sniffer.Stop()
+    hd.wgPktProc.Wait()
 }

@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"offscan/internal/conv"
-	"offscan/internal/dissectors"
 	"offscan/internal/ifconfig"
-	"offscan/internal/pktsniff"
+	"offscan/internal/pktdissector"
+	"offscan/internal/pktsniffer"
 )
 
 
@@ -39,8 +39,8 @@ type MonitorSniff struct {
     mut        sync.Mutex
     cancel     chan struct{}
     wg         sync.WaitGroup
-	dissec    *dissectors.BeaconDissector
-    sniffer   *pktsniff.Sniffer
+	dissec    *pktdissector.BeaconDissector
+    sniffer   *pktsniffer.Sniffer
 }
 
 
@@ -67,8 +67,8 @@ func (m *MonitorSniff) ExecuteMonitorSniff() {
 
 
 func (m *MonitorSniff) startBeaconProcessor() {
-    m.dissec   = dissectors.NewBeaconDissector() 
-    m.sniffer  = pktsniff.NewSniffer(m.iface, getBPFFilter(), false)
+    m.dissec   = pktdissector.NewBeaconDissector() 
+    m.sniffer  = pktsniffer.NewSniffer(m.iface, getBPFFilter(), false)
     packetCh  := m.sniffer.Start()
 
     m.wg.Add(1)

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package dissectors
+package pktdissector
 
 import (
 	"encoding/binary"
@@ -25,7 +25,8 @@ import (
 
 
 type PacketDissector struct {
-    pkt []byte
+    pkt     []byte
+    isARP   bool
 }
 
 
@@ -38,8 +39,9 @@ func NewPacketDissector() *PacketDissector {
 
 
 
-func (pd *PacketDissector) UpdatePkt(raw []byte) {
-    pd.pkt = raw
+func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
+    pd.pkt   = rawPkt
+    pd.isARP = pd.isArpReply()
 }
 
 
@@ -83,6 +85,26 @@ func (pd *PacketDissector) ipHeaderLen() (int, bool) {
 
 
 
+func (pd *PacketDissector) isArpReply() bool {
+	if len(pd.pkt) < 42 {
+		return false
+	}
+
+	etherType := (uint16(pd.pkt[12]) << 8) | uint16(pd.pkt[13])
+	if etherType != 0x0806 {
+		return false
+	}
+
+	operation := (uint16(pd.pkt[20]) << 8) | uint16(pd.pkt[21])
+	if operation != 2 {
+		return false
+	}
+
+    return true
+}
+
+
+
 func (pd *PacketDissector) isTCP() bool {
     if len(pd.pkt) < 24 {
         return false
@@ -104,19 +126,24 @@ func (pd *PacketDissector) isUDP() bool {
 
 
 func (pd *PacketDissector) GetSrcMac() (net.HardwareAddr, bool) {
-    if len(pd.pkt) < 12 {
+    if pd.isARP {
+        return net.HardwareAddr(pd.pkt[22:28]), true
+    }
+
+    if len(pd.pkt) < 12 || !pd.isIPv4() {
         return nil, false
     }
     
-	mac := make([]byte, 6)
-    copy(mac, pd.pkt[6:12])
-    
-	return net.HardwareAddr(mac), true
+	return net.HardwareAddr(pd.pkt[6:12]), true
 }
 
 
 
 func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
+    if pd.isARP {
+        return net.IP(pd.pkt[28:32]), true
+    }
+
     if len(pd.pkt) < 30 || !pd.isIPv4() {
         return nil, false
     }

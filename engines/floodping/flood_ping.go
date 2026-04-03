@@ -25,7 +25,7 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
-	"offscan/internal/packet"
+	"offscan/internal/pktbuilder"
 	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
 	"offscan/internal/utils"
@@ -41,7 +41,7 @@ func Run(args []string) {
 
 type PingFlooder struct {
     rand      *generators.RandomValues
-    builder   *packet.IcmpPkt
+    builder   *pktbuilder.IcmpPkt
     iface     *net.Interface
     pktsSent   int
     srcIP      net.IP
@@ -72,7 +72,7 @@ func newPingFlooder(argList []string) *PingFlooder {
 
     return &PingFlooder{
         rand:      randGen,
-        builder:   packet.NewIcmpPkt(),
+        builder:   pktbuilder.NewIcmpPkt(),
         iface:     iface,
         srcIP:     srcIP,
         srcMAC:    srcMAC,
