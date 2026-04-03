@@ -32,7 +32,7 @@ import (
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newBeaconFlooder(args).execute()
 }
 
 
@@ -47,7 +47,7 @@ type BeaconFlood struct {
 
 
 
-func New(argList []string) *BeaconFlood {
+func newBeaconFlooder(argList []string) *BeaconFlood {
 	bcArgs := parseArgs(argList)
 
     ifconfig.MustSetChannel(bcArgs.Iface, bcArgs.Channel)
@@ -63,7 +63,7 @@ func New(argList []string) *BeaconFlood {
 
 
 
-func (b *BeaconFlood) Execute() {
+func (b *BeaconFlood) execute() {
     ctx     := utils.SignalContext()
     randGen := generators.NewRandomValues(nil, nil)
     start   := time.Now()

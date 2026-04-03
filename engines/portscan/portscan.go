@@ -38,7 +38,7 @@ import (
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newPortScanner(args).execute()
 }
 
 
@@ -59,7 +59,7 @@ type PortScanner struct {
 
 
 
-func New(argList []string) *PortScanner {
+func newPortScanner(argList []string) *PortScanner {
 	args  := ParsePortScanArgs(argList)
 	dstIP := conv.MustStrToIPv4(args.TargetIP)
 	iface := sysinfo.MustRouteIfaceForDstIP(dstIP)
@@ -79,7 +79,7 @@ func New(argList []string) *PortScanner {
 
 
 
-func (ps *PortScanner) Execute() {
+func (ps *PortScanner) execute() {
     ps.displayInfo()
     ps.startPacketProcessor()
     ps.sendProbes()

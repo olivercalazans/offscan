@@ -34,7 +34,7 @@ import (
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newHostDisc(args).execute()
 }
 
 
@@ -65,7 +65,7 @@ type HostDiscovery struct {
 
 
 
-func New(argList []string) *HostDiscovery {
+func newHostDisc(argList []string) *HostDiscovery {
     args := ParseNetMapArgs(argList)
 
 	var iface *net.Interface
@@ -91,7 +91,7 @@ func New(argList []string) *HostDiscovery {
 
 
 
-func (nm *HostDiscovery) Execute() {
+func (nm *HostDiscovery) execute() {
     nm.validateProtoFlags()
     nm.displayExecInfo()
     nm.startPacketProcessor()

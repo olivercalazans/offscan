@@ -21,14 +21,14 @@ import (
 	"fmt"
 	"os"
 
-	"offscan/internal/engines/beacon"
-	"offscan/internal/engines/deauth"
-	"offscan/internal/engines/floodping"
-	"offscan/internal/engines/floodtcp"
-	"offscan/internal/engines/hostdisc"
-	"offscan/internal/engines/netinfo"
-	"offscan/internal/engines/portscan"
-	"offscan/internal/engines/wifimap"
+	"offscan/engines/beacon"
+	"offscan/engines/deauth"
+	"offscan/engines/floodping"
+	"offscan/engines/floodtcp"
+	"offscan/engines/hostdisc"
+	"offscan/engines/netinfo"
+	"offscan/engines/portscan"
+	"offscan/engines/wifimap"
 	"offscan/internal/utils"
 )
 

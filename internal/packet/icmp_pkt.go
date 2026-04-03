@@ -38,10 +38,10 @@ func NewIcmpPkt() *IcmpPkt {
 
 
 func (p *IcmpPkt) buildFixed() {
-	// Ethernet header (0-13)
+	// Ethernet header (0-14)
 	binary.BigEndian.PutUint16(p.buffer[12:14], 0x0800)
 	
-	// IP header (14-33)
+	// IP header (14-34)
 	p.buffer[14] = (4 << 4) | 5
 	p.buffer[15] = 0
 	binary.BigEndian.PutUint16(p.buffer[16:18], 28)
@@ -51,7 +51,7 @@ func (p *IcmpPkt) buildFixed() {
 	p.buffer[23] = 1
 	binary.BigEndian.PutUint16(p.buffer[24:26], 0)
 
-	// ICMP header (34-41)
+	// ICMP header (34-42)
 	p.buffer[34] = 8
 	p.buffer[35] = 0
 	binary.BigEndian.PutUint16(p.buffer[36:38], 0)
@@ -67,11 +67,13 @@ func (p *IcmpPkt) buildFixed() {
 func (p *IcmpPkt) etherHeader(srcMAC, dstMAC net.HardwareAddr) {
 	copy(p.buffer[0:6], dstMAC)
 	copy(p.buffer[6:12], srcMAC)
+	// 12:14 - fixed
 }
 
 
 
 func (p *IcmpPkt) ipHeader(srcIP, dstIP net.IP) {
+	// 14:26 - fixed
 	src := srcIP.To4()
 	dst := dstIP.To4()
 	if src == nil || dst == nil {

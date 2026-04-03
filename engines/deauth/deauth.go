@@ -31,7 +31,7 @@ import (
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newDeauth(args).execute()
 }
 
 
@@ -48,7 +48,7 @@ type Deauthentication struct {
 
 
 
-func New(argList []string) *Deauthentication {
+func newDeauth(argList []string) *Deauthentication {
     args := ParseArgs(argList)
     
     ifconfig.MustSetChannel(args.Iface, args.Channel)
@@ -76,7 +76,7 @@ func displayExecInfo(args *DeauthArgs) {
 
 
 
-func (d *Deauthentication) Execute() {
+func (d *Deauthentication) execute() {
     ctx := utils.SignalContext()
 
     fmt.Println("[+] Sending frames. Press Ctrl + C to stop")

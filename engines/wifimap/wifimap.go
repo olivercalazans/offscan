@@ -28,7 +28,7 @@ import (
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newWifiMapper(args).execute()
 }
 
 
@@ -40,7 +40,7 @@ type WifiMapper struct {
 
 
 
-func New(argList []string) *WifiMapper {
+func newWifiMapper(argList []string) *WifiMapper {
 	args := ParseWmapArgs(argList)
 
     return &WifiMapper{
@@ -51,7 +51,7 @@ func New(argList []string) *WifiMapper {
 
 
 
-func (wm *WifiMapper) Execute() {
+func (wm *WifiMapper) execute() {
     wm.executeMode()
     wm.displayResults()
 }

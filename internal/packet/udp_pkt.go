@@ -39,7 +39,7 @@ func NewUdpPkt() *UdpPkt {
 
 
 func (p *UdpPkt) buildFixed() {
-    // IP header (bytes 0-19)
+    // IP header (bytes 0-20)
     p.buffer[0] = (4 << 4) | 5
     p.buffer[1] = 0
     binary.BigEndian.PutUint16(p.buffer[4:6], 0x1234)
@@ -50,7 +50,12 @@ func (p *UdpPkt) buildFixed() {
 
 
 
-func (p *UdpPkt) ipHeader(totalLen uint16, srcIP, dstIP net.IP) {
+func (p *UdpPkt) ipHeader(
+    totalLen uint16, 
+    srcIP    net.IP, 
+    dstIP    net.IP,
+) {
+    // 0:9 - fixed
     binary.BigEndian.PutUint16(p.buffer[2:4], totalLen)
     binary.BigEndian.PutUint16(p.buffer[10:12], 0)
     src := srcIP.To4()
