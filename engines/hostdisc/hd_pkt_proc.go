@@ -37,7 +37,7 @@ func (hd *HostDiscovery) startPacketProcessor() {
     go func() {
         defer hd.wgPktProc.Done()
 
-        tempMap := make(map[[4]byte]Info)
+        tempMap := make(map[[4]byte]hostInfo)
         
 		for {
             pkt, ok := <-hd.snifferCh
@@ -86,7 +86,7 @@ func (hd *HostDiscovery) cidrForBPFFilter() string {
 
 
 
-func (hd *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) {
+func (hd *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
     dissector := pktdissector.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
@@ -105,7 +105,7 @@ func (hd *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]Info) 
     }
 
     mac, _ := dissector.GetSrcMac()
-    tempMap[ipBytes] = Info{Mac: mac, Name: ""}
+    tempMap[ipBytes] = hostInfo{Mac: mac, Name: ""}
 }
 
 

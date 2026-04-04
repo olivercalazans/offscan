@@ -29,17 +29,22 @@ import (
 
 
 func (hd *HostDiscovery) createGoroutines() {
-    if hd.icmp {
+    if hd.protocols.arp {
+        hd.wgSocks.Add(1)
+        go hd.sendProbes("arp", *hd.ips)
+    }
+
+    if hd.protocols.icmp {
         hd.wgSocks.Add(1)
         go hd.sendProbes("icmp", *hd.ips)
     }
     
-	if hd.tcp {
+	if hd.protocols.tcp {
         hd.wgSocks.Add(1)
         go hd.sendProbes("tcp", *hd.ips)
     }
     
-	if hd.udp {
+	if hd.protocols.udp {
         hd.wgSocks.Add(1)
         go hd.sendProbes("udp", *hd.ips)
     }
@@ -53,42 +58,109 @@ func (hd *HostDiscovery) createGoroutines() {
 func (hd *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
     defer hd.wgSocks.Done()
 
-    delays  := generators.NewDelayIter(hd.delay, int(ips.Total()))
-    randGen := generators.NewRandomValues(nil, nil)
-    socket  := sockets.NewL3Socket(hd.iface)
+	switch proto {
+    case "arp":  hd.sendArpProbes()
+    case "icmp": hd.sendIcmpProbes()
+	case "tcp":  hd.sendTcpProbes()
+	case "udp":  hd.sendUdpProbes()
+	default:     utils.Abort(fmt.Sprintf("Unknown protocol: %s", proto))
+    }
+    
+}
 
-    icmpPkt := pktbuilder.NewIcmpPkt()
-    tcpPkt  := pktbuilder.NewTcpPkt()
-    udpPkt  := pktbuilder.NewUdpPkt()
 
+
+func (hd *HostDiscovery) sendArpProbes() {
+    ips    := *hd.ips
+    delays := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    socket := sockets.NewL3Socket(hd.iface)
+    srcMAC := hd.iface.HardwareAddr
+    
+    pktBuild := pktbuilder.NewArpPkt()
+    pktBuild.AddStaticAddrs(srcMAC, hd.myIP)
+    
     for {
-        dstIP, ok := ips.Next()
-        if !ok {
-            break
-        }
+        dstIP, ok1 := ips.Next()
+        delay, ok2 := delays.Next()
         
-		delay, ok := delays.Next()
-        if !ok {
+        if !ok1 || !ok2  {
             break
         }
 
-        var pkt []byte
+        pkt := pktBuild.L3Pkt(dstIP)
+
+        socket.SendTo(pkt, dstIP)
+        time.Sleep(time.Duration(delay * float64(time.Second)))
+    }
+}
+
+
+
+func (hd *HostDiscovery) sendIcmpProbes() {
+    ips      := *hd.ips
+    delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    socket   := sockets.NewL3Socket(hd.iface)
+    pktBuild := pktbuilder.NewIcmpPkt()
+    
+    for {
+        dstIP, ok1 := ips.Next()
+        delay, ok2 := delays.Next()
         
-		switch proto {
-        case "icmp":
-            pkt = icmpPkt.L3Pkt(hd.myIP, dstIP)
-        
-		case "tcp":
-            srcPort := randGen.RandomPort()
-            pkt = tcpPkt.L3Pkt(hd.myIP, srcPort, dstIP, 80)
-        
-		case "udp":
-            srcPort := randGen.RandomPort()
-            pkt = udpPkt.L3Pkt(hd.myIP, srcPort, dstIP, 53, []byte{})
-        
-		default:
-            utils.Abort(fmt.Sprintf("Unknown protocol: %s", proto))
+        if !ok1 || !ok2  {
+            break
         }
+
+        pkt := pktBuild.L3Pkt(hd.myIP, dstIP)
+
+        socket.SendTo(pkt, dstIP)
+        time.Sleep(time.Duration(delay * float64(time.Second)))
+    }
+}
+
+
+
+func (hd *HostDiscovery) sendTcpProbes() {
+    ips      := *hd.ips
+    delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    socket   := sockets.NewL3Socket(hd.iface)
+    pktBuild := pktbuilder.NewTcpPkt()
+    randGen  := generators.NewRandomValues(nil, nil)
+    
+    for {
+        dstIP, ok1 := ips.Next()
+        delay, ok2 := delays.Next()
+        
+        if !ok1 || !ok2  {
+            break
+        }
+
+        srcPort := randGen.RandomPort()
+        pkt     := pktBuild.L3Pkt(hd.myIP, srcPort, dstIP, 80)
+
+        socket.SendTo(pkt, dstIP)
+        time.Sleep(time.Duration(delay * float64(time.Second)))
+    }
+}
+
+
+
+func (hd *HostDiscovery) sendUdpProbes() {
+    ips      := *hd.ips
+    delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    socket   := sockets.NewL3Socket(hd.iface)
+    pktBuild := pktbuilder.NewUdpPkt()
+    randGen  := generators.NewRandomValues(nil, nil)
+    
+    for {
+        dstIP, ok1 := ips.Next()
+        delay, ok2 := delays.Next()
+        
+        if !ok1 || !ok2  {
+            break
+        }
+
+        srcPort := randGen.RandomPort()
+        pkt     := pktBuild.L3Pkt(hd.myIP, srcPort, dstIP, 53, []byte{})
 
         socket.SendTo(pkt, dstIP)
         time.Sleep(time.Duration(delay * float64(time.Second)))

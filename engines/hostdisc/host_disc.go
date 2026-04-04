@@ -39,7 +39,12 @@ func Run(args []string) {
 
 
 
-type Info struct {
+type protocols struct {
+    arp, icmp, tcp, udp bool
+}
+
+
+type hostInfo struct {
     Mac  net.HardwareAddr
     Name string
 }
@@ -47,15 +52,13 @@ type Info struct {
 
 
 type HostDiscovery struct {
-    activeIPs      map[[4]byte]Info
+    activeIPs      map[[4]byte]hostInfo
     delay          string
     ips           *generators.Ipv4Iter
     iface         *net.Interface
     mut            sync.Mutex
     myIP           net.IP
-    icmp           bool
-    tcp            bool
-    udp            bool
+    protocols      protocols
     running        atomic.Bool
     sniffer       *pktsniffer.Sniffer
     snifferCh      <-chan []byte
@@ -78,14 +81,17 @@ func newHostDisc(argList []string) *HostDiscovery {
 	cidr := ifaceinfo.MustCIDR(iface)
 
     return &HostDiscovery{
-        activeIPs: make(map[[4]byte]Info),
+        activeIPs: make(map[[4]byte]hostInfo),
         ips:       generators.NewIpv4Iter(cidr, args.Range),
         myIP:      ifaceinfo.MustIPv4(iface),
         iface:     iface,
         delay:     args.Delay,
-        icmp:      args.Icmp,
-        tcp:       args.Tcp,
-        udp:       args.Udp,
+        protocols: protocols{
+            arp:   false,
+            icmp:  args.Icmp,
+            tcp:   args.Tcp,
+            udp:   args.Udp,
+        },
     }
 }
 
@@ -114,12 +120,13 @@ func (hd *HostDiscovery) validateProtoFlags() {
 
 
 func (hd *HostDiscovery) displayExecInfo() {
-    var protocols []string
-    if hd.icmp { protocols = append(protocols, "ICMP") }
-    if hd.tcp  { protocols = append(protocols, "TCP") }
-    if hd.udp  { protocols = append(protocols, "UDP") }
+    var protoc []string
+    if hd.protocols.arp  { protoc = append(protoc, "ARP") }
+    if hd.protocols.icmp { protoc = append(protoc, "ICMP") }
+    if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
+    if hd.protocols.udp  { protoc = append(protoc, "UDP") }
     
-	proto  := strings.Join(protocols, ", ")
+	proto  := strings.Join(protoc, ", ")
     first  := conv.U32ToIP(hd.ips.StartU32)
     last   := conv.U32ToIP(hd.ips.EndU32)
     length := hd.ips.EndU32 - hd.ips.StartU32 + 1

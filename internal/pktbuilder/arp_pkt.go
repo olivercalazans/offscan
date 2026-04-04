@@ -18,13 +18,12 @@
 package pktbuilder
 
 import (
-	"encoding/binary"
 	"net"
 )
 
 
 type ArpPkt struct {
-	buffer [42]byte
+	buffer [28]byte
 }
 
 
@@ -38,58 +37,32 @@ func NewArpPkt() *ArpPkt {
 
 
 func (ap *ArpPkt) buildFixed() {
-	// Ethernet header (0 - 14)
-	binary.BigEndian.PutUint16(ap.buffer[12:14], 0x0800)
-
-	// ARP header (14 - 42)	
-	ap.buffer[14] = 0x00   // HTYPE = 1 (Ethernet) - big endian
-	ap.buffer[15] = 0x01
-	ap.buffer[16] = 0x08   // PTYPE = 0x0800 (IPv4) - big endian
-	ap.buffer[17] = 0x00
-	ap.buffer[18] = 0x06   // HLEN = 6
-	ap.buffer[19] = 0x04   // PLEN = 4
-	ap.buffer[20] = 0x00   // OPER = 1 (request) - big endian
-	ap.buffer[21] = 0x01
-	// THA (6 bytes, 32:38) - zero 
-
-}
-
-
-
-func (ap *ArpPkt) etherHeader(
-	srcMac net.HardwareAddr,
-	dstMac net.HardwareAddr,
-) {
-	copy(ap.buffer[0:6], dstMac[:])
-    copy(ap.buffer[6:12], srcMac[:])
-	// 12:14 - fixed
-}
-
-
-
-func (ap *ArpPkt) arpHeader(
-	srcMac net.HardwareAddr,
-	srcIP  net.IP,
-) {
-	// 14:22 - fixed
-	copy(ap.buffer[22:28], srcMac)
-	copy(ap.buffer[28:32], srcIP)
-	// 32:38 - fixed
+	ap.buffer[0] = 0x00   // HTYPE = 1 (Ethernet) - big endian
+	ap.buffer[1] = 0x01
+	ap.buffer[2] = 0x08   // PTYPE = 0x0800 (IPv4) - big endian
+	ap.buffer[3] = 0x00
+	ap.buffer[4] = 0x06   // HLEN = 6
+	ap.buffer[5] = 0x04   // PLEN = 4
+	ap.buffer[6] = 0x00   // OPER = 1 (request) - big endian
+	ap.buffer[7] = 0x01
+	// THA (6 bytes, 18:24) - zero 
 }
 
 
 
 func (ap *ArpPkt) AddStaticAddrs(
 	srcMac net.HardwareAddr,
-	dstMac net.HardwareAddr,
 	srcIP  net.IP,
 ) {
-	ap.etherHeader(srcMac, dstMac)
-	ap.arpHeader(srcMac, srcIP)
+	// 0:8 - fixed
+	copy(ap.buffer[8:14], srcMac)
+	copy(ap.buffer[14:18], srcIP)
+	// 18:24 - fixed
 }
 
 
 
-func (ap *ArpPkt) UpdateDstIp(dstIP net.IP) {
-	copy(ap.buffer[38:42], dstIP)
+func (ap *ArpPkt) L3Pkt(dstIP net.IP) []byte {
+	copy(ap.buffer[24:28], dstIP)
+	return ap.buffer[:]
 }
