@@ -30,7 +30,7 @@ import (
 
 
 func (hd *HostDiscovery) startPacketProcessor() {
-    hd.sniffer   = pktsniffer.NewSniffer(hd.iface, hd.getBPFFilter(), false)
+    hd.sniffer   = pktsniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)
     hd.snifferCh = hd.sniffer.Start()
 
     hd.wgPktProc.Add(1)
@@ -53,8 +53,12 @@ func (hd *HostDiscovery) startPacketProcessor() {
 
 
 
-func (hd *HostDiscovery) getBPFFilter() string {
-    return fmt.Sprintf("dst host %s and src net %s", hd.myIP.String(), hd.cidrForBPFFilter())
+func (hd *HostDiscovery) getBpfFilter() string {
+    return fmt.Sprintf(
+        "(dst host %s and src net %s) or (arp[6:2] = 2)", 
+        hd.myIP.String(),
+        hd.cidrForBPFFilter(),
+    )
 }
 
 

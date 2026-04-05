@@ -28,6 +28,7 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
 	"offscan/internal/pktbuilder"
 	"offscan/internal/pktdissector"
 	"offscan/internal/pktsniffer"
@@ -62,7 +63,7 @@ type PortScanner struct {
 func newPortScanner(argList []string) *PortScanner {
 	args  := ParsePortScanArgs(argList)
 	dstIP := conv.MustStrToIPv4(args.TargetIP)
-	iface := sysinfo.MustRouteIfaceForDstIP(dstIP)
+	iface := netroute.MustRouteIfaceForDstIP(dstIP)
 	myIP  := ifaceinfo.MustIPv4(iface)
     
     return &PortScanner{

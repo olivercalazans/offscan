@@ -15,43 +15,30 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package sysinfo
+package netroute
 
 import (
-	"fmt"
 	"net"
-	"offscan/internal/ifaceinfo"
 	"offscan/internal/utils"
 )
 
 
 
-func ResolveMac(macStr string, iface *net.Interface) net.HardwareAddr {
-    var mac net.HardwareAddr
-    var err error
+func SrcIPFromDstIP(dstIP net.IP) net.IP {
+    dst := dstIP.String() + ":53"
 
-    switch macStr {
-    case "":        return  nil
-    case "gateway": mac, err = ifaceinfo.GatewayMAC(iface)
-    case "local":   mac, err = iface.HardwareAddr, nil
-    default:        mac, err = net.ParseMAC(macStr)
-    }
-
+    conn, err := net.Dial("udp", dst)
     if err != nil {
-        utils.Abort(fmt.Sprintf("Unable to parse MAC address: %v", err))
+        utils.Abort("Failed to connect UDP socket: " + err.Error())
+    }
+    defer conn.Close()
+
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    ip := localAddr.IP
+
+    if ip.To4() == nil {
+        utils.Abort("Expected a local IPv4 address, but got IPv6")
     }
 
-    return mac
-}
-
-
-
-func MustResolveMac(macStr string, iface *net.Interface) net.HardwareAddr {
-    mac := ResolveMac(macStr, iface)
-
-    if mac == nil {
-        utils.Abort("No MAC address found")
-    }
-
-    return mac
+    return ip
 }

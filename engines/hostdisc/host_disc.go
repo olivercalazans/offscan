@@ -27,6 +27,7 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
 	"offscan/internal/pktsniffer"
 	"offscan/internal/sysinfo"
 )
@@ -69,7 +70,7 @@ type HostDiscovery struct {
 
 
 func newHostDisc(argList []string) *HostDiscovery {
-    args := ParseNetMapArgs(argList)
+    var args *HostDiscArgs = ParseNetMapArgs(argList)
 
 	var iface *net.Interface
 	if args.Iface == nil {
@@ -86,35 +87,47 @@ func newHostDisc(argList []string) *HostDiscovery {
         myIP:      ifaceinfo.MustIPv4(iface),
         iface:     iface,
         delay:     args.Delay,
-        protocols: protocols{
-            arp:   false,
-            icmp:  args.Icmp,
-            tcp:   args.Tcp,
-            udp:   args.Udp,
-        },
+        protocols: protoFlags(args, iface),
     }
 }
 
 
 
+func protoFlags(args *HostDiscArgs, iface *net.Interface) protocols {
+    isLocal := true
+
+    if args.Range != nil {
+        for _, ip := range strings.Split(*args.Range, "*") {
+            ipv4    := conv.MustStrToIPv4(ip)
+            isLocal  = isLocal && netroute.IsLocal(iface, ipv4)
+        }
+    }
+
+    prots := protocols{
+        arp:  isLocal,
+        icmp: args.Icmp,
+        tcp:  args.Tcp,
+        udp:  args.Udp,
+    }
+
+    if !prots.arp && !prots.icmp && !prots.tcp && !prots.udp{
+        prots.icmp = true
+        prots.tcp  = true
+        prots.udp  = true
+    }
+
+    return prots
+}
+
+
+
 func (hd *HostDiscovery) execute() {
-    hd.validateProtoFlags()
     hd.displayExecInfo()
     hd.startPacketProcessor()
     hd.createGoroutines()
     hd.stopPacketProcessor()
     hd.resolveNames()
     hd.displayResult()
-}
-
-
-
-func (hd *HostDiscovery) validateProtoFlags() {
-    if !hd.icmp && !hd.tcp && !hd.udp {
-        hd.icmp = true
-        hd.tcp  = true
-        hd.udp  = true
-    }
 }
 
 
@@ -155,15 +168,22 @@ func (hd *HostDiscovery) resolveNames() {
 
 
 func (hd *HostDiscovery) displayResult() {
-    fmt.Println("")
-    fmt.Println("IP Address       MAC Address        Hostname")
-    fmt.Println("---------------  -----------------  --------")
-
 	hd.mut.Lock()
     defer hd.mut.Unlock()
 
+    if len(hd.activeIPs) < 1 {
+        fmt.Println("No host detected")
+        return
+    }
+
+    fmt.Println("")
+
 	for ipBytes, info := range hd.activeIPs {
         ip := net.IP(ipBytes[:])
-        fmt.Printf("%-15s  %-17s  %s\n", ip.String(), info.Mac.String(), info.Name)
+        
+        fmt.Printf("# %s (%s)\n", ip.String(), info.Name)
+        fmt.Printf("%s\n", info.Mac.String())
+        
+        fmt.Println("")
     }
 }

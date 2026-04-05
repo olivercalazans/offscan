@@ -15,30 +15,34 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package sysinfo
+package netroute
 
 import (
+	"fmt"
 	"net"
 	"offscan/internal/utils"
 )
 
 
 
-func SrcIPFromDstIP(dstIP net.IP) net.IP {
-    dst := dstIP.String() + ":53"
-
-    conn, err := net.Dial("udp", dst)
+func IsLocal(iface *net.Interface, ip net.IP) bool {
+    addrs, err := iface.Addrs()
     if err != nil {
-        utils.Abort("Failed to connect UDP socket: " + err.Error())
-    }
-    defer conn.Close()
-
-    localAddr := conn.LocalAddr().(*net.UDPAddr)
-    ip := localAddr.IP
-
-    if ip.To4() == nil {
-        utils.Abort("Expected a local IPv4 address, but got IPv6")
+        utils.Abort(fmt.Sprintf("Unable to get interface addresses %s: %v", iface.Name, err))
     }
 
-    return ip
+    for _, addr := range addrs {
+        ipnet, ok := addr.(*net.IPNet)
+        if !ok {
+            continue
+        }
+
+        if ipnet.IP.To4() != nil && ip.To4() != nil {
+            if ipnet.Contains(ip) {
+                return true
+            }
+        }
+    }
+
+    return false
 }

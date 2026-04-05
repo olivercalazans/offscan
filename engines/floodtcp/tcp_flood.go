@@ -25,6 +25,7 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
 	"offscan/internal/pktbuilder"
 	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
@@ -60,7 +61,7 @@ func newTcpFlooder(argList []string) *TcpFlooder {
 	dstIP  := conv.MustStrToIPv4(args.DstIP)
 	dstMAC := conv.MustStrToMac(args.DstMAC)
 
-	iface  := sysinfo.MustRouteIfaceForDstIP(dstIP)
+	iface  := netroute.MustRouteIfaceForDstIP(dstIP)
     cidr   := ifaceinfo.MustCIDR(iface)
 	
 	srcIP  := net.ParseIP(args.SrcIP)
