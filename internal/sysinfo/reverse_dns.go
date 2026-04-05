@@ -15,38 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package sysinfo
 
-import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
-)
+import "net"
 
 
 
-type NetInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
-}
+func GetHostName(ip string) string {
+    names, err := net.LookupAddr(ip)
 
-
-
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
-
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
-
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+	if err != nil || len(names) < 1 {
+        return "Unknown"
     }
 
-	return &opts
+    return names[0]
 }

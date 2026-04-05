@@ -24,22 +24,28 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"offscan/conv"
-	"offscan/generators"
-	"offscan/ifaceinfo"
-	"offscan/pktsniff"
-	"offscan/sysinfo"
+	"offscan/internal/conv"
+	"offscan/internal/generators"
+	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
+	"offscan/internal/pktsniffer"
+	"offscan/internal/sysinfo"
 )
 
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newHostDisc(args).execute()
 }
 
 
 
-type Info struct {
+type protocols struct {
+    arp, icmp, tcp, udp bool
+}
+
+
+type hostInfo struct {
     Mac  net.HardwareAddr
     Name string
 }
@@ -47,17 +53,15 @@ type Info struct {
 
 
 type HostDiscovery struct {
-    activeIPs      map[[4]byte]Info
+    activeIPs      map[[4]byte]hostInfo
     delay          string
     ips           *generators.Ipv4Iter
     iface         *net.Interface
     mut            sync.Mutex
     myIP           net.IP
-    icmp           bool
-    tcp            bool
-    udp            bool
+    protocols      protocols
     running        atomic.Bool
-    sniffer       *pktsniff.Sniffer
+    sniffer       *pktsniffer.Sniffer
     snifferCh      <-chan []byte
     wgSocks        sync.WaitGroup
     wgPktProc      sync.WaitGroup
@@ -65,8 +69,8 @@ type HostDiscovery struct {
 
 
 
-func New(argList []string) *HostDiscovery {
-    args := ParseNetMapArgs(argList)
+func newHostDisc(argList []string) *HostDiscovery {
+    var args *HostDiscArgs = ParseNetMapArgs(argList)
 
 	var iface *net.Interface
 	if args.Iface == nil {
@@ -78,53 +82,69 @@ func New(argList []string) *HostDiscovery {
 	cidr := ifaceinfo.MustCIDR(iface)
 
     return &HostDiscovery{
-        activeIPs: make(map[[4]byte]Info),
+        activeIPs: make(map[[4]byte]hostInfo),
         ips:       generators.NewIpv4Iter(cidr, args.Range),
         myIP:      ifaceinfo.MustIPv4(iface),
         iface:     iface,
         delay:     args.Delay,
-        icmp:      args.Icmp,
-        tcp:       args.Tcp,
-        udp:       args.Udp,
+        protocols: protoFlags(args, iface),
     }
 }
 
 
 
-func (nm *HostDiscovery) Execute() {
-    nm.validateProtoFlags()
-    nm.displayExecInfo()
-    nm.startPacketProcessor()
-    nm.createGoroutines()
-    nm.stopPacketProcessor()
-    nm.resolveNames()
-    nm.displayResult()
-}
+func protoFlags(args *HostDiscArgs, iface *net.Interface) protocols {
+    isLocal := true
 
-
-
-func (nm *HostDiscovery) validateProtoFlags() {
-    if !nm.icmp && !nm.tcp && !nm.udp {
-        nm.icmp = true
-        nm.tcp  = true
-        nm.udp  = true
+    if args.Range != nil {
+        for _, ip := range strings.Split(*args.Range, "*") {
+            ipv4    := conv.MustStrToIPv4(ip)
+            isLocal  = isLocal && netroute.IsLocal(iface, ipv4)
+        }
     }
+
+    prots := protocols{
+        arp:  isLocal,
+        icmp: args.Icmp,
+        tcp:  args.Tcp,
+        udp:  args.Udp,
+    }
+
+    if !prots.arp && !prots.icmp && !prots.tcp && !prots.udp{
+        prots.icmp = true
+        prots.tcp  = true
+        prots.udp  = true
+    }
+
+    return prots
 }
 
 
 
-func (nm *HostDiscovery) displayExecInfo() {
-    var protocols []string
-    if nm.icmp { protocols = append(protocols, "ICMP") }
-    if nm.tcp  { protocols = append(protocols, "TCP") }
-    if nm.udp  { protocols = append(protocols, "UDP") }
+func (hd *HostDiscovery) execute() {
+    hd.displayExecInfo()
+    hd.startPacketProcessor()
+    hd.createGoroutines()
+    hd.stopPacketProcessor()
+    hd.resolveNames()
+    hd.displayResult()
+}
+
+
+
+func (hd *HostDiscovery) displayExecInfo() {
+    var protoc []string
+    if hd.protocols.arp  { protoc = append(protoc, "ARP") }
+    if hd.protocols.icmp { protoc = append(protoc, "ICMP") }
+    if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
+    if hd.protocols.udp  { protoc = append(protoc, "UDP") }
     
-	proto  := strings.Join(protocols, ", ")
-    first  := conv.U32ToIP(nm.ips.StartU32)
-    last   := conv.U32ToIP(nm.ips.EndU32)
-    length := nm.ips.EndU32 - nm.ips.StartU32 + 1
+	proto  := strings.Join(protoc, ", ")
+    first  := conv.U32ToIP(hd.ips.StartU32)
+    last   := conv.U32ToIP(hd.ips.EndU32)
+    length := hd.ips.EndU32 - hd.ips.StartU32 + 1
 
-    fmt.Printf("[*] Iface..: %s\n", nm.iface.Name)
+    fmt.Printf("[*] Iface..: %s\n", hd.iface.Name)
     fmt.Printf("[*] Range..: %s - %s\n", first.String(), last.String())
     fmt.Printf("[*] Len IPs: %d\n", length)
     fmt.Printf("[*] Proto..: %s\n", proto)
@@ -132,31 +152,38 @@ func (nm *HostDiscovery) displayExecInfo() {
 
 
 
-func (nm *HostDiscovery) resolveNames() {
-    nm.mut.Lock()
-    defer nm.mut.Unlock()
+func (hd *HostDiscovery) resolveNames() {
+    hd.mut.Lock()
+    defer hd.mut.Unlock()
 
-	for ipBytes, info := range nm.activeIPs {
+	for ipBytes, info := range hd.activeIPs {
         ip       := net.IP(ipBytes[:])
         name     := sysinfo.GetHostName(ip.String())
         info.Name = name
         
-		nm.activeIPs[ipBytes] = info
+		hd.activeIPs[ipBytes] = info
     }
 }
 
 
 
-func (nm *HostDiscovery) displayResult() {
+func (hd *HostDiscovery) displayResult() {
+	hd.mut.Lock()
+    defer hd.mut.Unlock()
+
+    if len(hd.activeIPs) < 1 {
+        fmt.Println("No host detected")
+        return
+    }
+
     fmt.Println("")
-    fmt.Println("IP Address       MAC Address        Hostname")
-    fmt.Println("---------------  -----------------  --------")
 
-	nm.mut.Lock()
-    defer nm.mut.Unlock()
-
-	for ipBytes, info := range nm.activeIPs {
+	for ipBytes, info := range hd.activeIPs {
         ip := net.IP(ipBytes[:])
-        fmt.Printf("%-15s  %-17s  %s\n", ip.String(), info.Mac.String(), info.Name)
+        
+        fmt.Printf("# %s (%s)\n", ip.String(), info.Name)
+        fmt.Printf("%s\n", info.Mac.String())
+        
+        fmt.Println("")
     }
 }

@@ -22,26 +22,27 @@ import (
 	"net"
 	"time"
 
-	"offscan/conv"
-	"offscan/generators"
-	"offscan/ifaceinfo"
-	"offscan/packet"
-	"offscan/sockets"
-	"offscan/sysinfo"
-	"offscan/utils"
+	"offscan/internal/conv"
+	"offscan/internal/generators"
+	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
+	"offscan/internal/pktbuilder"
+	"offscan/internal/sockets"
+	"offscan/internal/sysinfo"
+	"offscan/internal/utils"
 )
 
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newPingFlooder(args).execute()
 }
 
 
 
 type PingFlooder struct {
     rand      *generators.RandomValues
-    builder   *packet.IcmpPkt
+    builder   *pktbuilder.IcmpPkt
     iface     *net.Interface
     pktsSent   int
     srcIP      net.IP
@@ -53,13 +54,13 @@ type PingFlooder struct {
 
 
 
-func New(argList []string) *PingFlooder {
+func newPingFlooder(argList []string) *PingFlooder {
 	args   := ParsePingArgs(argList)
 
 	dstIP  := conv.MustStrToIPv4(args.DstIP)
 	dstMAC := conv.MustStrToMac(args.DstMAC)
 
-	iface  := sysinfo.MustRouteIfaceForDstIP(dstIP)
+	iface  := netroute.MustRouteIfaceForDstIP(dstIP)
     cidr   := ifaceinfo.MustCIDR(iface)
 	
 	srcIP  := net.ParseIP(args.SrcIP)
@@ -72,7 +73,7 @@ func New(argList []string) *PingFlooder {
 
     return &PingFlooder{
         rand:      randGen,
-        builder:   packet.NewIcmpPkt(),
+        builder:   pktbuilder.NewIcmpPkt(),
         iface:     iface,
         srcIP:     srcIP,
         srcMAC:    srcMAC,
@@ -83,7 +84,7 @@ func New(argList []string) *PingFlooder {
 
 
 
-func (p *PingFlooder) Execute() {
+func (p *PingFlooder) execute() {
     p.displayInfo()
     p.sendEndlessly()
     p.displayExecInfo()

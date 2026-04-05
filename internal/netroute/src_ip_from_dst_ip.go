@@ -15,38 +15,30 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package netroute
 
 import (
-	"fmt"
+	"net"
 	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
 )
 
 
 
-type NetInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
-}
+func SrcIPFromDstIP(dstIP net.IP) net.IP {
+    dst := dstIP.String() + ":53"
 
+    conn, err := net.Dial("udp", dst)
+    if err != nil {
+        utils.Abort("Failed to connect UDP socket: " + err.Error())
+    }
+    defer conn.Close()
 
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    ip := localAddr.IP
 
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
-
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
-
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+    if ip.To4() == nil {
+        utils.Abort("Expected a local IPv4 address, but got IPv6")
     }
 
-	return &opts
+    return ip
 }

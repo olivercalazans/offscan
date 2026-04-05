@@ -15,38 +15,43 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package sysinfo
 
 import (
 	"fmt"
+	"net"
+	"offscan/internal/ifaceinfo"
 	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
 )
 
 
 
-type NetInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
+func ResolveMac(macStr string, iface *net.Interface) net.HardwareAddr {
+    var mac net.HardwareAddr
+    var err error
+
+    switch macStr {
+    case "":        return  nil
+    case "gateway": mac, err = ifaceinfo.GatewayMAC(iface)
+    case "local":   mac, err = iface.HardwareAddr, nil
+    default:        mac, err = net.ParseMAC(macStr)
+    }
+
+    if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to parse MAC address: %v", err))
+    }
+
+    return mac
 }
 
 
 
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
+func MustResolveMac(macStr string, iface *net.Interface) net.HardwareAddr {
+    mac := ResolveMac(macStr, iface)
 
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
-
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+    if mac == nil {
+        utils.Abort("No MAC address found")
     }
 
-	return &opts
+    return mac
 }

@@ -22,25 +22,26 @@ import (
 	"net"
 	"time"
 
-	"offscan/conv"
-	"offscan/generators"
-	"offscan/ifaceinfo"
-	"offscan/packet"
-	"offscan/sockets"
-	"offscan/sysinfo"
-	"offscan/utils"
+	"offscan/internal/conv"
+	"offscan/internal/generators"
+	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
+	"offscan/internal/pktbuilder"
+	"offscan/internal/sockets"
+	"offscan/internal/sysinfo"
+	"offscan/internal/utils"
 )
 
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newTcpFlooder(args).execute()
 }
 
 
 
 type TcpFlooder struct {
-    builder   *packet.TcpPkt
+    builder   *pktbuilder.TcpPkt
     iface     *net.Interface
     pktsSent   int
     rand      *generators.RandomValues
@@ -54,13 +55,13 @@ type TcpFlooder struct {
 
 
 
-func New(argList []string) *TcpFlooder {
+func newTcpFlooder(argList []string) *TcpFlooder {
     args   := ParseTcpArgs(argList)
 
 	dstIP  := conv.MustStrToIPv4(args.DstIP)
 	dstMAC := conv.MustStrToMac(args.DstMAC)
 
-	iface  := sysinfo.MustRouteIfaceForDstIP(dstIP)
+	iface  := netroute.MustRouteIfaceForDstIP(dstIP)
     cidr   := ifaceinfo.MustCIDR(iface)
 	
 	srcIP  := net.ParseIP(args.SrcIP)
@@ -71,7 +72,7 @@ func New(argList []string) *TcpFlooder {
 	randGen := generators.NewRandomValues(&firstIP, &lastIP)
 
     return &TcpFlooder{
-        builder:   packet.NewTcpPkt(),
+        builder:   pktbuilder.NewTcpPkt(),
         iface:     iface,
         rand:      randGen,
         srcIP:     srcIP,
@@ -84,7 +85,7 @@ func New(argList []string) *TcpFlooder {
 
 
 
-func (t *TcpFlooder) Execute() {
+func (t *TcpFlooder) execute() {
     t.displayInfo()
     t.sendEndlessly()
     t.displayExecInfo()

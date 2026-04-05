@@ -23,15 +23,15 @@ import (
 	"strconv"
 	"strings"
 
-	"offscan/conv"
-	"offscan/ifaceinfo"
-	"offscan/sysinfo"
+	"offscan/internal/conv"
+	"offscan/internal/ifaceinfo"
+	"offscan/internal/sysinfo"
 )
 
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newNetInfo(args).execute()
 }
 
 
@@ -53,7 +53,7 @@ type NetworkInfo struct {
 
 
 
-func New(argList []string) *NetworkInfo {
+func newNetInfo(argList []string) *NetworkInfo {
 	args := ParseNetInfoArgs(argList)
     var ifaceList []net.Interface
 
@@ -70,7 +70,7 @@ func New(argList []string) *NetworkInfo {
 
 
 
-func (ni *NetworkInfo) Execute() {
+func (ni *NetworkInfo) execute() {
     for idx, iface := range ni.ifaceList {
 		ni.current = &iface
         

@@ -15,38 +15,34 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package netroute
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
 )
 
 
 
-type NetInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
-}
-
-
-
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
-
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
-
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+func IsLocal(iface *net.Interface, ip net.IP) bool {
+    addrs, err := iface.Addrs()
+    if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to get interface addresses %s: %v", iface.Name, err))
     }
 
-	return &opts
+    for _, addr := range addrs {
+        ipnet, ok := addr.(*net.IPNet)
+        if !ok {
+            continue
+        }
+
+        if ipnet.IP.To4() != nil && ip.To4() != nil {
+            if ipnet.Contains(ip) {
+                return true
+            }
+        }
+    }
+
+    return false
 }

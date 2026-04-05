@@ -15,38 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package conv
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
 )
 
 
 
-type NetInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
-}
-
-
-
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
-
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
-
+func MustStrToMac(macStr string) net.HardwareAddr {    
+	mac, err := net.ParseMAC(macStr)
+    
 	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+        utils.Abort(fmt.Sprintf("Unable to parse MAC address: %v", err))
     }
 
-	return &opts
+	return mac
 }

@@ -25,20 +25,21 @@ import (
 	"sync"
 	"time"
 
-	"offscan/conv"
-	"offscan/dissectors"
-	"offscan/generators"
-	"offscan/ifaceinfo"
-	"offscan/packet"
-	"offscan/pktsniff"
-	"offscan/sockets"
-	"offscan/sysinfo"
+	"offscan/internal/conv"
+	"offscan/internal/generators"
+	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
+	"offscan/internal/pktbuilder"
+	"offscan/internal/pktdissector"
+	"offscan/internal/pktsniffer"
+	"offscan/internal/sockets"
+	"offscan/internal/sysinfo"
 )
 
 
 
 func Run(args []string) {
-    New(args).Execute()
+    newPortScanner(args).execute()
 }
 
 
@@ -54,15 +55,15 @@ type PortScanner struct {
     openPorts   map[uint16]bool
     mut         sync.Mutex
     wg          sync.WaitGroup
-    sniffer    *pktsniff.Sniffer
+    sniffer    *pktsniffer.Sniffer
 }
 
 
 
-func New(argList []string) *PortScanner {
+func newPortScanner(argList []string) *PortScanner {
 	args  := ParsePortScanArgs(argList)
 	dstIP := conv.MustStrToIPv4(args.TargetIP)
-	iface := sysinfo.MustRouteIfaceForDstIP(dstIP)
+	iface := netroute.MustRouteIfaceForDstIP(dstIP)
 	myIP  := ifaceinfo.MustIPv4(iface)
     
     return &PortScanner{
@@ -79,7 +80,7 @@ func New(argList []string) *PortScanner {
 
 
 
-func (ps *PortScanner) Execute() {
+func (ps *PortScanner) execute() {
     ps.displayInfo()
     ps.startPacketProcessor()
     ps.sendProbes()
@@ -104,7 +105,7 @@ func (ps *PortScanner) displayInfo() {
 
 
 func (ps *PortScanner) startPacketProcessor() {
-    ps.sniffer = pktsniff.NewSniffer(ps.iface, ps.getBPFFilter(), false)
+    ps.sniffer = pktsniffer.NewSniffer(ps.iface, ps.getBPFFilter(), false)
     packetCh  := ps.sniffer.Start()
 
     ps.wg.Add(1)
@@ -112,7 +113,7 @@ func (ps *PortScanner) startPacketProcessor() {
         defer ps.wg.Done()
         
         tempPorts := make(map[uint16]bool)
-        dissector := dissectors.NewPacketDissector()
+        dissector := pktdissector.NewPacketDissector()
 
         for {
 			pkt, ok := <-packetCh
@@ -144,7 +145,7 @@ func (ps *PortScanner) getBPFFilter() string {
 
 
 
-func (ps *PortScanner) dissectAndUpdate(dissector *dissectors.PacketDissector, tempPorts map[uint16]bool, pkt []byte) {
+func (ps *PortScanner) dissectAndUpdate(dissector *pktdissector.PacketDissector, tempPorts map[uint16]bool, pkt []byte) {
     dissector.UpdatePkt(pkt)
     var port uint16
     var ok bool
@@ -187,7 +188,7 @@ func (ps *PortScanner) sendProbes() {
 func (ps *PortScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
     portIter  := generators.NewPortIter(ps.ports, ps.random)
     delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
-    builder   := packet.NewTcpPkt()
+    builder   := pktbuilder.NewTcpPkt()
 
     for {
         port, ok := portIter.Next()
@@ -207,10 +208,10 @@ func (ps *PortScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *gene
 
 
 func (ps *PortScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
-    payloads  := packet.NewUdpPayloads(ps.myIP)
+    payloads  := pktbuilder.NewUdpPayloads(ps.myIP)
     entries   := payloads.Entries()
     delayIter := generators.NewDelayIter(ps.delay, len(entries))
-    builder   := packet.NewUdpPkt()
+    builder   := pktbuilder.NewUdpPkt()
 
     for _, entry := range entries {
         delay, ok := delayIter.Next()

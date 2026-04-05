@@ -20,8 +20,8 @@ package beacon
 import (
 	"fmt"
 	"net"
-	"offscan/conv"
-	"offscan/utils"
+	"offscan/internal/conv"
+	"offscan/internal/utils"
 	"os"
 
 	"github.com/jessevdk/go-flags"

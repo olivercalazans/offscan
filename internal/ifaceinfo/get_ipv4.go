@@ -15,38 +15,48 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package ifaceinfo
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
 )
 
 
 
-type NetInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
+func IPv4(iface *net.Interface) (net.IP, error) {
+    addrs, err := iface.Addrs()
+    if err != nil {
+        return nil, fmt.Errorf("Unable to get interface IPs: %w", err)
+    }
+
+    for _, addr := range addrs {
+        ipNet, ok := addr.(*net.IPNet)
+     
+        if !ok {
+            continue
+        }
+     
+        ip := ipNet.IP
+        if ip.To4() == nil {
+            continue
+        }
+     
+        return ip, nil
+    }
+    
+    return nil, fmt.Errorf("No IPv4 address found on interface")
 }
 
 
 
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
+func MustIPv4(iface *net.Interface) net.IP {
+    ip, err := IPv4(iface)
 
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
-
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+    if err != nil {
+        utils.Abort(fmt.Sprintf("%v", err))
     }
 
-	return &opts
+    return ip
 }

@@ -19,7 +19,7 @@ package portscan
 
 import (
 	"fmt"
-	"offscan/utils"
+	"offscan/internal/utils"
 	"os"
 
 	"github.com/jessevdk/go-flags"

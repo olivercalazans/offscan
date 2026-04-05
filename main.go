@@ -29,7 +29,7 @@ import (
 	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
 	"offscan/engines/wifimap"
-	"offscan/utils"
+	"offscan/internal/utils"
 )
 
 
