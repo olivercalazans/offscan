@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package floodtcp
+package flood
 
 import (
 	"fmt"
@@ -27,22 +27,23 @@ import (
 
 
 
-type TcpArgs struct {
+type floodArgs struct {
+	Icmp    bool    `long:"icmp" description:"ICMP (Ping) flood"`
+	Tcp     bool    `long:"tcp" description:"TCP SYN flood"`
     DstIP   string  `long:"dip" description:"Target IP address to flood" required:"true"`
     DstMAC  string  `long:"dmac" description:"Destination MAC. Use 'local' = iface MAC, 'gateway' = gateway MAC" required:"true"`
-    Port    uint16  `short:"p" long:"port" description:"Target port" required:"true"`
-    SrcIP   string `long:"sip" description:"Optional source IP address"`
-    SrcMAC  string `long:"smac" description:"Optional source MAC. Use 'local' = iface MAC, 'gateway' = gateway MAC"`
+    Port    uint16  `long:"dport" description:"Target port (Only TCP)"`
+    SrcIP   string  `long:"sip" description:"Optional source IP address"`
+    SrcMAC  string  `long:"smac" description:"Optional source MAC. Use 'local' = iface MAC, 'gateway' = gateway MAC"`
 }
 
 
-
-func ParseTcpArgs(args []string) *TcpArgs {
-    var opts TcpArgs
-
+func parseFloodArgs(args []string) *floodArgs {
+    var opts floodArgs
+    
 	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(args)
-
+    
 	if err != nil {
         if flags.WroteHelp(err) {
 			fmt.Printf("%v", err)

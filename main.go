@@ -23,8 +23,7 @@ import (
 
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
-	"offscan/engines/floodping"
-	"offscan/engines/floodtcp"
+	"offscan/engines/flood"
 	"offscan/engines/hostdisc"
 	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
@@ -35,44 +34,40 @@ import (
 
 
 type CommandHandler struct {
-	Description string
-	Run         func(args []string)
+	Desc  string
+	Run   func(args []string)
 }
 
 
 
 var registry = map[string]CommandHandler{
 	"beacon": {
-		Description: "Beacon Flood",
-		Run:         beacon.Run,
+		Desc: "Beacon Flood",
+		Run:  beacon.Run,
 	},
 	"deauth": {
-		Description: "Deauthentication attack",
-		Run:         deauth.Run,
+		Desc: "Deauthentication attack",
+		Run:  deauth.Run,
+	},
+	"flood": {
+		Desc: "Flood (Ping/TCP)",
+		Run:  flood.Run,
 	},
 	"info": {
-		Description: "Network Information",
-		Run:         netinfo.Run,
+		Desc: "Network Information",
+		Run:  netinfo.Run,
 	},
 	"hdisc": {
-		Description: "Host Discovery",
-		Run:         hostdisc.Run,
-	},
-	"ping": {
-		Description: "Ping Flooding",
-		Run:         floodping.Run,
+		Desc: "Host Discovery",
+		Run:  hostdisc.Run,
 	},
 	"pscan": {
-		Description: "Port Scanning",
-		Run:         portscan.Run,
-	},
-	"tcp": {
-		Description: "TCP Flooding",
-		Run:         floodtcp.Run,
+		Desc: "Port Scanning",
+		Run:  portscan.Run,
 	},
 	"wmap": {
-		Description: "Wifi Mapping",
-		Run:         wifimap.Run,
+		Desc: "Wifi Mapping",
+		Run:  wifimap.Run,
 	},
 }
 
@@ -87,7 +82,7 @@ func main() {
 
 	cmdName := args[0]
 
-	if cmdName == "-h" || cmdName == "--help" {
+	if cmdName == "--help" {
 		displayCommands()
 		return
 	}
@@ -106,8 +101,8 @@ func displayCommands() {
 	fmt.Println("# Available commands:")
 	
     for name, handler := range registry {
-		fmt.Printf("  %-6s -> %s\n", name, handler.Description)
+		fmt.Printf("  %-6s -> %s\n", name, handler.Desc)
 	}
 	
-    fmt.Println()
+    fmt.Printf("\nOBS.: Each command has its own --help\n")
 }
