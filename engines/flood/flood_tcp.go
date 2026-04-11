@@ -28,7 +28,17 @@ import (
 
 
 
+func (f *flooder) validatePort() {
+    if f.dstPort == 0 {
+        utils.Abort("Port number is required for TCP flood (--dport)")
+    }
+}
+
+
+
 func (f *flooder) sendTcpEndlessly() {
+    f.validatePort()
+    
     socket  := sockets.NewL2Socket(f.iface)
     builder := pktbuilder.NewTcpPkt()
     ctx     := utils.SignalContext()

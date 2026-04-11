@@ -104,5 +104,5 @@ func displayCommands() {
 		fmt.Printf("  %-6s -> %s\n", name, handler.Desc)
 	}
 	
-    fmt.Println()
+    fmt.Printf("\nOBS.: Each command has its own --help\n")
 }

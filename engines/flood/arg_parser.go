@@ -32,7 +32,7 @@ type floodArgs struct {
 	Tcp     bool    `long:"tcp" description:"TCP SYN flood"`
     DstIP   string  `long:"dip" description:"Target IP address to flood" required:"true"`
     DstMAC  string  `long:"dmac" description:"Destination MAC. Use 'local' = iface MAC, 'gateway' = gateway MAC" required:"true"`
-    Port    uint16  `long:"dport" description:"Target port"`
+    Port    uint16  `long:"dport" description:"Target port (Only TCP)"`
     SrcIP   string  `long:"sip" description:"Optional source IP address"`
     SrcMAC  string  `long:"smac" description:"Optional source MAC. Use 'local' = iface MAC, 'gateway' = gateway MAC"`
 }
