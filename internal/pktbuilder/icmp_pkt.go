@@ -32,9 +32,7 @@ type IcmpPkt struct {
 
 
 func NewIcmpPkt() *IcmpPkt {
-	i := &IcmpPkt{
-		offset: 20,
-	}
+	i := &IcmpPkt{ offset: 20 }
 	
 	i.ipLayer = newIpHeader(i.buffer[:20])
 	i.buildFixed()
