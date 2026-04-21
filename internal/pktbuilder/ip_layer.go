@@ -19,25 +19,18 @@ package pktbuilder
 
 import (
 	"encoding/binary"
-	"fmt"
 	"net"
-	"offscan/internal/utils"
 )
 
 
 
 type ipHeader struct {
-	header  []byte
+	header  *[20]byte
 }
 
 
 
-func newIpHeader(header []byte) *ipHeader {
-	var headerLen uint8 = uint8(len(header))
-	if headerLen > 20 {
-		utils.Abort(fmt.Sprintf("Header bigger than 20. Header len: %d", headerLen))
-	}
-
+func newIpHeader(header *[20]byte) *ipHeader {
 	ih := &ipHeader{ header: header }
 	ih.fixedIpInfo()
 	return ih
@@ -55,8 +48,8 @@ func (ih *ipHeader) fixedIpInfo() {
 
 
 
-func (ih *ipHeader) setLen(lenUpperHdr uint16) {
-	binary.BigEndian.PutUint16(ih.header[2:4], 20 + lenUpperHdr)
+func (ih *ipHeader) setLen(layer4Len uint16) {
+	binary.BigEndian.PutUint16(ih.header[2:4], 20 + layer4Len)
 }
 
 
@@ -67,14 +60,20 @@ func (ih *ipHeader) setProto(proto uint8) {
 
 
 
-func (ih *ipHeader) updateChecksum() {
+func (ih *ipHeader) flushChecksum() {
+	binary.BigEndian.PutUint16(ih.header[10:12], 0)
+}
+
+
+
+func (ih *ipHeader) calculateChecksum() {
 	ck := Ipv4Sum(ih.header[0:20])
 	binary.BigEndian.PutUint16(ih.header[10:12], ck)
 }
 
 
 
-func (ih *ipHeader) updateSrcIp(srcIp net.IP) {
+func (ih *ipHeader) setSrcIp(srcIp net.IP) {
 	src := srcIp.To4()
 	if src == nil{
 		return
@@ -85,7 +84,7 @@ func (ih *ipHeader) updateSrcIp(srcIp net.IP) {
 
 
 
-func (ih *ipHeader) updateDstIp(dstIp net.IP) {
+func (ih *ipHeader) setDstIp(dstIp net.IP) {
 	dst := dstIp.To4()
 	if dst == nil {
 		return

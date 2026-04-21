@@ -35,7 +35,7 @@ type TcpPkt struct {
 func NewTcpPkt() *TcpPkt {
     t := &TcpPkt{}
     
-    t.ipLayer  = newIpHeader(t.buffer[:20])
+    t.ipLayer  = newIpHeader((*[20]byte)(t.buffer[0:20]))
     t.tcpLayer = (*[20]byte)(t.buffer[20:40])
 	
     t.buildFixed()
@@ -62,13 +62,13 @@ func (t *TcpPkt) buildFixed() {
 
 
 
-func (t *TcpPkt) updateSrcPort(srcPort uint16) {
+func (t *TcpPkt) setSrcPort(srcPort uint16) {
     binary.BigEndian.PutUint16(t.tcpLayer[0:2], srcPort)
 }
 
 
 
-func (t *TcpPkt) updateDstPort(dstPort uint16) {
+func (t *TcpPkt) setDstPort(dstPort uint16) {
     binary.BigEndian.PutUint16(t.tcpLayer[2:4], dstPort)
 }
 
@@ -80,7 +80,7 @@ func (t *TcpPkt) flushChecksum() {
 
 
 
-func (t *TcpPkt) updateChecksum(srcIp, dstIp net.IP) {
+func (t *TcpPkt) calculateChecksum(srcIp, dstIp net.IP) {
     cksum := TcpUdpSum(t.tcpLayer[:20], srcIp, dstIp, 6)
     binary.BigEndian.PutUint16(t.tcpLayer[16:18], cksum)
 }
@@ -93,14 +93,14 @@ func (t *TcpPkt) L3Pkt(
 	dstIP   net.IP, 
 	dstPort uint16,
 ) []byte {
-    t.ipLayer.updateSrcIp(srcIP)
-    t.ipLayer.updateDstIp(dstIP)
-    t.ipLayer.updateChecksum()
+    t.ipLayer.setSrcIp(srcIP)
+    t.ipLayer.setDstIp(dstIP)
+    t.ipLayer.calculateChecksum()
 
-    t.updateSrcPort(srcPort)
-    t.updateDstPort(dstPort)
+    t.setSrcPort(srcPort)
+    t.setDstPort(dstPort)
     t.flushChecksum()
-    t.updateChecksum(srcIP, dstIP)
+    t.calculateChecksum(srcIP, dstIP)
     
     return t.buffer[:40]
 }

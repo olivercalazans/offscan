@@ -34,7 +34,7 @@ type IcmpPkt struct {
 func NewIcmpPkt() *IcmpPkt {
 	i := &IcmpPkt{ offset: 20 }
 	
-	i.ipLayer = newIpHeader(i.buffer[:20])
+	i.ipLayer = newIpHeader((*[20]byte)(i.buffer[0:20]))
 	i.buildFixed()
 	
 	return i
@@ -62,8 +62,8 @@ func (i *IcmpPkt) buildFixed() {
 
 
 func (i *IcmpPkt) L3Pkt(srcIP, dstIP net.IP) []byte {
-	i.ipLayer.updateSrcIp(srcIP)
-	i.ipLayer.updateDstIp(dstIP)
-	i.ipLayer.updateChecksum()
+	i.ipLayer.setSrcIp(srcIP)
+	i.ipLayer.setDstIp(dstIP)
+	i.ipLayer.calculateChecksum()
 	return i.buffer[:28]
 }
