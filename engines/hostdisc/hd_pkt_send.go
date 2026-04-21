@@ -124,7 +124,7 @@ func (hd *HostDiscovery) sendTcpProbes() {
     delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket   := sockets.NewL3Socket(hd.iface)
     pktBuild := pktbuilder.NewTcpPkt()
-    randGen  := generators.NewRandomValues(nil, nil)
+    randGen  := generators.NewRandomValues()
     
     for {
         dstIP, ok1 := ips.Next()
@@ -149,7 +149,7 @@ func (hd *HostDiscovery) sendUdpProbes() {
     delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket   := sockets.NewL3Socket(hd.iface)
     pktBuild := pktbuilder.NewUdpPkt()
-    randGen  := generators.NewRandomValues(nil, nil)
+    randGen  := generators.NewRandomValues()
     
     for {
         dstIP, ok1 := ips.Next()

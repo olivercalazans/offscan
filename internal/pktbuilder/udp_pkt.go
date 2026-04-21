@@ -25,88 +25,95 @@ import (
 
 
 type UdpPkt struct {
-    buffer [347]byte
+    buffer     [353]byte
+    ipLayer   *ipHeader
+    updLayer  *[333]byte
 }
 
 
 
 func NewUdpPkt() *UdpPkt {
-    p := &UdpPkt{}
-    p.buildFixed()
-    return p
+    u := &UdpPkt{}
+
+    u.ipLayer  = newIpHeader((*[20]byte)(u.buffer[0:20]))
+    u.updLayer = (*[333]byte)(u.buffer[20:])
+    
+    u.buildFixed()
+    return u
 }
 
 
 
-func (p *UdpPkt) buildFixed() {
-    // IP header (bytes 0-20)
-    p.buffer[0] = (4 << 4) | 5
-    p.buffer[1] = 0
-    binary.BigEndian.PutUint16(p.buffer[4:6], 0x1234)
-    binary.BigEndian.PutUint16(p.buffer[6:8], 0x4000)
-    p.buffer[8] = 64
-    p.buffer[9] = 17
+func (u *UdpPkt) buildFixed() {
+    u.ipLayer.fixedIpInfo()
+    u.ipLayer.setProto(17)
 }
 
 
 
-func (p *UdpPkt) ipHeader(
-    totalLen uint16, 
-    srcIP    net.IP, 
-    dstIP    net.IP,
+func (u *UdpPkt) setSrcPort(srcPort uint16) {
+    binary.BigEndian.PutUint16(u.updLayer[0:2], srcPort)
+}
+
+
+
+func (u *UdpPkt) setDstPort(srcPort uint16) {
+    binary.BigEndian.PutUint16(u.updLayer[2:4], srcPort)
+}
+
+
+
+func (u *UdpPkt) setLen(len uint16) {
+    binary.BigEndian.PutUint16(u.updLayer[4:6], len)
+}
+
+
+
+func (u *UdpPkt) flushChecksum() {
+    binary.BigEndian.PutUint16(u.updLayer[6:8], 0)
+}
+
+
+
+func (u *UdpPkt) calculateChecksum(
+    srcIP   net.IP,
+    dstIP   net.IP,
+    lenUdp  uint16,
 ) {
-    // 0:9 - fixed
-    binary.BigEndian.PutUint16(p.buffer[2:4], totalLen)
-    binary.BigEndian.PutUint16(p.buffer[10:12], 0)
-    src := srcIP.To4()
-    dst := dstIP.To4()
-    
-	if src == nil || dst == nil {
-        return
-    }
-    copy(p.buffer[12:16], src)
-    copy(p.buffer[16:20], dst)
-
-    ck := Ipv4Sum(p.buffer[:20])
-    binary.BigEndian.PutUint16(p.buffer[10:12], ck)
+    ck := TcpUdpSum(u.updLayer[:lenUdp], srcIP, dstIP, 17)
+    binary.BigEndian.PutUint16(u.updLayer[6:8], ck)
 }
 
 
 
-func (p *UdpPkt) udpHeader(srcIP net.IP, srcPort uint16, dstIP net.IP, dstPort uint16, payloadLen uint16) {
-    udpLen := 8 + payloadLen
+func (u *UdpPkt) L3Pkt(
+	srcIP    net.IP, 
+	srcPort  uint16, 
+	dstIP    net.IP, 
+	dstPort  uint16, 
+	payload  []byte,
 
-    binary.BigEndian.PutUint16(p.buffer[20:22], srcPort)
-    binary.BigEndian.PutUint16(p.buffer[22:24], dstPort)
-    binary.BigEndian.PutUint16(p.buffer[24:26], udpLen)
-    binary.BigEndian.PutUint16(p.buffer[26:28], 0)
-
-    udpSegment := p.buffer[20 : 20+udpLen]
-    ck := TcpUdpSum(udpSegment, srcIP, dstIP, 17)
-    binary.BigEndian.PutUint16(p.buffer[26:28], ck)
-}
-
-
-
-func (p *UdpPkt) L3Pkt(
-	srcIP   net.IP, 
-	srcPort uint16, 
-	dstIP   net.IP, 
-	dstPort uint16, 
-	payload []byte,
 ) []byte {
-    payloadLen := len(payload)
-    
-	if payloadLen > 347-28 {
-        payloadLen = 347 - 28
-        payload = payload[:payloadLen]
-    }
-    totalLen := 20 + 8 + payloadLen
 
-    copy(p.buffer[28:28+payloadLen], payload)
+    lenPayload := len(payload)
+    lenUdp     := uint16(8 + lenPayload)
+    totalLen   := uint16(20 + lenUdp)
 
-    p.udpHeader(srcIP, srcPort, dstIP, dstPort, uint16(payloadLen))
-    p.ipHeader(uint16(totalLen), srcIP, dstIP)
+    u.ipLayer.setLen(lenUdp)
+    u.ipLayer.flushChecksum()
+    u.ipLayer.setSrcIp(srcIP)
+    u.ipLayer.setDstIp(dstIP)
+    u.ipLayer.calculateChecksum()
 
-    return p.buffer[:totalLen]
+    copy(u.updLayer[8:lenUdp], payload)
+    u.setSrcPort(srcPort)
+    u.setDstPort(dstPort)
+
+    u.setSrcPort(srcPort)
+    u.setDstPort(dstPort)
+    u.setLen(lenUdp)
+    u.flushChecksum()
+    u.calculateChecksum(srcIP, dstIP, lenUdp)
+
+    return u.buffer[:totalLen]
 }

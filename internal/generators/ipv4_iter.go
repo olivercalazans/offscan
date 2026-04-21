@@ -243,6 +243,3 @@ func (it *Ipv4Iter) Total() uint64 {
 
 
 
-func (it *Ipv4Iter) Reset() {
-    it.current = it.StartU32
-}

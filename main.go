@@ -23,7 +23,6 @@ import (
 
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
-	"offscan/engines/flood"
 	"offscan/engines/hostdisc"
 	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
@@ -48,10 +47,6 @@ var registry = map[string]CommandHandler{
 	"deauth": {
 		Desc: "Deauthentication attack",
 		Run:  deauth.Run,
-	},
-	"flood": {
-		Desc: "Flood (Ping/TCP)",
-		Run:  flood.Run,
 	},
 	"info": {
 		Desc: "Network Information",
