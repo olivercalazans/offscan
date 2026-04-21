@@ -181,8 +181,7 @@ func (hd *HostDiscovery) displayResult() {
 	for ipBytes, info := range hd.activeIPs {
         ip := net.IP(ipBytes[:])
         
-        fmt.Printf("# %s (%s)\n", ip.String(), info.Name)
-        fmt.Printf("%s\n", info.Mac.String())
+        fmt.Printf("# %-15s %s (%s)", ip.String(), info.Mac.String(), info.Name)
         
         fmt.Println("")
     }

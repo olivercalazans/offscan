@@ -65,7 +65,7 @@ func newBeaconFlooder(argList []string) *BeaconFlood {
 
 func (b *BeaconFlood) execute() {
     ctx     := utils.SignalContext()
-    randGen := generators.NewRandomValues(nil, nil)
+    randGen := generators.NewRandomValues()
     start   := time.Now()
     
 	fmt.Println("[+] Sending beacons. Press Ctrl+C to stop")

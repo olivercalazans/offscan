@@ -34,23 +34,12 @@ type RandomValues struct {
 
 
 
-func NewRandomValues(firstIP, lastIP *uint32) *RandomValues {
-    var f, l uint32
-
-	if firstIP != nil {
-        f = *firstIP
-    }
-
-	if lastIP != nil {
-        l = *lastIP
-    }
+func NewRandomValues() *RandomValues {
 
 	src := rand.NewSource(time.Now().UnixNano())
 
 	return &RandomValues{
-        rng:     rand.New(src),
-        firstIP: f,
-        lastIP:  l,
+        rng: rand.New(src),
     }
 }
 
@@ -60,24 +49,6 @@ func (rv *RandomValues) RandomPort() uint16 {
     const minPort = 49152
     const maxPort = 65535
     return uint16(minPort + rv.rng.Intn(maxPort-minPort+1))
-}
-
-
-
-func (rv *RandomValues) RandomIP() net.IP {
-    if rv.firstIP == 0 && rv.lastIP == 0 {
-        return net.IPv4(0, 0, 0, 0)
-    }
-
-	rangeSize := rv.lastIP - rv.firstIP + 1
-    randNum   := rv.firstIP + uint32(rv.rng.Int63n(int64(rangeSize)))
-
-	return net.IPv4(
-        byte(randNum>>24),
-        byte(randNum>>16),
-        byte(randNum>>8),
-        byte(randNum),
-    )
 }
 
 

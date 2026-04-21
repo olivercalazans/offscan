@@ -39,7 +39,7 @@ func MustRouteIfaceForDstIP(dstIP net.IP) *net.Interface {
     defer conn.Close()
 
     localAddr := conn.LocalAddr().(*net.UDPAddr)
-    localIP := localAddr.IP.To4()
+    localIP   := localAddr.IP.To4()
 
     if localIP == nil {
         utils.Abort(fmt.Sprintf("Local address is not IPv4: %v", localAddr.IP))

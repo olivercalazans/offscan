@@ -172,7 +172,7 @@ func (ps *PortScanner) stopPacketProcessor() {
 
 func (ps *PortScanner) sendProbes() {
     socket  := sockets.NewL3Socket(ps.iface)
-    randGen := generators.NewRandomValues(nil, nil)
+    randGen := generators.NewRandomValues()
 
     if ps.udp {
         ps.sendUdpProbes(socket, randGen)

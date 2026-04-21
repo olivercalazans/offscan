@@ -32,6 +32,13 @@ func Run(args []string) {
 }
 
 
+type WifiData struct {
+    BSSIDs   map[string]struct{}
+    Channel  uint8
+    Freq     string
+    Sec      string
+}
+
 
 type WifiMapper struct {
     wifis   map[string]WifiData
@@ -108,12 +115,10 @@ func (wm *WifiMapper) displayHeader(maxLen int) {
 
 
 func (wm *WifiMapper) displayWifiInfo(ssid string, info *WifiData, maxLen int) {
-    // Coleta todas as chaves (BSSIDs) em um slice vazio
     bssidStrs := make([]string, 0, len(info.BSSIDs))
     for bssid := range info.BSSIDs {
         bssidStrs = append(bssidStrs, bssid)
     }
-    // Ordena para consistência (opcional, mas recomendado)
     sort.Strings(bssidStrs)
 
     firstBSSID := "N/A"
