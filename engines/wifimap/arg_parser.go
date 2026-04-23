@@ -26,14 +26,14 @@ import (
 )
 
 
-type WmapArgs struct {
+type wmapArgs struct {
     Iface   string `short:"i" long:"iface" description:"Interface to be used to get the beacons" required:"true"`
 }
 
 
 
-func ParseWmapArgs(args []string) *WmapArgs {
-    var opts WmapArgs
+func ParseWmapArgs(args []string) *wmapArgs {
+    var opts wmapArgs
     
 	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(args)

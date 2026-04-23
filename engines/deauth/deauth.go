@@ -36,7 +36,7 @@ func Run(args []string) {
 
 
 
-type Deauthentication struct {
+type deauthentication struct {
     builder    *frame80211.Deauth
     frmsSent   int
     seqNum     uint16
@@ -48,13 +48,13 @@ type Deauthentication struct {
 
 
 
-func newDeauth(argList []string) *Deauthentication {
+func newDeauth(argList []string) *deauthentication {
     args := ParseArgs(argList)
     
     ifconfig.MustSetChannel(args.Iface, args.Channel)
     displayExecInfo(args)
 
-    return &Deauthentication{
+    return &deauthentication{
         builder:   frame80211.NewDeauthFrame(args.Bssid),
         frmsSent:  0,
         seqNum:    1,
@@ -67,7 +67,7 @@ func newDeauth(argList []string) *Deauthentication {
 
 
 
-func displayExecInfo(args *DeauthArgs) {
+func displayExecInfo(args *deauthArgs) {
     fmt.Printf("[*] IFACE...: %s\n", args.Iface.Name)
     fmt.Printf("[*] BSSID...: %s\n", args.Bssid.String())
     fmt.Printf("[*] TARGET..: %s\n", args.TargetMac.String())
@@ -76,7 +76,7 @@ func displayExecInfo(args *DeauthArgs) {
 
 
 
-func (d *Deauthentication) execute() {
+func (d *deauthentication) execute() {
     ctx := utils.SignalContext()
 
     fmt.Println("[+] Sending frames. Press Ctrl + C to stop")
@@ -106,7 +106,7 @@ func (d *Deauthentication) execute() {
 
 
 
-func (d *Deauthentication) sendFrame(srcMac, dstMac net.HardwareAddr) {
+func (d *deauthentication) sendFrame(srcMac, dstMac net.HardwareAddr) {
     frame := d.builder.Frame(dstMac, srcMac, d.seqNum)
     d.socket.Send(frame)
     
@@ -116,7 +116,7 @@ func (d *Deauthentication) sendFrame(srcMac, dstMac net.HardwareAddr) {
 
 
 
-func (d *Deauthentication) updateSeqNum() {
+func (d *deauthentication) updateSeqNum() {
     if d.seqNum >= 4095 {
         d.seqNum = 0
     }

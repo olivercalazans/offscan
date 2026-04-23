@@ -15,12 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package beacon
+package ifconf
 
 import (
 	"fmt"
-	"net"
-	"offscan/internal/conv"
 	"offscan/internal/utils"
 	"os"
 
@@ -29,42 +27,28 @@ import (
 
 
 
-type bcFloodArgs struct {
-	Ssid    string
-	Iface   *net.Interface
-	Channel int
+type ifConfArgs struct {
+	Iface  string  `short:"i" long:"iface" description:"Interface to set mode" required:"true"`
+	Man    bool    `long:"man" description:"Set interface on managed mode"`
+    Mon    bool    `long:"mon" description:"Set interface on monitor mode"`
 }
 
 
 
-type Args struct {
-    Ssid    string `short:"s" long:"ssid" description:"SSID/Network name" required:"true"`
-    Iface   string `short:"i" long:"iface" description:"Interface to be used" required:"true"`
-    Channel int    `short:"c" long:"channel" description:"Channel" required:"true"`
-}
-
-
-
-func parseArgs(argList []string) *bcFloodArgs {
-    var opts Args
+func parseIfConfigArgs(args []string) *ifConfArgs {
+    var opts ifConfArgs
 
 	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
+    _, err := parser.ParseArgs(args)
 
 	if err != nil {
-		if flags.WroteHelp(err) {
+        if flags.WroteHelp(err) {
 			fmt.Printf("%v", err)
 			os.Exit(0)
 		}
-		
-		utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
+        
+        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
-	bcArgs := &bcFloodArgs{
-		Ssid:    opts.Ssid,
-		Iface:   conv.MustGetIface(opts.Iface),
-		Channel: opts.Channel,
-	}
-
-	return bcArgs
+	return &opts
 }

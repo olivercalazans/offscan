@@ -24,6 +24,7 @@ import (
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
+	"offscan/engines/ifconf"
 	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
 	"offscan/engines/wifimap"
@@ -47,6 +48,10 @@ var registry = map[string]CommandHandler{
 	"deauth": {
 		Desc: "Deauthentication attack",
 		Run:  deauth.Run,
+	},
+	"ifconf": {
+		Desc: "Interface Configuration",
+		Run:  ifconf.Run,
 	},
 	"info": {
 		Desc: "Network Information",

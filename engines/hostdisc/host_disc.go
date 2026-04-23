@@ -52,7 +52,7 @@ type hostInfo struct {
 
 
 
-type HostDiscovery struct {
+type hostDiscovery struct {
     activeIPs      map[[4]byte]hostInfo
     delay          string
     ips           *generators.Ipv4Iter
@@ -69,8 +69,8 @@ type HostDiscovery struct {
 
 
 
-func newHostDisc(argList []string) *HostDiscovery {
-    var args *HostDiscArgs = ParseNetMapArgs(argList)
+func newHostDisc(argList []string) *hostDiscovery {
+    var args *hostDiscArgs = ParseNetMapArgs(argList)
 
 	var iface *net.Interface
 	if args.Iface == nil {
@@ -81,7 +81,7 @@ func newHostDisc(argList []string) *HostDiscovery {
 
 	cidr := ifaceinfo.MustCIDR(iface)
 
-    return &HostDiscovery{
+    return &hostDiscovery{
         activeIPs: make(map[[4]byte]hostInfo),
         ips:       generators.NewIpv4Iter(cidr, args.Range),
         myIP:      ifaceinfo.MustIPv4(iface),
@@ -93,7 +93,7 @@ func newHostDisc(argList []string) *HostDiscovery {
 
 
 
-func protoFlags(args *HostDiscArgs, iface *net.Interface) protocols {
+func protoFlags(args *hostDiscArgs, iface *net.Interface) protocols {
     isLocal := true
 
     if args.Range != nil {
@@ -121,7 +121,7 @@ func protoFlags(args *HostDiscArgs, iface *net.Interface) protocols {
 
 
 
-func (hd *HostDiscovery) execute() {
+func (hd *hostDiscovery) execute() {
     hd.displayExecInfo()
     hd.startPacketProcessor()
     hd.createGoroutines()
@@ -132,7 +132,7 @@ func (hd *HostDiscovery) execute() {
 
 
 
-func (hd *HostDiscovery) displayExecInfo() {
+func (hd *hostDiscovery) displayExecInfo() {
     var protoc []string
     if hd.protocols.arp  { protoc = append(protoc, "ARP") }
     if hd.protocols.icmp { protoc = append(protoc, "ICMP") }
@@ -152,7 +152,7 @@ func (hd *HostDiscovery) displayExecInfo() {
 
 
 
-func (hd *HostDiscovery) resolveNames() {
+func (hd *hostDiscovery) resolveNames() {
     hd.mut.Lock()
     defer hd.mut.Unlock()
 
@@ -167,7 +167,7 @@ func (hd *HostDiscovery) resolveNames() {
 
 
 
-func (hd *HostDiscovery) displayResult() {
+func (hd *hostDiscovery) displayResult() {
 	hd.mut.Lock()
     defer hd.mut.Unlock()
 

@@ -29,7 +29,7 @@ import (
 
 
 
-func (hd *HostDiscovery) startPacketProcessor() {
+func (hd *hostDiscovery) startPacketProcessor() {
     hd.sniffer   = pktsniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)
     hd.snifferCh = hd.sniffer.Start()
 
@@ -53,7 +53,7 @@ func (hd *HostDiscovery) startPacketProcessor() {
 
 
 
-func (hd *HostDiscovery) getBpfFilter() string {
+func (hd *hostDiscovery) getBpfFilter() string {
     return fmt.Sprintf(
         "(dst host %s and src net %s) or (arp[6:2] = 2)", 
         hd.myIP.String(),
@@ -63,7 +63,7 @@ func (hd *HostDiscovery) getBpfFilter() string {
 
 
 
-func (hd *HostDiscovery) cidrForBPFFilter() string {
+func (hd *hostDiscovery) cidrForBPFFilter() string {
     xor := hd.ips.StartU32 ^ hd.ips.EndU32
     var leadingZeros int
     
@@ -90,7 +90,7 @@ func (hd *HostDiscovery) cidrForBPFFilter() string {
 
 
 
-func (hd *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
+func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
     dissector := pktdissector.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
@@ -114,14 +114,14 @@ func (hd *HostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostIn
 
 
 
-func (hd *HostDiscovery) isInRange(ip net.IP) bool {
+func (hd *hostDiscovery) isInRange(ip net.IP) bool {
     ipU32 := conv.IPToU32(ip)
     return ipU32 >= hd.ips.StartU32 && ipU32 <= hd.ips.EndU32
 }
 
 
 
-func (hd *HostDiscovery) stopPacketProcessor() {
+func (hd *hostDiscovery) stopPacketProcessor() {
     hd.sniffer.Stop()
     hd.wgPktProc.Wait()
 }

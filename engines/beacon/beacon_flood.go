@@ -37,7 +37,7 @@ func Run(args []string) {
 
 
 
-type BeaconFlood struct {
+type beaconFlood struct {
     channel uint8
     ssid    string
     bcSent  int
@@ -47,12 +47,12 @@ type BeaconFlood struct {
 
 
 
-func newBeaconFlooder(argList []string) *BeaconFlood {
+func newBeaconFlooder(argList []string) *beaconFlood {
 	bcArgs := parseArgs(argList)
 
     ifconfig.MustSetChannel(bcArgs.Iface, bcArgs.Channel)
 
-    return &BeaconFlood{
+    return &beaconFlood{
         channel: uint8(bcArgs.Channel),
         ssid:    bcArgs.Ssid,
         bcSent:  0,
@@ -63,7 +63,7 @@ func newBeaconFlooder(argList []string) *BeaconFlood {
 
 
 
-func (b *BeaconFlood) execute() {
+func (b *beaconFlood) execute() {
     ctx     := utils.SignalContext()
     randGen := generators.NewRandomValues()
     start   := time.Now()
@@ -89,7 +89,7 @@ func (b *BeaconFlood) execute() {
 
 
 
-func (b *BeaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
+func (b *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
     b.sendBeacon(bssid, ssid, seq, "open")
     b.sendBeacon(bssid, ssid, seq+1, "wpa")
     b.sendBeacon(bssid, ssid, seq+2, "wpa2")
@@ -98,7 +98,7 @@ func (b *BeaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint1
 
 
 
-func (b *BeaconFlood) sendBeacon(bssid net.HardwareAddr, ssid string, seq uint16, sec string) {
+func (b *beaconFlood) sendBeacon(bssid net.HardwareAddr, ssid string, seq uint16, sec string) {
     beacon := b.builder.Beacon(bssid, ssid, seq, b.channel, sec)
     b.socket.Send(beacon)
     b.bcSent++

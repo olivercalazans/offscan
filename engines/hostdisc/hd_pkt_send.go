@@ -28,7 +28,7 @@ import (
 
 
 
-func (hd *HostDiscovery) createGoroutines() {
+func (hd *hostDiscovery) createGoroutines() {
     if hd.protocols.arp {
         hd.wgSocks.Add(1)
         go hd.sendProbes("arp", *hd.ips)
@@ -55,7 +55,7 @@ func (hd *HostDiscovery) createGoroutines() {
 
 
 
-func (hd *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
+func (hd *hostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
     defer hd.wgSocks.Done()
 
 	switch proto {
@@ -70,7 +70,7 @@ func (hd *HostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
 
 
 
-func (hd *HostDiscovery) sendArpProbes() {
+func (hd *hostDiscovery) sendArpProbes() {
     ips    := *hd.ips
     delays := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket := sockets.NewL3Socket(hd.iface)
@@ -96,7 +96,7 @@ func (hd *HostDiscovery) sendArpProbes() {
 
 
 
-func (hd *HostDiscovery) sendIcmpProbes() {
+func (hd *hostDiscovery) sendIcmpProbes() {
     ips      := *hd.ips
     delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket   := sockets.NewL3Socket(hd.iface)
@@ -119,7 +119,7 @@ func (hd *HostDiscovery) sendIcmpProbes() {
 
 
 
-func (hd *HostDiscovery) sendTcpProbes() {
+func (hd *hostDiscovery) sendTcpProbes() {
     ips      := *hd.ips
     delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket   := sockets.NewL3Socket(hd.iface)
@@ -144,7 +144,7 @@ func (hd *HostDiscovery) sendTcpProbes() {
 
 
 
-func (hd *HostDiscovery) sendUdpProbes() {
+func (hd *hostDiscovery) sendUdpProbes() {
     ips      := *hd.ips
     delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket   := sockets.NewL3Socket(hd.iface)

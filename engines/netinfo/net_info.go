@@ -36,7 +36,7 @@ func Run(args []string) {
 
 
 
-type NetworkInfo struct {
+type networkInfo struct {
     ifaceList   []net.Interface
     current     *net.Interface
     state       string
@@ -53,7 +53,7 @@ type NetworkInfo struct {
 
 
 
-func newNetInfo(argList []string) *NetworkInfo {
+func newNetInfo(argList []string) *networkInfo {
 	args := ParseNetInfoArgs(argList)
     var ifaceList []net.Interface
 
@@ -63,14 +63,14 @@ func newNetInfo(argList []string) *NetworkInfo {
         ifaceList = append(ifaceList, *conv.MustGetIface(args.Iface))
     }
 
-    return &NetworkInfo{
+    return &networkInfo{
         ifaceList: ifaceList,
     }
 }
 
 
 
-func (ni *NetworkInfo) execute() {
+func (ni *networkInfo) execute() {
     for idx, iface := range ni.ifaceList {
 		ni.current = &iface
         
@@ -90,7 +90,7 @@ func (ni *NetworkInfo) execute() {
 
 
 
-func (ni *NetworkInfo) setState() {
+func (ni *networkInfo) setState() {
     state, err := ifaceinfo.State(ni.current)
     
 	if err != nil {
@@ -102,19 +102,19 @@ func (ni *NetworkInfo) setState() {
 
 
 
-func (ni *NetworkInfo) setType() {
+func (ni *networkInfo) setType() {
     ni.ifType = ifaceinfo.Type(ni.current)
 }
 
 
 
-func (ni *NetworkInfo) setMAC() {
+func (ni *networkInfo) setMAC() {
     ni.mac = ni.current.HardwareAddr.String()    
 }
 
 
 
-func (ni *NetworkInfo) setIP() {
+func (ni *networkInfo) setIP() {
     ip, err := ifaceinfo.IPv4(ni.current)
     
 	if err != nil {
@@ -126,7 +126,7 @@ func (ni *NetworkInfo) setIP() {
 
 
 
-func (ni *NetworkInfo) setCIDR() {
+func (ni *networkInfo) setCIDR() {
     cidr, err := ifaceinfo.CIDR(ni.current)
     
 	if err != nil {
@@ -138,7 +138,7 @@ func (ni *NetworkInfo) setCIDR() {
 
 
 
-func (ni *NetworkInfo) setHostLen() {
+func (ni *networkInfo) setHostLen() {
     parts := strings.Split(ni.cidr, "/")
     
 	if len(parts) < 2 {
@@ -164,13 +164,13 @@ func (ni *NetworkInfo) setHostLen() {
 
 
 
-func (ni *NetworkInfo) setMTU() {
+func (ni *networkInfo) setMTU() {
     ni.mtu = fmt.Sprintf("%d", ni.current.MTU)
 }
 
 
 
-func (ni *NetworkInfo) setGatewayMAC() {
+func (ni *networkInfo) setGatewayMAC() {
     mac, err := ifaceinfo.GatewayMAC(ni.current)
 
     if err != nil {
@@ -182,7 +182,7 @@ func (ni *NetworkInfo) setGatewayMAC() {
 
 
 
-func (ni *NetworkInfo) setGatewayIP() {
+func (ni *networkInfo) setGatewayIP() {
     ip, err := ifaceinfo.GatewayIP(ni.current)
     
 	if err != nil {
@@ -194,7 +194,7 @@ func (ni *NetworkInfo) setGatewayIP() {
 
 
 
-func (ni *NetworkInfo) setBroadcast() {
+func (ni *networkInfo) setBroadcast() {
     if ni.ifType == "Loopback" {
         ni.broadcast = "None"
         return
@@ -211,7 +211,7 @@ func (ni *NetworkInfo) setBroadcast() {
 
 
 
-func (ni *NetworkInfo) displayInfo(index int) {
+func (ni *networkInfo) displayInfo(index int) {
     fmt.Printf("#%d Interface: %s - State: %s\n", index, ni.current.Name, ni.state)
     fmt.Println("  - Type.......:", ni.ifType)
     fmt.Println("  - MAC........:", ni.mac)
