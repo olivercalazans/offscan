@@ -60,7 +60,7 @@ func newNetInfo(argList []string) *networkInfo {
     if  args.Iface == "" {
         ifaceList = sysinfo.MustAllIfaces()
     } else {
-        ifaceList = append(ifaceList, *conv.MustGetIface(args.Iface))
+        ifaceList = append(ifaceList, *conv.MustStrToIface(args.Iface))
     }
 
     return &networkInfo{

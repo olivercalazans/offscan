@@ -19,6 +19,7 @@ package ifconf
 
 import (
 	"fmt"
+	"offscan/internal/conv"
 	"offscan/internal/utils"
 	"os/exec"
 	"time"
@@ -68,6 +69,8 @@ func (ic *ifaceConfig) validateFlags() {
 	if ic.args.Mon && ic.args.Man {
 		utils.Abort("Select only one mode: --mon or --man")
 	}
+
+	conv.MustStrToIface(ic.args.Iface)
 }
 
 

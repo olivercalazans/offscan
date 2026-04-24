@@ -66,7 +66,7 @@ func ParseArgs(argList []string) *deauthArgs {
     deauthArgs := &deauthArgs{
         Delay:     opts.Delay,
         Channel:   opts.Channel,
-        Iface:     conv.MustGetIface(opts.Iface),
+        Iface:     conv.MustStrToIface(opts.Iface),
         Bssid:     conv.MustStrToMac(opts.Bssid),
         TargetMac: conv.MustStrToMac(opts.TargetMac),
     }

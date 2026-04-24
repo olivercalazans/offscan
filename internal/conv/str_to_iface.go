@@ -25,11 +25,11 @@ import (
 
 
 
-func MustGetIface(ifaceName string) *net.Interface {
+func MustStrToIface(ifaceName string) *net.Interface {
     iface, err := net.InterfaceByName(ifaceName)
     
 	if err != nil {
-        utils.Abort(fmt.Sprintf("Erro ao obter interface %s: %v", ifaceName, err))
+        utils.Abort(fmt.Sprintf("Unable to get interface %s: %v", ifaceName, err))
     }
     
 	return iface

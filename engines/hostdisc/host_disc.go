@@ -76,7 +76,7 @@ func newHostDisc(argList []string) *hostDiscovery {
 	if args.Iface == nil {
 		iface = sysinfo.MustDefaultInterface()
 	} else {
-		iface = conv.MustGetIface(*args.Iface)
+		iface = conv.MustStrToIface(*args.Iface)
 	}
 
 	cidr := ifaceinfo.MustCIDR(iface)

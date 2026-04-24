@@ -62,7 +62,7 @@ func parseArgs(argList []string) *bcFloodArgs {
 
 	bcArgs := &bcFloodArgs{
 		Ssid:    opts.Ssid,
-		Iface:   conv.MustGetIface(opts.Iface),
+		Iface:   conv.MustStrToIface(opts.Iface),
 		Channel: opts.Channel,
 	}
 

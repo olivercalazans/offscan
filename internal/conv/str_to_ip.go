@@ -29,7 +29,7 @@ func MustStrToIPv4(s string) net.IP {
     ip := net.ParseIP(s)
     
 	if ip == nil {
-        utils.Abort(fmt.Sprintf("invalid IP address: %s", s))
+        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
     }
     
 	return ip

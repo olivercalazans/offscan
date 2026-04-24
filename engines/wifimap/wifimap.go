@@ -52,7 +52,7 @@ func newWifiMapper(argList []string) *WifiMapper {
 
     return &WifiMapper{
         wifis: make(map[string]wifiData),
-        iface: conv.MustGetIface(args.Iface),
+        iface: conv.MustStrToIface(args.Iface),
     }
 }
 
