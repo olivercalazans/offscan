@@ -15,22 +15,40 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package ifconf
 
 import (
 	"fmt"
-	"net"
 	"offscan/internal/utils"
+	"os"
+
+	"github.com/jessevdk/go-flags"
 )
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+type ifConfArgs struct {
+	Iface  string  `short:"i" long:"iface" description:"Interface to set mode" required:"true"`
+	Man    bool    `long:"man" description:"Set interface on managed mode"`
+    Mon    bool    `long:"mon" description:"Set interface on monitor mode"`
+}
+
+
+
+func parseIfConfigArgs(args []string) *ifConfArgs {
+    var opts ifConfArgs
+
+	parser := flags.NewParser(&opts, flags.HelpFlag)
+    _, err := parser.ParseArgs(args)
+
+	if err != nil {
+        if flags.WroteHelp(err) {
+			fmt.Printf("%v", err)
+			os.Exit(0)
+		}
+        
+        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
-    
-	return ip
+
+	return &opts
 }

@@ -44,7 +44,7 @@ func Run(args []string) {
 
 
 
-type PortScanner struct {
+type portScanner struct {
     iface      *net.Interface
     myIP        net.IP
     targetIP    net.IP
@@ -60,13 +60,13 @@ type PortScanner struct {
 
 
 
-func newPortScanner(argList []string) *PortScanner {
-	args  := ParsePortScanArgs(argList)
+func newPortScanner(argList []string) *portScanner {
+	args  := parsePortScanArgs(argList)
 	dstIP := conv.MustStrToIPv4(args.TargetIP)
 	iface := netroute.MustRouteIfaceForDstIP(dstIP)
 	myIP  := ifaceinfo.MustIPv4(iface)
     
-    return &PortScanner{
+    return &portScanner{
         iface:      iface,
         myIP:       myIP,
         targetIP:   dstIP,
@@ -80,7 +80,7 @@ func newPortScanner(argList []string) *PortScanner {
 
 
 
-func (ps *PortScanner) execute() {
+func (ps *portScanner) execute() {
     ps.displayInfo()
     ps.startPacketProcessor()
     ps.sendProbes()
@@ -90,7 +90,7 @@ func (ps *PortScanner) execute() {
 
 
 
-func (ps *PortScanner) displayInfo() {
+func (ps *portScanner) displayInfo() {
     proto := "TCP"
 
 	if ps.udp {
@@ -104,7 +104,7 @@ func (ps *PortScanner) displayInfo() {
 
 
 
-func (ps *PortScanner) startPacketProcessor() {
+func (ps *portScanner) startPacketProcessor() {
     ps.sniffer = pktsniffer.NewSniffer(ps.iface, ps.getBPFFilter(), false)
     packetCh  := ps.sniffer.Start()
 
@@ -129,7 +129,7 @@ func (ps *PortScanner) startPacketProcessor() {
 
 
 
-func (ps *PortScanner) getBPFFilter() string {
+func (ps *portScanner) getBPFFilter() string {
     if ps.udp {
         return fmt.Sprintf(
 			"udp and dst host %s and src host %s",
@@ -145,7 +145,7 @@ func (ps *PortScanner) getBPFFilter() string {
 
 
 
-func (ps *PortScanner) dissectAndUpdate(dissector *pktdissector.PacketDissector, tempPorts map[uint16]bool, pkt []byte) {
+func (ps *portScanner) dissectAndUpdate(dissector *pktdissector.PacketDissector, tempPorts map[uint16]bool, pkt []byte) {
     dissector.UpdatePkt(pkt)
     var port uint16
     var ok bool
@@ -163,14 +163,14 @@ func (ps *PortScanner) dissectAndUpdate(dissector *pktdissector.PacketDissector,
 
 
 
-func (ps *PortScanner) stopPacketProcessor() {
+func (ps *portScanner) stopPacketProcessor() {
     ps.sniffer.Stop()
     ps.wg.Wait()
 }
 
 
 
-func (ps *PortScanner) sendProbes() {
+func (ps *portScanner) sendProbes() {
     socket  := sockets.NewL3Socket(ps.iface)
     randGen := generators.NewRandomValues()
 
@@ -185,7 +185,7 @@ func (ps *PortScanner) sendProbes() {
 
 
 
-func (ps *PortScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
+func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
     portIter  := generators.NewPortIter(ps.ports, ps.random)
     delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
     builder   := pktbuilder.NewTcpPkt()
@@ -207,7 +207,7 @@ func (ps *PortScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *gene
 
 
 
-func (ps *PortScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
+func (ps *portScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
     payloads  := pktbuilder.NewUdpPayloads(ps.myIP)
     entries   := payloads.Entries()
     delayIter := generators.NewDelayIter(ps.delay, len(entries))
@@ -227,7 +227,7 @@ func (ps *PortScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *gene
 
 
 
-func (ps *PortScanner) displayResult() {
+func (ps *portScanner) displayResult() {
     deviceName := sysinfo.GetHostName(ps.targetIP.String())
     ports      := ps.formatPorts()
     
@@ -237,7 +237,7 @@ func (ps *PortScanner) displayResult() {
 
 
 
-func (ps *PortScanner) formatPorts() string {
+func (ps *portScanner) formatPorts() string {
     ps.mut.Lock()
     defer ps.mut.Unlock()
 

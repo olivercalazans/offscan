@@ -27,9 +27,9 @@ import (
 
 
 
-type PortScanArgs struct {
+type portScanArgs struct {
     TargetIP   string  `short:"t" long:"target" description:"Target IP" required:"true"`
-    Ports     *string `short:"p" long:"ports" description:"Specific ports or ranges (e.g., 22,80 or 20-50)"`
+    Ports     *string  `short:"p" long:"ports" description:"Specific ports or ranges (e.g., 22,80 or 20-50)"`
     Random     bool    `short:"r" long:"random" description:"Scan ports in random order"`
     Delay      string  `short:"d" long:"delay" default:"0.03" description:"Delay between packets (seconds)"`
     UDP        bool    `short:"U" long:"udp" description:"Scan UDP ports"`
@@ -37,8 +37,8 @@ type PortScanArgs struct {
 
 
 
-func ParsePortScanArgs(args []string) *PortScanArgs {
-    var opts PortScanArgs
+func parsePortScanArgs(args []string) *portScanArgs {
+    var opts portScanArgs
 
 	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(args)

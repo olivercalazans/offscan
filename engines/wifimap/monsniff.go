@@ -34,8 +34,8 @@ import (
 
 type MonitorSniff struct {
     iface     *net.Interface
-    wifisBuf  *map[string]WifiData
-    buffer     map[string]WifiData      
+    wifisBuf  *map[string]wifiData
+    buffer     map[string]wifiData      
     mut        sync.Mutex
     cancel     chan struct{}
     wg         sync.WaitGroup
@@ -45,11 +45,11 @@ type MonitorSniff struct {
 
 
 
-func NewMonitorSniff(iface *net.Interface, wifisBuf *map[string]WifiData) *MonitorSniff {
+func NewMonitorSniff(iface *net.Interface, wifisBuf *map[string]wifiData) *MonitorSniff {
     return &MonitorSniff{
         iface:    iface,
         wifisBuf: wifisBuf,
-        buffer:   make(map[string]WifiData),
+        buffer:   make(map[string]wifiData),
         cancel:   make(chan struct{}),
     }
 }
@@ -75,7 +75,7 @@ func (m *MonitorSniff) startBeaconProcessor() {
     go func() {
         defer m.wg.Done()
 
-        tempBuf := make(map[string]WifiData)
+        tempBuf := make(map[string]wifiData)
         
 		for {
 			pkt, ok := <-packetCh
@@ -97,7 +97,7 @@ func getBPFFilter() string {
 
 
 
-func (m *MonitorSniff) dissectAndUpdate(tempBuf map[string]WifiData, beacon []byte) {
+func (m *MonitorSniff) dissectAndUpdate(tempBuf map[string]wifiData, beacon []byte) {
     info, ok := m.dissec.DissecBeacon(beacon)
     
 	if !ok || len(info) < 4 {
@@ -126,7 +126,7 @@ func getFrequency(chnl uint8) string {
 
 
 func (m *MonitorSniff) addInfo(
-	tempBuf  map[string]WifiData, 
+	tempBuf  map[string]wifiData, 
 	ssid     string, 
 	bssid    string, 
 	chnl     uint8, 
@@ -144,7 +144,7 @@ func (m *MonitorSniff) addInfo(
         tempBuf[ssid]          = existing
 
     } else {
-        tempBuf[ssid] = WifiData{
+        tempBuf[ssid] = wifiData{
    			BSSIDs:   map[string]struct{}{bssid: {}},
 			Channel:  chnl,
             Freq:     freq,
@@ -204,11 +204,11 @@ func (m *MonitorSniff) sendData() {
     m.mut.Lock()
     defer m.mut.Unlock()
 
-    *m.wifisBuf = make(map[string]WifiData)
+    *m.wifisBuf = make(map[string]wifiData)
 
     for k, v := range m.buffer {
         (*m.wifisBuf)[k] = v
     }
 
-    m.buffer = make(map[string]WifiData)
+    m.buffer = make(map[string]wifiData)
 }

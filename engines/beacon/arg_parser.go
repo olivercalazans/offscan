@@ -29,7 +29,7 @@ import (
 
 
 
-type BcFloodArgs struct {
+type bcFloodArgs struct {
 	Ssid    string
 	Iface   *net.Interface
 	Channel int
@@ -45,7 +45,7 @@ type Args struct {
 
 
 
-func parseArgs(argList []string) *BcFloodArgs {
+func parseArgs(argList []string) *bcFloodArgs {
     var opts Args
 
 	parser := flags.NewParser(&opts, flags.HelpFlag)
@@ -60,9 +60,9 @@ func parseArgs(argList []string) *BcFloodArgs {
 		utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
-	bcArgs := &BcFloodArgs{
+	bcArgs := &bcFloodArgs{
 		Ssid:    opts.Ssid,
-		Iface:   conv.MustGetIface(opts.Iface),
+		Iface:   conv.MustStrToIface(opts.Iface),
 		Channel: opts.Channel,
 	}
 

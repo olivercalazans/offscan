@@ -27,14 +27,14 @@ import (
 
 
 
-type NetInfoArgs struct {
+type netInfoArgs struct {
     Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
 }
 
 
 
-func ParseNetInfoArgs(argList []string) *NetInfoArgs {
-    var opts NetInfoArgs
+func ParseNetInfoArgs(argList []string) *netInfoArgs {
+    var opts netInfoArgs
 
 	parser := flags.NewParser(&opts, flags.HelpFlag)
     _, err := parser.ParseArgs(argList)

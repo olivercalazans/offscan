@@ -32,7 +32,7 @@ func Run(args []string) {
 }
 
 
-type WifiData struct {
+type wifiData struct {
     BSSIDs   map[string]struct{}
     Channel  uint8
     Freq     string
@@ -41,7 +41,7 @@ type WifiData struct {
 
 
 type WifiMapper struct {
-    wifis   map[string]WifiData
+    wifis   map[string]wifiData
     iface  *net.Interface
 }
 
@@ -51,8 +51,8 @@ func newWifiMapper(argList []string) *WifiMapper {
 	args := ParseWmapArgs(argList)
 
     return &WifiMapper{
-        wifis: make(map[string]WifiData),
-        iface: conv.MustGetIface(args.Iface),
+        wifis: make(map[string]wifiData),
+        iface: conv.MustStrToIface(args.Iface),
     }
 }
 
@@ -82,7 +82,7 @@ func (wm *WifiMapper) displayResults() {
     }
 
     wifis   := wm.wifis
-    wm.wifis = make(map[string]WifiData)
+    wm.wifis = make(map[string]wifiData)
 
     wm.displayHeader(maxLen)
 
@@ -114,7 +114,7 @@ func (wm *WifiMapper) displayHeader(maxLen int) {
 
 
 
-func (wm *WifiMapper) displayWifiInfo(ssid string, info *WifiData, maxLen int) {
+func (wm *WifiMapper) displayWifiInfo(ssid string, info *wifiData, maxLen int) {
     bssidStrs := make([]string, 0, len(info.BSSIDs))
     for bssid := range info.BSSIDs {
         bssidStrs = append(bssidStrs, bssid)

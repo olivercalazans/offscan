@@ -29,7 +29,7 @@ import (
 
 
 
-type DeauthArgs struct {
+type deauthArgs struct {
     Iface     *net.Interface 
     TargetMac  net.HardwareAddr
     Bssid      net.HardwareAddr
@@ -48,7 +48,7 @@ type Args struct {
 
 
 
-func ParseArgs(argList []string) *DeauthArgs {
+func ParseArgs(argList []string) *deauthArgs {
     var opts Args
     
     parser := flags.NewParser(&opts, flags.HelpFlag)
@@ -63,10 +63,10 @@ func ParseArgs(argList []string) *DeauthArgs {
         utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
     }
 
-    deauthArgs := &DeauthArgs{
+    deauthArgs := &deauthArgs{
         Delay:     opts.Delay,
         Channel:   opts.Channel,
-        Iface:     conv.MustGetIface(opts.Iface),
+        Iface:     conv.MustStrToIface(opts.Iface),
         Bssid:     conv.MustStrToMac(opts.Bssid),
         TargetMac: conv.MustStrToMac(opts.TargetMac),
     }
