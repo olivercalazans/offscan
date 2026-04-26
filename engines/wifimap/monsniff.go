@@ -39,7 +39,6 @@ type MonitorSniff struct {
     mut        sync.Mutex
     cancel     chan struct{}
     wg         sync.WaitGroup
-	dissec    *pktdissector.BeaconDissector
     sniffer   *pktsniffer.Sniffer
 }
 
@@ -67,7 +66,6 @@ func (m *MonitorSniff) ExecuteMonitorSniff() {
 
 
 func (m *MonitorSniff) startBeaconProcessor() {
-    m.dissec   = pktdissector.NewBeaconDissector() 
     m.sniffer  = pktsniffer.NewSniffer(m.iface, getBPFFilter(), false)
     packetCh  := m.sniffer.Start()
 
@@ -98,7 +96,7 @@ func getBPFFilter() string {
 
 
 func (m *MonitorSniff) dissectAndUpdate(tempBuf map[string]wifiData, beacon []byte) {
-    info, ok := m.dissec.DissecBeacon(beacon)
+    info, ok := pktdissector.DissecBeacon(beacon)
     
 	if !ok || len(info) < 4 {
         return
