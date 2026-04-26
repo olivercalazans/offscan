@@ -31,22 +31,22 @@ import (
 func (hd *hostDiscovery) createGoroutines() {
     if hd.protocols.arp {
         hd.wgSocks.Add(1)
-        go hd.sendProbes("arp", *hd.ips)
+        go hd.sendProbes("arp")
     }
 
     if hd.protocols.icmp {
         hd.wgSocks.Add(1)
-        go hd.sendProbes("icmp", *hd.ips)
+        go hd.sendProbes("icmp")
     }
     
 	if hd.protocols.tcp {
         hd.wgSocks.Add(1)
-        go hd.sendProbes("tcp", *hd.ips)
+        go hd.sendProbes("tcp")
     }
     
 	if hd.protocols.udp {
         hd.wgSocks.Add(1)
-        go hd.sendProbes("udp", *hd.ips)
+        go hd.sendProbes("udp")
     }
 
     hd.wgSocks.Wait()
@@ -55,7 +55,7 @@ func (hd *hostDiscovery) createGoroutines() {
 
 
 
-func (hd *hostDiscovery) sendProbes(proto string, ips generators.Ipv4Iter) {
+func (hd *hostDiscovery) sendProbes(proto string) {
     defer hd.wgSocks.Done()
 
 	switch proto {
@@ -97,10 +97,9 @@ func (hd *hostDiscovery) sendArpProbes() {
 
 
 func (hd *hostDiscovery) sendIcmpProbes() {
-    ips      := *hd.ips
-    delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
-    socket   := sockets.NewL3Socket(hd.iface)
-    pktBuild := pktbuilder.NewIcmpPkt()
+    ips    := *hd.ips
+    delays := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    socket := sockets.NewL3Socket(hd.iface)
     
     for {
         dstIP, ok1 := ips.Next()
@@ -110,10 +109,10 @@ func (hd *hostDiscovery) sendIcmpProbes() {
             break
         }
 
-        pkt := pktBuild.L3Pkt(hd.myIP, dstIP)
-
-        socket.SendTo(pkt, dstIP)
-        time.Sleep(time.Duration(delay * float64(time.Second)))
+        if pkt, err := pktbuilder.BuildICMPPing(hd.myIP, dstIP); err == nil {
+            socket.SendTo(pkt, dstIP)
+            time.Sleep(time.Duration(delay * float64(time.Second)))
+        }
     }
 }
 
