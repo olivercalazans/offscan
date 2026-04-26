@@ -112,7 +112,7 @@ func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
 
 
 
-func (pd *PacketDissector) GetTCPSrcPort() (uint16, bool) {
+func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
 	hasIPv4 := false
 	hasTCP  := false
 
@@ -125,26 +125,6 @@ func (pd *PacketDissector) GetTCPSrcPort() (uint16, bool) {
 
 	if hasIPv4 && hasTCP {
 		return uint16(pd.tcp.SrcPort), true
-	}
-	
-    return 0, false
-}
-
-
-
-func (pd *PacketDissector) GetUDPSrcPort() (uint16, bool) {
-	hasIPv4 := false
-	hasUDP  := false
-
-	for _, lt := range pd.decodedLayers {
-		switch lt {
-		case layers.LayerTypeIPv4 : hasIPv4 = true
-		case layers.LayerTypeUDP  : hasUDP  = true
-		}
-	}
-
-	if hasIPv4 && hasUDP {
-		return uint16(pd.udp.SrcPort), true
 	}
 	
     return 0, false

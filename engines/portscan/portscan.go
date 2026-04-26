@@ -51,7 +51,6 @@ type portScanner struct {
     ports      *string
     random      bool
     delay       string
-    udp         bool
     openPorts   map[uint16]bool
     mut         sync.Mutex
     wg          sync.WaitGroup
@@ -73,7 +72,6 @@ func newPortScanner(argList []string) *portScanner {
         ports:      args.Ports,
         random:     args.Random,
         delay:      args.Delay,
-        udp:        args.UDP,
         openPorts:  make(map[uint16]bool),
     }
 }
@@ -91,15 +89,9 @@ func (ps *portScanner) execute() {
 
 
 func (ps *portScanner) displayInfo() {
-    proto := "TCP"
-
-	if ps.udp {
-        proto = "UDP"
-    }
-
 	fmt.Printf("[*] Iface...: %s\n", ps.iface.Name)
     fmt.Printf("[*] Target..: %s\n", ps.targetIP.String())
-    fmt.Printf("[*] Proto...: %s\n", proto)
+    fmt.Printf("[*] Proto...: TCP\n")
 }
 
 
@@ -130,13 +122,6 @@ func (ps *portScanner) startPacketProcessor() {
 
 
 func (ps *portScanner) getBPFFilter() string {
-    if ps.udp {
-        return fmt.Sprintf(
-			"udp and dst host %s and src host %s",
-            ps.myIP.String(), ps.targetIP.String(),
-		)
-    }
-
 	return fmt.Sprintf(
 		"tcp[13] & 0x12 == 0x12 and dst host %s and src host %s",
         ps.myIP.String(), ps.targetIP.String(),
@@ -145,16 +130,16 @@ func (ps *portScanner) getBPFFilter() string {
 
 
 
-func (ps *portScanner) dissectAndUpdate(dissector *pktdissector.PacketDissector, tempPorts map[uint16]bool, pkt []byte) {
+func (ps *portScanner) dissectAndUpdate(
+    dissector  *pktdissector.PacketDissector, 
+    tempPorts   map[uint16]bool, 
+    pkt         []byte,
+) {
     dissector.UpdatePkt(pkt)
     var port uint16
     var ok bool
 
-	if ps.udp {
-        port, ok = dissector.GetUDPSrcPort()
-    } else {
-        port, ok = dissector.GetTCPSrcPort()
-    }
+    port, ok = dissector.GetTcpSrcPort()
 
 	if ok {
         tempPorts[port] = true

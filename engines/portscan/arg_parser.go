@@ -32,7 +32,6 @@ type portScanArgs struct {
     Ports     *string  `short:"p" long:"ports" description:"Specific ports or ranges (e.g., 22,80 or 20-50)"`
     Random     bool    `short:"r" long:"random" description:"Scan ports in random order"`
     Delay      string  `short:"d" long:"delay" default:"0.03" description:"Delay between packets (seconds)"`
-    UDP        bool    `short:"U" long:"udp" description:"Scan UDP ports"`
 }
 
 
