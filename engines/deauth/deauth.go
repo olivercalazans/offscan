@@ -38,12 +38,12 @@ func Run(args []string) {
 
 type deauthentication struct {
     builder    *frame80211.Deauth
-    frmsSent   int
-    seqNum     uint16
+    frmsSent    int
+    seqNum      uint16
     socket     *sockets.Layer2Socket
-    apMac      net.HardwareAddr
-    targetMac  net.HardwareAddr
-    delay      time.Duration
+    apMac       net.HardwareAddr
+    targetMac   net.HardwareAddr
+    delay       time.Duration
 }
 
 

@@ -51,7 +51,6 @@ type portScanner struct {
     ports      *string
     random      bool
     delay       string
-    udp         bool
     openPorts   map[uint16]bool
     mut         sync.Mutex
     wg          sync.WaitGroup
@@ -73,7 +72,6 @@ func newPortScanner(argList []string) *portScanner {
         ports:      args.Ports,
         random:     args.Random,
         delay:      args.Delay,
-        udp:        args.UDP,
         openPorts:  make(map[uint16]bool),
     }
 }
@@ -83,7 +81,7 @@ func newPortScanner(argList []string) *portScanner {
 func (ps *portScanner) execute() {
     ps.displayInfo()
     ps.startPacketProcessor()
-    ps.sendProbes()
+    ps.sendTcpProbes()
     ps.stopPacketProcessor()
     ps.displayResult()
 }
@@ -91,15 +89,9 @@ func (ps *portScanner) execute() {
 
 
 func (ps *portScanner) displayInfo() {
-    proto := "TCP"
-
-	if ps.udp {
-        proto = "UDP"
-    }
-
 	fmt.Printf("[*] Iface...: %s\n", ps.iface.Name)
     fmt.Printf("[*] Target..: %s\n", ps.targetIP.String())
-    fmt.Printf("[*] Proto...: %s\n", proto)
+    fmt.Printf("[*] Proto...: TCP\n")
 }
 
 
@@ -130,13 +122,6 @@ func (ps *portScanner) startPacketProcessor() {
 
 
 func (ps *portScanner) getBPFFilter() string {
-    if ps.udp {
-        return fmt.Sprintf(
-			"udp and dst host %s and src host %s",
-            ps.myIP.String(), ps.targetIP.String(),
-		)
-    }
-
 	return fmt.Sprintf(
 		"tcp[13] & 0x12 == 0x12 and dst host %s and src host %s",
         ps.myIP.String(), ps.targetIP.String(),
@@ -145,16 +130,16 @@ func (ps *portScanner) getBPFFilter() string {
 
 
 
-func (ps *portScanner) dissectAndUpdate(dissector *pktdissector.PacketDissector, tempPorts map[uint16]bool, pkt []byte) {
+func (ps *portScanner) dissectAndUpdate(
+    dissector  *pktdissector.PacketDissector, 
+    tempPorts   map[uint16]bool, 
+    pkt         []byte,
+) {
     dissector.UpdatePkt(pkt)
     var port uint16
     var ok bool
 
-	if ps.udp {
-        port, ok = dissector.GetUDPSrcPort()
-    } else {
-        port, ok = dissector.GetTCPSrcPort()
-    }
+    port, ok = dissector.GetTcpSrcPort()
 
 	if ok {
         tempPorts[port] = true
@@ -170,25 +155,11 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 
-func (ps *portScanner) sendProbes() {
-    socket  := sockets.NewL3Socket(ps.iface)
-    randGen := generators.NewRandomValues()
-
-    if ps.udp {
-        ps.sendUdpProbes(socket, randGen)
-    } else {
-        ps.sendTcpProbes(socket, randGen)
-    }
-
-    time.Sleep(3 * time.Second)
-}
-
-
-
-func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
+func (ps *portScanner) sendTcpProbes() {
+    socket    := sockets.NewL3Socket(ps.iface)
+    randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)
     delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
-    builder   := pktbuilder.NewTcpPkt()
 
     for {
         port, ok := portIter.Next()
@@ -198,31 +169,14 @@ func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *gene
         if !ok { break }
         
 		srcPort := randGen.RandomPort()
-        pkt     := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, port)
-        
-		socket.SendTo(pkt, ps.targetIP)
-        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
+     
+        if pkt, err := pktbuilder.TcpSynPkt(ps.myIP, ps.targetIP, srcPort, port); err == nil {
+            socket.SendTo(pkt, ps.targetIP)
+            time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
+        }
     }
-}
 
-
-
-func (ps *portScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
-    payloads  := pktbuilder.NewUdpPayloads(ps.myIP)
-    entries   := payloads.Entries()
-    delayIter := generators.NewDelayIter(ps.delay, len(entries))
-    builder   := pktbuilder.NewUdpPkt()
-
-    for _, entry := range entries {
-        delay, ok := delayIter.Next()
-        if !ok { break }
-
-        srcPort := randGen.RandomPort()
-        pkt     := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, entry.Port, entry.Payload)
-        
-        socket.SendTo(pkt, ps.targetIP)
-        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
-    }
+    time.Sleep(3 * time.Second)
 }
 
 

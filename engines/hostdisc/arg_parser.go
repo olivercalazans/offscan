@@ -33,7 +33,6 @@ type hostDiscArgs struct {
     Range *string  `short:"r" long:"range" description:"IP range to scan"`
     Icmp   bool    `long:"icmp" description:"Use only/and ICMP probes"`
     Tcp    bool    `long:"tcp" description:"Use only/and TCP probes"`
-    Udp    bool    `long:"udp" description:"Use only/and UDP probes"`
 }
 
 

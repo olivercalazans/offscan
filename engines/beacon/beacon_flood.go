@@ -38,11 +38,11 @@ func Run(args []string) {
 
 
 type beaconFlood struct {
-    channel uint8
-    ssid    string
-    bcSent  int
-    builder *frame80211.Beacon
-    socket  *sockets.Layer2Socket
+    channel   uint8
+    ssid      string
+    bcSent    int
+    builder  *frame80211.Beacon
+    socket   *sockets.Layer2Socket
 }
 
 

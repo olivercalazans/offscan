@@ -18,89 +18,49 @@
 package pktbuilder
 
 import (
-	"encoding/binary"
 	"net"
+
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 )
 
 
 
-type TcpPkt struct {
-    buffer    [40]byte
-    ipLayer  *ipHeader
-    tcpLayer *[20]byte
-}
+func TcpSynPkt(srcIP, dstIP net.IP, srcPort, dstPort uint16) ([]byte, error) {
+	ip := &layers.IPv4{
+		Version  : 4,
+		IHL      : 5,
+		TOS      : 0,
+		Id       : 0x1234,
+		Flags    : layers.IPv4DontFragment,
+		TTL      : 64,
+		Protocol : layers.IPProtocolTCP,
+		SrcIP    : srcIP,
+		DstIP    : dstIP,
+	}
 
+	tcp := &layers.TCP{
+		SrcPort : layers.TCPPort(srcPort),
+		DstPort : layers.TCPPort(dstPort),
+		Seq     : 1,
+		Ack     : 0,
+		SYN     : true,
+		ACK     : false,
+		Window  : 64240,
+		Options : nil,
+	}
 
+    tcp.SetNetworkLayerForChecksum(ip)
 
-func NewTcpPkt() *TcpPkt {
-    t := &TcpPkt{}
-    
-    t.ipLayer  = newIpHeader((*[20]byte)(t.buffer[0:20]))
-    t.tcpLayer = (*[20]byte)(t.buffer[20:40])
+	buf  := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
 	
-    t.buildFixed()
-    
-    return t
-}
-
-
-
-func (t *TcpPkt) buildFixed() {
-    t.ipLayer.fixedIpInfo()
-	t.ipLayer.setProto(6)
-	t.ipLayer.setLen(20)
-
-    binary.BigEndian.PutUint32(t.tcpLayer[4:8], 1)
-    binary.BigEndian.PutUint32(t.tcpLayer[8:12], 0)
-    
-    t.tcpLayer[12] = 5 << 4
-    t.tcpLayer[13] = 0x02
-    
-    binary.BigEndian.PutUint16(t.tcpLayer[14:16], 64240)
-    binary.BigEndian.PutUint16(t.tcpLayer[18:20], 0)
-}
-
-
-
-func (t *TcpPkt) setSrcPort(srcPort uint16) {
-    binary.BigEndian.PutUint16(t.tcpLayer[0:2], srcPort)
-}
-
-
-
-func (t *TcpPkt) setDstPort(dstPort uint16) {
-    binary.BigEndian.PutUint16(t.tcpLayer[2:4], dstPort)
-}
-
-
-
-func (t *TcpPkt) flushChecksum() {
-    binary.BigEndian.PutUint16(t.tcpLayer[16:18], 0)
-}
-
-
-
-func (t *TcpPkt) calculateChecksum(srcIp, dstIp net.IP) {
-    cksum := TcpUdpSum(t.tcpLayer[:20], srcIp, dstIp, 6)
-    binary.BigEndian.PutUint16(t.tcpLayer[16:18], cksum)
-}
-
-
-
-func (t *TcpPkt) L3Pkt(
-	srcIP   net.IP, 
-	srcPort uint16, 
-	dstIP   net.IP, 
-	dstPort uint16,
-) []byte {
-    t.ipLayer.setSrcIp(srcIP)
-    t.ipLayer.setDstIp(dstIP)
-    t.ipLayer.calculateChecksum()
-
-    t.setSrcPort(srcPort)
-    t.setDstPort(dstPort)
-    t.flushChecksum()
-    t.calculateChecksum(srcIP, dstIP)
-    
-    return t.buffer[:40]
+    if err := gopacket.SerializeLayers(buf, opts, ip, tcp); err != nil {
+		return nil, err
+	}
+	
+    return buf.Bytes(), nil
 }
