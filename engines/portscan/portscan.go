@@ -83,7 +83,7 @@ func newPortScanner(argList []string) *portScanner {
 func (ps *portScanner) execute() {
     ps.displayInfo()
     ps.startPacketProcessor()
-    ps.sendProbes()
+    ps.sendTcpProbes()
     ps.stopPacketProcessor()
     ps.displayResult()
 }
@@ -170,22 +170,9 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 
-func (ps *portScanner) sendProbes() {
-    socket  := sockets.NewL3Socket(ps.iface)
-    randGen := generators.NewRandomValues()
-
-    if ps.udp {
-        ps.sendUdpProbes(socket, randGen)
-    } else {
-        ps.sendTcpProbes(socket, randGen)
-    }
-
-    time.Sleep(3 * time.Second)
-}
-
-
-
-func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
+func (ps *portScanner) sendTcpProbes() {
+    socket    := sockets.NewL3Socket(ps.iface)
+    randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)
     delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
 
@@ -203,26 +190,8 @@ func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *gene
             time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
         }
     }
-}
 
-
-
-func (ps *portScanner) sendUdpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
-    payloads  := pktbuilder.NewUdpPayloads(ps.myIP)
-    entries   := payloads.Entries()
-    delayIter := generators.NewDelayIter(ps.delay, len(entries))
-    builder   := pktbuilder.NewUdpPkt()
-
-    for _, entry := range entries {
-        delay, ok := delayIter.Next()
-        if !ok { break }
-
-        srcPort := randGen.RandomPort()
-        pkt     := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, entry.Port, entry.Payload)
-        
-        socket.SendTo(pkt, ps.targetIP)
-        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
-    }
+    time.Sleep(3 * time.Second)
 }
 
 

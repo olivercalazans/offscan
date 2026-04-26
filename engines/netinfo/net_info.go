@@ -38,7 +38,7 @@ func Run(args []string) {
 
 type networkInfo struct {
     ifaceList   []net.Interface
-    current     *net.Interface
+    current    *net.Interface
     state       string
     ifType      string
     mac         string

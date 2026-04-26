@@ -53,18 +53,18 @@ type hostInfo struct {
 
 
 type hostDiscovery struct {
-    activeIPs      map[[4]byte]hostInfo
-    delay          string
-    ips           *generators.Ipv4Iter
-    iface         *net.Interface
-    mut            sync.Mutex
-    myIP           net.IP
-    protocols      protocols
-    running        atomic.Bool
-    sniffer       *pktsniffer.Sniffer
-    snifferCh      <-chan []byte
-    wgSocks        sync.WaitGroup
-    wgPktProc      sync.WaitGroup
+    activeIPs   map[[4]byte]hostInfo
+    delay       string
+    ips        *generators.Ipv4Iter
+    iface      *net.Interface
+    mut         sync.Mutex
+    myIP        net.IP
+    protocols   protocols
+    running     atomic.Bool
+    sniffer    *pktsniffer.Sniffer
+    snifferCh   <-chan []byte
+    wgSocks     sync.WaitGroup
+    wgPktProc   sync.WaitGroup
 }
 
 
@@ -107,7 +107,6 @@ func protoFlags(args *hostDiscArgs, iface *net.Interface) protocols {
         arp:  isLocal,
         icmp: args.Icmp,
         tcp:  args.Tcp,
-        udp:  args.Udp,
     }
 
     if !prots.arp && !prots.icmp && !prots.tcp && !prots.udp{

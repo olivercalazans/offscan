@@ -62,7 +62,6 @@ func (hd *hostDiscovery) sendProbes(proto string) {
     case "arp":  hd.sendArpProbes()
     case "icmp": hd.sendIcmpProbes()
 	case "tcp":  hd.sendTcpProbes()
-	case "udp":  hd.sendUdpProbes()
 	default:     utils.Abort(fmt.Sprintf("Unknown protocol: %s", proto))
     }
     
@@ -135,30 +134,5 @@ func (hd *hostDiscovery) sendTcpProbes() {
             socket.SendTo(pkt, dstIP)
             time.Sleep(time.Duration(delay * float64(time.Second)))
         }
-    }
-}
-
-
-
-func (hd *hostDiscovery) sendUdpProbes() {
-    ips      := *hd.ips
-    delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
-    socket   := sockets.NewL3Socket(hd.iface)
-    pktBuild := pktbuilder.NewUdpPkt()
-    randGen  := generators.NewRandomValues()
-    
-    for {
-        dstIP, ok1 := ips.Next()
-        delay, ok2 := delays.Next()
-        
-        if !ok1 || !ok2  {
-            break
-        }
-
-        srcPort := randGen.RandomPort()
-        pkt     := pktBuild.L3Pkt(hd.myIP, srcPort, dstIP, 53, []byte{})
-
-        socket.SendTo(pkt, dstIP)
-        time.Sleep(time.Duration(delay * float64(time.Second)))
     }
 }
