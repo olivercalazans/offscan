@@ -19,50 +19,34 @@ package pktbuilder
 
 import (
 	"net"
+
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 )
 
 
-type ArpPkt struct {
-	buffer [28]byte
-}
 
+func ArpRequest(srcMac net.HardwareAddr, srcIP, dstIP net.IP) ([]byte, error) {
+	arp := &layers.ARP{
+		AddrType:          layers.LinkTypeEthernet, // 0x0001
+		Protocol:          layers.EthernetTypeIPv4, // 0x0800
+		HwAddressSize:     6,
+		ProtAddressSize:   4,
+		Operation:         layers.ARPRequest,       // 0x0001
+		SourceHwAddress:   srcMac,
+		SourceProtAddress: srcIP.To4(),
+		DstHwAddress:      net.HardwareAddr{0, 0, 0, 0, 0, 0},
+		DstProtAddress:    dstIP.To4(),
+	}
 
+	buf  := gopacket.NewSerializeBuffer()
+	opts := gopacket.SerializeOptions{
+		FixLengths: true,
+	}
 
-func NewArpPkt() *ArpPkt {
-	ap := &ArpPkt{}
-	ap.buildFixed()
-	return ap
-}
-
-
-
-func (ap *ArpPkt) buildFixed() {
-	ap.buffer[0] = 0x00   // HTYPE = 1 (Ethernet) - big endian
-	ap.buffer[1] = 0x01
-	ap.buffer[2] = 0x08   // PTYPE = 0x0800 (IPv4) - big endian
-	ap.buffer[3] = 0x00
-	ap.buffer[4] = 0x06   // HLEN = 6
-	ap.buffer[5] = 0x04   // PLEN = 4
-	ap.buffer[6] = 0x00   // OPER = 1 (request) - big endian
-	ap.buffer[7] = 0x01
-	// THA (6 bytes, 18:24) - zero 
-}
-
-
-
-func (ap *ArpPkt) AddStaticAddrs(
-	srcMac net.HardwareAddr,
-	srcIP  net.IP,
-) {
-	// 0:8 - fixed
-	copy(ap.buffer[8:14], srcMac)
-	copy(ap.buffer[14:18], srcIP)
-	// 18:24 - fixed
-}
-
-
-
-func (ap *ArpPkt) L3Pkt(dstIP net.IP) []byte {
-	copy(ap.buffer[24:28], dstIP)
-	return ap.buffer[:]
+	if err := gopacket.SerializeLayers(buf, opts, arp); err != nil {
+		return nil, err
+	}
+	
+	return buf.Bytes(), nil
 }

@@ -75,10 +75,7 @@ func (hd *hostDiscovery) sendArpProbes() {
     delays := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket := sockets.NewL3Socket(hd.iface)
     srcMAC := hd.iface.HardwareAddr
-    
-    pktBuild := pktbuilder.NewArpPkt()
-    pktBuild.AddStaticAddrs(srcMAC, hd.myIP)
-    
+        
     for {
         dstIP, ok1 := ips.Next()
         delay, ok2 := delays.Next()
@@ -87,10 +84,10 @@ func (hd *hostDiscovery) sendArpProbes() {
             break
         }
 
-        pkt := pktBuild.L3Pkt(dstIP)
-
-        socket.SendTo(pkt, dstIP)
-        time.Sleep(time.Duration(delay * float64(time.Second)))
+        if pkt, err := pktbuilder.ArpRequest(srcMAC, hd.myIP, dstIP); err == nil {
+            socket.SendTo(pkt, dstIP)
+            time.Sleep(time.Duration(delay * float64(time.Second)))
+        }
     }
 }
 
