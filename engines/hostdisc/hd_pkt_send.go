@@ -109,7 +109,7 @@ func (hd *hostDiscovery) sendIcmpProbes() {
             break
         }
 
-        if pkt, err := pktbuilder.BuildICMPPing(hd.myIP, dstIP); err == nil {
+        if pkt, err := pktbuilder.PingPkt(hd.myIP, dstIP); err == nil {
             socket.SendTo(pkt, dstIP)
             time.Sleep(time.Duration(delay * float64(time.Second)))
         }
@@ -119,11 +119,10 @@ func (hd *hostDiscovery) sendIcmpProbes() {
 
 
 func (hd *hostDiscovery) sendTcpProbes() {
-    ips      := *hd.ips
-    delays   := generators.NewDelayIter(hd.delay, int(ips.Total()))
-    socket   := sockets.NewL3Socket(hd.iface)
-    pktBuild := pktbuilder.NewTcpPkt()
-    randGen  := generators.NewRandomValues()
+    ips     := *hd.ips
+    delays  := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    socket  := sockets.NewL3Socket(hd.iface)
+    randGen := generators.NewRandomValues()
     
     for {
         dstIP, ok1 := ips.Next()
@@ -134,10 +133,11 @@ func (hd *hostDiscovery) sendTcpProbes() {
         }
 
         srcPort := randGen.RandomPort()
-        pkt     := pktBuild.L3Pkt(hd.myIP, srcPort, dstIP, 80)
-
-        socket.SendTo(pkt, dstIP)
-        time.Sleep(time.Duration(delay * float64(time.Second)))
+        
+        if pkt, err := pktbuilder.TcpSynPkt(hd.myIP, dstIP, srcPort, 80); err == nil {
+            socket.SendTo(pkt, dstIP)
+            time.Sleep(time.Duration(delay * float64(time.Second)))
+        }
     }
 }
 

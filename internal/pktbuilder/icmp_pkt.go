@@ -25,7 +25,7 @@ import (
 )
 
 
-func BuildICMPPing(srcIP, dstIP net.IP) ([]byte, error) {
+func PingPkt(srcIP, dstIP net.IP) ([]byte, error) {
 	ip := &layers.IPv4{
 		Version    : 4,
 		IHL        : 5,

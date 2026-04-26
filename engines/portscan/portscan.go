@@ -188,7 +188,6 @@ func (ps *portScanner) sendProbes() {
 func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *generators.RandomValues) {
     portIter  := generators.NewPortIter(ps.ports, ps.random)
     delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
-    builder   := pktbuilder.NewTcpPkt()
 
     for {
         port, ok := portIter.Next()
@@ -198,10 +197,11 @@ func (ps *portScanner) sendTcpProbes(socket *sockets.Layer3Socket, randGen *gene
         if !ok { break }
         
 		srcPort := randGen.RandomPort()
-        pkt     := builder.L3Pkt(ps.myIP, srcPort, ps.targetIP, port)
-        
-		socket.SendTo(pkt, ps.targetIP)
-        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
+     
+        if pkt, err := pktbuilder.TcpSynPkt(ps.myIP, ps.targetIP, srcPort, port); err == nil {
+            socket.SendTo(pkt, ps.targetIP)
+            time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
+        }
     }
 }
 
