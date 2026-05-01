@@ -37,6 +37,7 @@ type wifiData struct {
     Channel  uint8
     Freq     string
     Sec      string
+    Std      string
 }
 
 
@@ -101,15 +102,17 @@ func (wm *WifiMapper) displayResults() {
 
 
 func (wm *WifiMapper) displayHeader(maxLen int) {
-    fmt.Printf("\n%-*s  %-17s  %s  %s   %s\n",
-        maxLen, "SSID", "BSSID", "Channel", "Sec", "Freq")
+    fmt.Printf("\n%-*s  %-17s  %-4s  %s  %-8s  %s\n",
+        maxLen, "SSID", "BSSID", "Ch", "Freq", "Std", "Sec",
+    )
 
-		fmt.Printf("%s  %s  %s  %s  %s\n",
-        strings.Repeat("-", maxLen),
-        strings.Repeat("-", 17),
-        strings.Repeat("-", 7),
-        strings.Repeat("-", 4),
-        strings.Repeat("-", 4))
+	fmt.Printf("%s  %s  %s  %s  %s  %s\n",
+    strings.Repeat("-", maxLen),
+    strings.Repeat("-", 17),
+    strings.Repeat("-", 3),
+    strings.Repeat("-", 4),
+    strings.Repeat("-", 8),
+    strings.Repeat("-", 6))
 }
 
 
@@ -126,8 +129,8 @@ func (wm *WifiMapper) displayWifiInfo(ssid string, info *wifiData, maxLen int) {
         firstBSSID = bssidStrs[0]
     }
 
-    line := fmt.Sprintf("%-*s  %-17s  %-7d  %-4s  %sG\n",
-        maxLen, ssid, firstBSSID, info.Channel, info.Sec, info.Freq)
+    line := fmt.Sprintf("%-*s  %-17s  %-3d  %sG  %-8s  %-4s\n",
+        maxLen, ssid, firstBSSID, info.Channel, info.Freq, info.Std, info.Sec)
     
     fmt.Print(line)
 
