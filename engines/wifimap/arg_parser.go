@@ -27,7 +27,7 @@ import (
 
 
 type wmapArgs struct {
-    Iface   string `short:"i" long:"iface" description:"Interface to be used to get the beacons" required:"true"`
+    Iface  string  `short:"i" long:"iface" description:"Interface to be used to get the beacons" required:"true"`
 }
 
 

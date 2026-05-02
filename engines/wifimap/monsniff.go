@@ -108,8 +108,9 @@ func (m *MonitorSniff) dissectAndUpdate(tempBuf map[string]wifiData, beacon []by
     sec      := info[3]
     bssid    := conv.MustStrToMac(bssidStr)
     freq     := getFrequency(chnl)
+    std      := info[4]
 
-    m.addInfo(tempBuf, ssid, bssid.String(), chnl, freq, sec)
+    m.addInfo(tempBuf, ssid, bssid.String(), chnl, freq, sec, std)
 }
 
 
@@ -130,6 +131,7 @@ func (m *MonitorSniff) addInfo(
 	chnl     uint8, 
 	freq     string,
 	sec      string,
+    std      string,
 ) {
     existing, ok := tempBuf[ssid]
 
@@ -143,10 +145,11 @@ func (m *MonitorSniff) addInfo(
 
     } else {
         tempBuf[ssid] = wifiData{
-   			BSSIDs:   map[string]struct{}{bssid: {}},
-			Channel:  chnl,
-            Freq:     freq,
-            Sec:      sec,
+   			BSSIDs  : map[string]struct{}{bssid: {}},
+			Channel : chnl,
+            Freq    : freq,
+            Sec     : sec,
+            Std     : std,
         }
     }
 }
