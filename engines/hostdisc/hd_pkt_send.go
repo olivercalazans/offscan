@@ -19,120 +19,112 @@ package hostdisc
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/generators"
 	"offscan/internal/pktbuilder"
 	"offscan/internal/sockets"
-	"offscan/internal/utils"
 	"time"
 )
 
 
 
-func (hd *hostDiscovery) createGoroutines() {
-    if hd.protocols.arp {
-        hd.wgSocks.Add(1)
-        go hd.sendProbes("arp")
-    }
-
-    if hd.protocols.icmp {
-        hd.wgSocks.Add(1)
-        go hd.sendProbes("icmp")
-    }
-    
-	if hd.protocols.tcp {
-        hd.wgSocks.Add(1)
-        go hd.sendProbes("tcp")
-    }
-    
-	if hd.protocols.udp {
-        hd.wgSocks.Add(1)
-        go hd.sendProbes("udp")
-    }
-
-    hd.wgSocks.Wait()
-    time.Sleep(3 * time.Second)
-}
-
-
-
-func (hd *hostDiscovery) sendProbes(proto string) {
-    defer hd.wgSocks.Done()
-
-	switch proto {
-    case "arp":  hd.sendArpProbes()
-    case "icmp": hd.sendIcmpProbes()
-	case "tcp":  hd.sendTcpProbes()
-	default:     utils.Abort(fmt.Sprintf("Unknown protocol: %s", proto))
-    }
-    
-}
-
-
-
-func (hd *hostDiscovery) sendArpProbes() {
-    ips    := *hd.ips
-    delays := generators.NewDelayIter(hd.delay, int(ips.Total()))
-    socket := sockets.NewL3Socket(hd.iface)
-    srcMAC := hd.iface.HardwareAddr
-        
-    for {
-        dstIP, ok1 := ips.Next()
-        delay, ok2 := delays.Next()
-        
-        if !ok1 || !ok2  {
-            break
-        }
-
-        if pkt, err := pktbuilder.ArpRequest(srcMAC, hd.myIP, dstIP); err == nil {
-            socket.SendTo(pkt, dstIP)
-            time.Sleep(time.Duration(delay * float64(time.Second)))
-        }
-    }
-}
-
-
-
-func (hd *hostDiscovery) sendIcmpProbes() {
-    ips    := *hd.ips
-    delays := generators.NewDelayIter(hd.delay, int(ips.Total()))
-    socket := sockets.NewL3Socket(hd.iface)
-    
-    for {
-        dstIP, ok1 := ips.Next()
-        delay, ok2 := delays.Next()
-        
-        if !ok1 || !ok2  {
-            break
-        }
-
-        if pkt, err := pktbuilder.PingPkt(hd.myIP, dstIP); err == nil {
-            socket.SendTo(pkt, dstIP)
-            time.Sleep(time.Duration(delay * float64(time.Second)))
-        }
-    }
-}
-
-
-
-func (hd *hostDiscovery) sendTcpProbes() {
+func (hd *hostDiscovery) sendProbes() {
     ips     := *hd.ips
     delays  := generators.NewDelayIter(hd.delay, int(ips.Total()))
     socket  := sockets.NewL3Socket(hd.iface)
+    srcMAC  := hd.iface.HardwareAddr
     randGen := generators.NewRandomValues()
     
-    for {
-        dstIP, ok1 := ips.Next()
+    var pktErr uint16 = 0
+
+	for {
+        dstIP, ok1 := hd.ips.Next()
         delay, ok2 := delays.Next()
         
         if !ok1 || !ok2  {
             break
         }
 
-        srcPort := randGen.RandomPort()
-        
-        if pkt, err := pktbuilder.TcpSynPkt(hd.myIP, dstIP, srcPort, 80); err == nil {
-            socket.SendTo(pkt, dstIP)
-            time.Sleep(time.Duration(delay * float64(time.Second)))
+        if hd.protocols.arp {
+            if ok := hd.sendArpProbe(socket, dstIP, srcMAC); ok == false {
+                pktErr++
+            }
         }
+
+        if hd.protocols.icmp {
+            if ok := hd.sendIcmpProbe(socket, dstIP); ok == false {
+                pktErr++
+            }
+        }
+
+        if hd.protocols.tcp {
+            if ok := hd.sendTcpProbe(socket, dstIP, randGen.RandomPort()); ok == false {
+                pktErr++
+            }
+        }
+
+        time.Sleep(time.Duration(delay * float64(time.Second)))
     }
+
+    fmt.Printf("[!] Packets not sent: %d\n", pktErr)
+    time.Sleep(2 * time.Second)
+}
+
+
+
+func (hd *hostDiscovery) sendArpProbe(
+    socket  *sockets.Layer3Socket,
+    dstIP    net.IP,
+    srcMAC   net.HardwareAddr,
+
+) bool {
+
+    pkt, err := pktbuilder.ArpRequest(srcMAC, hd.myIP, dstIP)
+
+    if err != nil {
+        return false
+    }
+    
+    socket.SendTo(pkt, dstIP)
+    time.Sleep(50 * time.Millisecond)
+    return true
+}
+
+
+
+func (hd *hostDiscovery) sendIcmpProbe(
+    socket  *sockets.Layer3Socket,
+    dstIP    net.IP,
+
+) bool {
+
+    pkt, err := pktbuilder.PingPkt(hd.myIP, dstIP)
+    
+    if err != nil {
+        return false
+    }
+    
+    socket.SendTo(pkt, dstIP)
+    time.Sleep(50 * time.Millisecond)
+    return true
+}
+
+
+
+func (hd *hostDiscovery) sendTcpProbe(
+    socket  *sockets.Layer3Socket,
+    dstIP    net.IP,
+    srcPort  uint16,
+
+) bool {
+    
+    pkt, err := pktbuilder.TcpSynPkt(hd.myIP, dstIP, srcPort, 80)
+
+    if err != nil {
+        return false
+    }
+
+    socket.SendTo(pkt, dstIP)
+    time.Sleep(50 * time.Millisecond)
+    return true
 }

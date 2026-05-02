@@ -123,7 +123,7 @@ func protoFlags(args *hostDiscArgs, iface *net.Interface) protocols {
 func (hd *hostDiscovery) execute() {
     hd.displayExecInfo()
     hd.startPacketProcessor()
-    hd.createGoroutines()
+    hd.sendProbes()
     hd.stopPacketProcessor()
     hd.resolveNames()
     hd.displayResult()
