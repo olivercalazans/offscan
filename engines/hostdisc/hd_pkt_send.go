@@ -29,8 +29,7 @@ import (
 
 
 func (hd *hostDiscovery) sendProbes() {
-    ips     := *hd.ips
-    delays  := generators.NewDelayIter(hd.delay, int(ips.Total()))
+    delays  := generators.NewDelayIter(hd.delay, int(hd.ips.Total()))
     socket  := sockets.NewL3Socket(hd.iface)
     srcMAC  := hd.iface.HardwareAddr
     randGen := generators.NewRandomValues()
@@ -38,29 +37,26 @@ func (hd *hostDiscovery) sendProbes() {
     var pktErr uint16 = 0
 
 	for {
-        dstIP, ok1 := hd.ips.Next()
-        delay, ok2 := delays.Next()
+        dstIP, hasIP    := hd.ips.Next()
+        delay, hasDelay := delays.Next()
         
-        if !ok1 || !ok2  {
+        if !hasIP || !hasDelay  {
             break
         }
 
         if hd.protocols.arp {
-            if ok := hd.sendArpProbe(socket, dstIP, srcMAC); ok == false {
-                pktErr++
-            }
+            ok := hd.sendArpProbe(socket, dstIP, srcMAC)
+            if !ok { pktErr++ }
         }
 
         if hd.protocols.icmp {
-            if ok := hd.sendIcmpProbe(socket, dstIP); ok == false {
-                pktErr++
-            }
+            ok := hd.sendIcmpProbe(socket, dstIP)
+            if !ok { pktErr++ }
         }
 
         if hd.protocols.tcp {
-            if ok := hd.sendTcpProbe(socket, dstIP, randGen.RandomPort()); ok == false {
-                pktErr++
-            }
+            ok := hd.sendTcpProbe(socket, dstIP, randGen.RandomPort())
+            if !ok { pktErr++ }
         }
 
         time.Sleep(time.Duration(delay * float64(time.Second)))
