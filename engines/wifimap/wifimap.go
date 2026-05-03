@@ -81,7 +81,9 @@ func (wm *wifiMapper) execute() {
 
 func (wm *wifiMapper) startBeaconProcessor() {
     wm.sniffer  = pktsniffer.NewSniffer(wm.iface, getBPFFilter(), false)
-    packetCh  := wm.sniffer.Start()
+    packetCh   := wm.sniffer.Start()
+
+    fmt.Printf("[+] Sniffing beacons\n")
 
     wm.wg.Add(1)
     go func() {
@@ -198,7 +200,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
             continue
         }
 
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(350 * time.Millisecond)
     }
 
 	if len(errChannels) > 0 {
@@ -210,6 +212,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 
 func (wm *wifiMapper) stopBeaconProcessor() {
     wm.sniffer.Stop()
+    fmt.Printf("[-] Sniffer stopped\n")
     wm.wg.Wait()
 }
 
@@ -244,7 +247,7 @@ func (wm *wifiMapper) displayResults() {
 
 
 func (wm *wifiMapper) displayHeader(maxLen int) {
-    fmt.Printf("\n%-*s  %-17s  %-4s  %s  %-8s  %s\n",
+    fmt.Printf("\n%-*s  %-17s  %-3s  %s  %-8s  %s\n",
         maxLen, "SSID", "BSSID", "Ch", "Freq", "Std", "Sec",
     )
 
