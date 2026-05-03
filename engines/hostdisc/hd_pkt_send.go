@@ -28,9 +28,12 @@ import (
 
 
 
+const delayBetween = 40 * time.Millisecond
+
+
+
 func (hd *hostDiscovery) sendProbes() {
     delays  := generators.NewDelayIter(hd.delay, int(hd.ips.Total()))
-    socket  := sockets.NewL3Socket(hd.iface)
     srcMAC  := hd.iface.HardwareAddr
     randGen := generators.NewRandomValues()
     
@@ -45,23 +48,24 @@ func (hd *hostDiscovery) sendProbes() {
         }
 
         if hd.protocols.arp {
-            ok := hd.sendArpProbe(socket, dstIP, srcMAC)
+            ok := hd.sendArpProbe(hd.socket, dstIP, srcMAC)
             if !ok { pktErr++ }
         }
 
         if hd.protocols.icmp {
-            ok := hd.sendIcmpProbe(socket, dstIP)
+            ok := hd.sendIcmpProbe(hd.socket, dstIP)
             if !ok { pktErr++ }
         }
 
         if hd.protocols.tcp {
-            ok := hd.sendTcpProbe(socket, dstIP, randGen.RandomPort())
+            ok := hd.sendTcpProbe(hd.socket, dstIP, randGen.RandomPort())
             if !ok { pktErr++ }
         }
 
         time.Sleep(time.Duration(delay * float64(time.Second)))
     }
 
+    hd.stopSocket()
     fmt.Printf("[!] Packets not sent: %d\n", pktErr)
     time.Sleep(2 * time.Second)
 }
@@ -82,7 +86,7 @@ func (hd *hostDiscovery) sendArpProbe(
     }
     
     socket.SendTo(pkt, dstIP)
-    time.Sleep(50 * time.Millisecond)
+    time.Sleep(delayBetween)
     return true
 }
 
@@ -101,7 +105,7 @@ func (hd *hostDiscovery) sendIcmpProbe(
     }
     
     socket.SendTo(pkt, dstIP)
-    time.Sleep(50 * time.Millisecond)
+    time.Sleep(delayBetween)
     return true
 }
 
@@ -121,6 +125,16 @@ func (hd *hostDiscovery) sendTcpProbe(
     }
 
     socket.SendTo(pkt, dstIP)
-    time.Sleep(50 * time.Millisecond)
+    time.Sleep(delayBetween)
     return true
+}
+
+
+
+func (hd *hostDiscovery) stopSocket() {
+    if hd.socket == nil { return }
+    
+    if err := hd.socket.Close(); err != nil {
+        fmt.Printf("[!] Error closing socket: %v\n", err)
+    }
 }

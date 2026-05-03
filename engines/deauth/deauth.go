@@ -52,7 +52,7 @@ func newDeauth(argList []string) *deauthentication {
     args := ParseArgs(argList)
     
     ifconfig.MustSetChannel(args.Iface, args.Channel)
-    displayExecInfo(args)
+    displayInfo(args)
 
     return &deauthentication{
         builder:   frame80211.NewDeauthFrame(args.Bssid),
@@ -67,7 +67,7 @@ func newDeauth(argList []string) *deauthentication {
 
 
 
-func displayExecInfo(args *deauthArgs) {
+func displayInfo(args *deauthArgs) {
     fmt.Printf("[*] IFACE...: %s\n", args.Iface.Name)
     fmt.Printf("[*] BSSID...: %s\n", args.Bssid.String())
     fmt.Printf("[*] TARGET..: %s\n", args.TargetMac.String())
@@ -87,8 +87,8 @@ func (d *deauthentication) execute() {
         select {
         case <-ctx.Done():
             elapsed := time.Since(start).Seconds()
-            fmt.Printf("\n[-] Flood interrupted\n")
-            fmt.Printf("[%%] Frames sent: %d in %.2f s\n", d.frmsSent, elapsed)
+            d.closeSocket()
+            d.displayExecInfo(elapsed)
             return
 
         default:
@@ -121,4 +121,21 @@ func (d *deauthentication) updateSeqNum() {
         d.seqNum = 0
     }
     d.seqNum++
+}
+
+
+
+func (d *deauthentication) displayExecInfo(elapsed float64) {
+    fmt.Printf("\n[-] Flood interrupted\n")
+    fmt.Printf("[%%] Frames sent: %d in %.2f s\n", d.frmsSent, elapsed)
+}
+
+
+
+func (d *deauthentication) closeSocket() {
+    if d.socket == nil { return }
+    
+    if err := d.socket.Close(); err != nil {
+        fmt.Printf("[!] Error closing socket: %v\n", err)
+    }
 }

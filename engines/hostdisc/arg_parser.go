@@ -28,11 +28,12 @@ import (
 
 
 type hostDiscArgs struct {
-    Delay  string  `short:"d" long:"delay" default:"0.03" description:"Add a delay between packet transmissions."`
-    Iface *string  `short:"i" long:"iface" description:"Network interface to send packets (default: system default)"`
-    Range *string  `short:"r" long:"range" description:"IP range to scan"`
-    Icmp   bool    `long:"icmp" description:"Use only/and ICMP probes"`
-    Tcp    bool    `long:"tcp" description:"Use only/and TCP probes"`
+    Delay   string  `short:"d" long:"delay" default:"0.03" description:"Add a delay between packet transmissions."`
+    Iface  *string  `short:"i" long:"iface" description:"Network interface to send packets (default: system default)"`
+    Range  *string  `short:"r" long:"range" description:"IP range to scan"`
+	Arp     bool    `long:"arp" description:"Use only/and ARP probes"`
+    Icmp    bool    `long:"icmp" description:"Use only/and ICMP probes"`
+    Tcp     bool    `long:"tcp" description:"Use only/and TCP probes"`
 }
 
 

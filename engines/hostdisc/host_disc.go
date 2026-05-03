@@ -29,6 +29,7 @@ import (
 	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
 	"offscan/internal/pktsniffer"
+	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
 )
 
@@ -41,7 +42,7 @@ func Run(args []string) {
 
 
 type protocols struct {
-    arp, icmp, tcp, udp bool
+    arp, icmp, tcp bool
 }
 
 
@@ -63,7 +64,7 @@ type hostDiscovery struct {
     running     atomic.Bool
     sniffer    *pktsniffer.Sniffer
     snifferCh   <-chan []byte
-    wgSocks     sync.WaitGroup
+    socket     *sockets.Layer3Socket
     wgPktProc   sync.WaitGroup
 }
 
@@ -82,18 +83,33 @@ func newHostDisc(argList []string) *hostDiscovery {
 	cidr := ifaceinfo.MustCIDR(iface)
 
     return &hostDiscovery{
-        activeIPs: make(map[[4]byte]hostInfo),
-        ips:       generators.NewIpv4Iter(cidr, args.Range),
-        myIP:      ifaceinfo.MustIPv4(iface),
-        iface:     iface,
-        delay:     args.Delay,
-        protocols: protoFlags(args, iface),
+        activeIPs : make(map[[4]byte]hostInfo),
+        ips       : generators.NewIpv4Iter(cidr, args.Range),
+        myIP      : ifaceinfo.MustIPv4(iface),
+        socket    : sockets.NewL3Socket(iface),
+        iface     : iface,
+        delay     : args.Delay,
+        protocols : protoFlags(args, iface),
     }
 }
 
 
 
 func protoFlags(args *hostDiscArgs, iface *net.Interface) protocols {
+    prots := protocols{
+        arp  : true,
+        icmp : true,
+        tcp  : true,
+    }
+
+    if args.Arp || args.Icmp || args.Tcp {
+        prots.arp  = args.Arp
+        prots.icmp = args.Icmp
+        prots.tcp  = args.Tcp
+
+        return prots
+    }
+    
     isLocal := true
 
     if args.Range != nil {
@@ -101,18 +117,6 @@ func protoFlags(args *hostDiscArgs, iface *net.Interface) protocols {
             ipv4    := conv.MustStrToIPv4(ip)
             isLocal  = isLocal && netroute.IsLocal(iface, ipv4)
         }
-    }
-
-    prots := protocols{
-        arp:  isLocal,
-        icmp: args.Icmp,
-        tcp:  args.Tcp,
-    }
-
-    if !prots.arp && !prots.icmp && !prots.tcp && !prots.udp{
-        prots.icmp = true
-        prots.tcp  = true
-        prots.udp  = true
     }
 
     return prots
@@ -136,7 +140,6 @@ func (hd *hostDiscovery) displayExecInfo() {
     if hd.protocols.arp  { protoc = append(protoc, "ARP") }
     if hd.protocols.icmp { protoc = append(protoc, "ICMP") }
     if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
-    if hd.protocols.udp  { protoc = append(protoc, "UDP") }
     
 	proto  := strings.Join(protoc, ", ")
     first  := conv.U32ToIP(hd.ips.StartU32)
@@ -180,8 +183,7 @@ func (hd *hostDiscovery) displayResult() {
 	for ipBytes, info := range hd.activeIPs {
         ip := net.IP(ipBytes[:])
         
-        fmt.Printf("# %-15s %s (%s)", ip.String(), info.Mac.String(), info.Name)
-        
+        fmt.Printf("# %-15s  %s  %s", ip.String(), info.Mac.String(), info.Name)
         fmt.Println("")
     }
 }
