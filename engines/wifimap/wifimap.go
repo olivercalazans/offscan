@@ -19,10 +19,16 @@ package wifimap
 
 import (
 	"fmt"
+	"maps"
 	"net"
 	"offscan/internal/conv"
+	"offscan/internal/ifconfig"
+	"offscan/internal/pktdissector"
+	"offscan/internal/pktsniffer"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 )
 
 
@@ -41,49 +47,185 @@ type wifiData struct {
 }
 
 
-type WifiMapper struct {
-    wifis   map[string]wifiData
-    iface  *net.Interface
+type wifiMapper struct {
+    wInfo     map[string]wifiData
+    iface    *net.Interface
+    sniffer  *pktsniffer.Sniffer
+    mut       sync.Mutex
+    cancel    chan struct{}
+    wg        sync.WaitGroup
 }
 
 
 
-func newWifiMapper(argList []string) *WifiMapper {
+func newWifiMapper(argList []string) *wifiMapper {
 	args := ParseWmapArgs(argList)
 
-    return &WifiMapper{
-        wifis: make(map[string]wifiData),
+    return &wifiMapper{
+        wInfo: make(map[string]wifiData),
         iface: conv.MustStrToIface(args.Iface),
     }
 }
 
 
 
-func (wm *WifiMapper) execute() {
-    wm.executeMode()
+func (wm *wifiMapper) execute() {
+    wm.startBeaconProcessor()
+    wm.sniff2GChannels()
+    wm.sniff5GChannels()
+    wm.stopBeaconProcessor()
     wm.displayResults()
 }
 
 
 
-func (wm *WifiMapper) executeMode() {
-    monSniff := NewMonitorSniff(wm.iface, &wm.wifis)
-    monSniff.ExecuteMonitorSniff()
+func (wm *wifiMapper) startBeaconProcessor() {
+    wm.sniffer  = pktsniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+    packetCh  := wm.sniffer.Start()
+
+    wm.wg.Add(1)
+    go func() {
+        defer wm.wg.Done()
+
+        tempBuf := make(map[string]wifiData)
+        
+		for {
+			pkt, ok := <-packetCh
+            if !ok { break }
+            wm.dissectAndUpdate(tempBuf, pkt)
+        }
+
+        wm.mut.Lock()
+        maps.Copy(wm.wInfo, tempBuf)
+		wm.mut.Unlock()
+    }()
 }
 
 
 
-func (wm *WifiMapper) displayResults() {
+func getBPFFilter() string {
+    return "type mgt and subtype beacon"
+}
+
+
+
+func (wm *wifiMapper) dissectAndUpdate(tempBuf map[string]wifiData, beacon []byte) {
+    info, ok := pktdissector.DissecBeacon(beacon)
+    
+	if !ok || len(info) < 5 {
+        return
+    }
+    
+	ssid     := info[0]
+    bssidStr := info[1]
+    chnl     := conv.StrToU8(info[2])
+    sec      := info[3]
+    bssid    := conv.MustStrToMac(bssidStr)
+    freq     := getFrequency(chnl)
+    std      := info[4]
+
+    wm.addInfo(tempBuf, ssid, bssid.String(), chnl, freq, sec, std)
+}
+
+
+
+func getFrequency(chnl uint8) string {
+    if chnl <= 14 {
+        return "2.4"
+    }
+    return "5"
+}
+
+
+
+func (wm *wifiMapper) addInfo(
+	tempBuf  map[string]wifiData, 
+	ssid     string, 
+	bssid    string, 
+	chnl     uint8, 
+	freq     string,
+	sec      string,
+    std      string,
+) {
+    existing, ok := tempBuf[ssid]
+
+    if ok {
+        if _, ok := existing.BSSIDs[bssid]; ok {
+            return
+        }
+
+        existing.BSSIDs[bssid] = struct{}{} 
+        tempBuf[ssid]          = existing
+
+    } else {
+        tempBuf[ssid] = wifiData{
+   			BSSIDs  : map[string]struct{}{bssid: {}},
+			Channel : chnl,
+            Freq    : freq,
+            Sec     : sec,
+            Std     : std,
+        }
+    }
+}
+
+
+
+func (wm *wifiMapper) sniff2GChannels() {
+    channels := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}
+    wm.sniffChannels(channels, "2.4")
+}
+
+
+
+func (wm *wifiMapper) sniff5GChannels() {
+    channels := []int{
+        36,  40,  44,  48,  52,  56,  60,  64,  100, 104, 108, 112, 116, 120, 
+        124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165,
+    }
+    wm.sniffChannels(channels, "5")
+}
+
+
+
+func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
+    var errChannels []int
+
+	for _, chnl := range channels {
+        ok := ifconfig.TrySetChannel(wm.iface, chnl)
+
+		if ok != nil {
+            errChannels = append(errChannels, chnl)
+            continue
+        }
+
+		time.Sleep(300 * time.Millisecond)
+    }
+
+	if len(errChannels) > 0 {
+        fmt.Printf("[!] Unable to sniff these channels (%sG):\n%v\n", freq, errChannels)
+    }
+}
+
+
+
+func (wm *wifiMapper) stopBeaconProcessor() {
+    wm.sniffer.Stop()
+    wm.wg.Wait()
+}
+
+
+
+func (wm *wifiMapper) displayResults() {
     maxLen := 4
     
-	for ssid := range wm.wifis {
+	for ssid := range wm.wInfo {
         if len(ssid) > maxLen {
             maxLen = len(ssid)
         }
     }
 
-    wifis   := wm.wifis
-    wm.wifis = make(map[string]wifiData)
+    wifis    := wm.wInfo
+    wm.wInfo  = make(map[string]wifiData)
 
     wm.displayHeader(maxLen)
 
@@ -101,7 +243,7 @@ func (wm *WifiMapper) displayResults() {
 
 
 
-func (wm *WifiMapper) displayHeader(maxLen int) {
+func (wm *wifiMapper) displayHeader(maxLen int) {
     fmt.Printf("\n%-*s  %-17s  %-4s  %s  %-8s  %s\n",
         maxLen, "SSID", "BSSID", "Ch", "Freq", "Std", "Sec",
     )
@@ -117,7 +259,7 @@ func (wm *WifiMapper) displayHeader(maxLen int) {
 
 
 
-func (wm *WifiMapper) displayWifiInfo(ssid string, info *wifiData, maxLen int) {
+func (wm *wifiMapper) displayWifiInfo(ssid string, info *wifiData, maxLen int) {
     bssidStrs := make([]string, 0, len(info.BSSIDs))
     for bssid := range info.BSSIDs {
         bssidStrs = append(bssidStrs, bssid)
