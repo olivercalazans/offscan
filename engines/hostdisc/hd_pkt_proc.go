@@ -122,6 +122,9 @@ func (hd *hostDiscovery) isInRange(ip net.IP) bool {
 
 
 func (hd *hostDiscovery) stopPacketProcessor() {
-    hd.sniffer.Stop()
+    if hd.sniffer != nil {
+        hd.sniffer.Stop()
+    }
+    
     hd.wgPktProc.Wait()
 }

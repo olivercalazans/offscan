@@ -55,6 +55,7 @@ type portScanner struct {
     mut         sync.Mutex
     wg          sync.WaitGroup
     sniffer    *pktsniffer.Sniffer
+    socket     *sockets.Layer3Socket
 }
 
 
@@ -66,13 +67,13 @@ func newPortScanner(argList []string) *portScanner {
 	myIP  := ifaceinfo.MustIPv4(iface)
     
     return &portScanner{
-        iface:      iface,
-        myIP:       myIP,
-        targetIP:   dstIP,
-        ports:      args.Ports,
-        random:     args.Random,
-        delay:      args.Delay,
-        openPorts:  make(map[uint16]bool),
+        iface     : iface,
+        myIP      : myIP,
+        targetIP  : dstIP,
+        ports     : args.Ports,
+        random    : args.Random,
+        delay     : args.Delay,
+        openPorts :  make(map[uint16]bool),
     }
 }
 
@@ -156,27 +157,37 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
-    socket    := sockets.NewL3Socket(ps.iface)
+    ps.socket  = sockets.NewL3Socket(ps.iface)
     randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)
     delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
 
     for {
-        port, ok := portIter.Next()
-        if !ok { break }
+        port,  hasPort  := portIter.Next()
+        delay, hasDelay := delayIter.Next()
         
-		delay, ok := delayIter.Next()
-        if !ok { break }
+        if !hasPort || !hasDelay { break }
         
 		srcPort := randGen.RandomPort()
      
         if pkt, err := pktbuilder.TcpSynPkt(ps.myIP, ps.targetIP, srcPort, port); err == nil {
-            socket.SendTo(pkt, ps.targetIP)
+            ps.socket.SendTo(pkt, ps.targetIP)
             time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
         }
     }
 
+    ps.closeSocket()
     time.Sleep(3 * time.Second)
+}
+
+
+
+func (ps *portScanner) closeSocket() {
+    if ps.socket == nil { return }
+    
+    if err := ps.socket.Close(); err != nil {
+        fmt.Printf("[!] Error closing socket: %v\n", err)
+    }
 }
 
 
