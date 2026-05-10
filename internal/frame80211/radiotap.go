@@ -18,7 +18,7 @@
 package frame80211
 
 
-func MinimalRariotapHeader(buffer []byte) {
+func minimalRariotapHeader(buffer []byte) {
 	buffer[0]  = 0x00  // Header revision
 	buffer[1]  = 0x00  // Header pad
 	buffer[2]  = 0x0c  // Header length
