@@ -41,20 +41,9 @@ func Run(args []string) {
 
 
 
-type protocols struct {
-    arp, icmp, tcp bool
-}
-
-
-type hostInfo struct {
-    Mac  net.HardwareAddr
-    Name string
-}
-
-
-
 type hostDiscovery struct {
     activeIPs   map[[4]byte]hostInfo
+    pkts       *packets
     delay       string
     ips        *generators.Ipv4Iter
     iface      *net.Interface

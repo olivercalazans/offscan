@@ -157,6 +157,7 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
+    builder   := pktbuilder.NewTcpPkt()
     ps.socket  = sockets.NewL3Socket(ps.iface)
     randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)
@@ -169,11 +170,10 @@ func (ps *portScanner) sendTcpProbes() {
         if !hasPort || !hasDelay { break }
         
 		srcPort := randGen.RandomPort()
-     
-        if pkt, err := pktbuilder.TcpSynPkt(ps.myIP, ps.targetIP, srcPort, port); err == nil {
-            ps.socket.SendTo(pkt, ps.targetIP)
-            time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
-        }
+        pkt     := builder.L3SynPkt(ps.myIP, srcPort, ps.targetIP, port)
+        
+        ps.socket.SendTo(pkt, ps.targetIP)
+        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
     }
 
     ps.closeSocket()
@@ -186,7 +186,7 @@ func (ps *portScanner) closeSocket() {
     if ps.socket == nil { return }
     
     if err := ps.socket.Close(); err != nil {
-        fmt.Printf("[!] Error closing socket: %v\n", err)
+        fmt.Printf("[!] Error while closing socket: %v\n", err)
     }
 }
 
