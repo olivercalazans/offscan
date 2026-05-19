@@ -42,7 +42,7 @@ func NewDeauthFrame(bssid Mac) *Deauth {
 
 
 func buildFixed(buffer []byte, bssid Mac) {        
-	MinimalRariotapHeader(buffer[:12])
+	minimalRariotapHeader(buffer[:12])
 
     buffer[12] = 0xC0
     buffer[13] = 0x00

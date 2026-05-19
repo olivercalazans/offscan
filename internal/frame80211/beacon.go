@@ -36,7 +36,7 @@ type Beacon struct {
 
 func NewBeacon() *Beacon {
     b := &Beacon{}
-    MinimalRariotapHeader(b.buffer[:12])
+    minimalRariotapHeader(b.buffer[:12])
 
     b.buffer[12] = 0x80
     b.buffer[13] = 0x00

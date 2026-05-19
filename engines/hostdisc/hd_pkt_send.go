@@ -22,7 +22,6 @@ import (
 	"net"
 	"offscan/internal/generators"
 	"offscan/internal/pktbuilder"
-	"offscan/internal/sockets"
 	"time"
 )
 
@@ -34,8 +33,8 @@ const delayBetween = 40 * time.Millisecond
 
 func (hd *hostDiscovery) sendProbes() {
     delays  := generators.NewDelayIter(hd.delay, int(hd.ips.Total()))
-    srcMAC  := hd.iface.HardwareAddr
     randGen := generators.NewRandomValues()
+    hd.initPkts()
     
     var pktErr uint16 = 0
 
@@ -48,17 +47,17 @@ func (hd *hostDiscovery) sendProbes() {
         }
 
         if hd.protocols.arp {
-            ok := hd.sendArpProbe(hd.socket, dstIP, srcMAC)
+            ok := hd.sendArpProbe(dstIP)
             if !ok { pktErr++ }
         }
 
         if hd.protocols.icmp {
-            ok := hd.sendIcmpProbe(hd.socket, dstIP)
+            ok := hd.sendIcmpProbe(dstIP)
             if !ok { pktErr++ }
         }
 
         if hd.protocols.tcp {
-            ok := hd.sendTcpProbe(hd.socket, dstIP, randGen.RandomPort())
+            ok := hd.sendTcpProbe(dstIP, randGen.RandomPort())
             if !ok { pktErr++ }
         }
 
@@ -72,59 +71,46 @@ func (hd *hostDiscovery) sendProbes() {
 
 
 
-func (hd *hostDiscovery) sendArpProbe(
-    socket  *sockets.Layer3Socket,
-    dstIP    net.IP,
-    srcMAC   net.HardwareAddr,
-
-) bool {
-
-    pkt, err := pktbuilder.ArpRequest(srcMAC, hd.myIP, dstIP)
-
-    if err != nil {
-        return false
-    }
+func (hd *hostDiscovery) initPkts() {
+    hd.pkts = &packets{}
     
-    socket.SendTo(pkt, dstIP)
+    if hd.protocols.arp {
+        hd.pkts.arp = pktbuilder.NewArpPkt()
+        hd.pkts.arp.AddStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
+    }
+
+    if hd.protocols.icmp {
+        hd.pkts.icmp = pktbuilder.NewIcmpPkt()
+    }
+
+    if hd.protocols.tcp {
+        hd.pkts.tcp = pktbuilder.NewTcpPkt()
+    }
+}
+
+
+
+func (hd *hostDiscovery) sendArpProbe(dstIP net.IP) bool {
+    pkt := hd.pkts.arp.L3RequestPkt(dstIP)
+    hd.socket.SendTo(pkt, dstIP)
     time.Sleep(delayBetween)
     return true
 }
 
 
 
-func (hd *hostDiscovery) sendIcmpProbe(
-    socket  *sockets.Layer3Socket,
-    dstIP    net.IP,
-
-) bool {
-
-    pkt, err := pktbuilder.PingPkt(hd.myIP, dstIP)
-    
-    if err != nil {
-        return false
-    }
-    
-    socket.SendTo(pkt, dstIP)
+func (hd *hostDiscovery) sendIcmpProbe(dstIP net.IP) bool {
+    pkt := hd.pkts.icmp.L3PingPkt(hd.myIP, dstIP)    
+    hd.socket.SendTo(pkt, dstIP)
     time.Sleep(delayBetween)
     return true
 }
 
 
 
-func (hd *hostDiscovery) sendTcpProbe(
-    socket  *sockets.Layer3Socket,
-    dstIP    net.IP,
-    srcPort  uint16,
-
-) bool {
-    
-    pkt, err := pktbuilder.TcpSynPkt(hd.myIP, dstIP, srcPort, 80)
-
-    if err != nil {
-        return false
-    }
-
-    socket.SendTo(pkt, dstIP)
+func (hd *hostDiscovery) sendTcpProbe(dstIP net.IP, srcPort uint16) bool {
+    pkt := hd.pkts.tcp.L3SynPkt(hd.myIP, srcPort, dstIP, 80)
+    hd.socket.SendTo(pkt, dstIP)
     time.Sleep(delayBetween)
     return true
 }

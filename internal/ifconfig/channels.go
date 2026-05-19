@@ -15,20 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package frame80211
+package ifconfig
 
 
-func minimalRariotapHeader(buffer []byte) {
-	buffer[0]  = 0x00  // Header revision
-	buffer[1]  = 0x00  // Header pad
-	buffer[2]  = 0x0c  // Header length
-	buffer[3]  = 0x00  //
-	buffer[4]  = 0x04  // Bitmap
-	buffer[5]  = 0x80  //
-	buffer[6]  = 0x00  //
-	buffer[7]  = 0x00  //
-	buffer[8]  = 0x02  // Rate
-	buffer[9]  = 0x00  // Rate pad
-	buffer[10] = 0x18  // TX flags
-	buffer[11] = 0x00  //
+
+func Channels2() []int {
+	return []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}
+}
+
+
+func Channels5() []int {
+	return []int{
+	    36,  40,  44,  48,  52,  56,  60,  64,  100, 104, 108, 112, 116, 120, 
+	    124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165,
+	}
 }

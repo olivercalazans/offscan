@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -51,7 +52,7 @@ type portScanner struct {
     ports      *string
     random      bool
     delay       string
-    openPorts   map[uint16]bool
+    openPorts   map[uint16]struct{}
     mut         sync.Mutex
     wg          sync.WaitGroup
     sniffer    *pktsniffer.Sniffer
@@ -73,7 +74,7 @@ func newPortScanner(argList []string) *portScanner {
         ports     : args.Ports,
         random    : args.Random,
         delay     : args.Delay,
-        openPorts :  make(map[uint16]bool),
+        openPorts : make(map[uint16]struct{}),
     }
 }
 
@@ -105,7 +106,7 @@ func (ps *portScanner) startPacketProcessor() {
     go func() {
         defer ps.wg.Done()
         
-        tempPorts := make(map[uint16]bool)
+        tempPorts := make(map[uint16]struct{})
         dissector := pktdissector.NewPacketDissector()
 
         for {
@@ -133,7 +134,7 @@ func (ps *portScanner) getBPFFilter() string {
 
 func (ps *portScanner) dissectAndUpdate(
     dissector  *pktdissector.PacketDissector, 
-    tempPorts   map[uint16]bool, 
+    tempPorts   map[uint16]struct{}, 
     pkt         []byte,
 ) {
     dissector.UpdatePkt(pkt)
@@ -143,7 +144,7 @@ func (ps *portScanner) dissectAndUpdate(
     port, ok = dissector.GetTcpSrcPort()
 
 	if ok {
-        tempPorts[port] = true
+        tempPorts[port] = struct{}{}
     }
 }
 
@@ -157,6 +158,7 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
+    builder   := pktbuilder.NewTcpPkt()
     ps.socket  = sockets.NewL3Socket(ps.iface)
     randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)
@@ -169,11 +171,10 @@ func (ps *portScanner) sendTcpProbes() {
         if !hasPort || !hasDelay { break }
         
 		srcPort := randGen.RandomPort()
-     
-        if pkt, err := pktbuilder.TcpSynPkt(ps.myIP, ps.targetIP, srcPort, port); err == nil {
-            ps.socket.SendTo(pkt, ps.targetIP)
-            time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
-        }
+        pkt     := builder.L3SynPkt(ps.myIP, srcPort, ps.targetIP, port)
+        
+        ps.socket.SendTo(pkt, ps.targetIP)
+        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
     }
 
     ps.closeSocket()
@@ -193,27 +194,29 @@ func (ps *portScanner) closeSocket() {
 
 
 func (ps *portScanner) displayResult() {
-    deviceName := sysinfo.GetHostName(ps.targetIP.String())
-    ports      := ps.formatPorts()
-    
+    deviceName := sysinfo.GetHostName(ps.targetIP.String())    
 	fmt.Printf("\nOpen ports from %s (%s)\n", deviceName, ps.targetIP.String())
-    fmt.Println(ports)
+    ps.formatPorts()
 }
 
 
 
-func (ps *portScanner) formatPorts() string {
+func (ps *portScanner) formatPorts() {
     ps.mut.Lock()
     defer ps.mut.Unlock()
 
-	if len(ps.openPorts) == 0 {
-        return "None"
+    if len(ps.openPorts) == 0 {
+        fmt.Println("None")
+        return
     }
 
-	var ports []string
-    for p := range ps.openPorts {
-        ports = append(ports, fmt.Sprintf("%d", p))
+    iter       := maps.Keys(ps.openPorts)
+    portsSlice := slices.Sorted(iter)
+
+    portsStr := make([]string, len(portsSlice))
+    for i, p := range portsSlice {
+        portsStr[i] = fmt.Sprintf("%d", p)
     }
 
-	return strings.Join(ports, ", ")
+    fmt.Println(strings.Join(portsStr, ", "))
 }

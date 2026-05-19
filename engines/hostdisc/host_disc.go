@@ -20,6 +20,7 @@ package hostdisc
 import (
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -41,18 +42,6 @@ func Run(args []string) {
 
 
 
-type protocols struct {
-    arp, icmp, tcp bool
-}
-
-
-type hostInfo struct {
-    Mac  net.HardwareAddr
-    Name string
-}
-
-
-
 type hostDiscovery struct {
     activeIPs   map[[4]byte]hostInfo
     delay       string
@@ -60,6 +49,7 @@ type hostDiscovery struct {
     iface      *net.Interface
     mut         sync.Mutex
     myIP        net.IP
+    pkts       *packets
     protocols   protocols
     running     atomic.Bool
     sniffer    *pktsniffer.Sniffer
@@ -169,8 +159,29 @@ func (hd *hostDiscovery) resolveNames() {
 
 
 
+func (hd *hostDiscovery) getSortedActiveIPs() [][4]byte {
+    keys := make([][4]byte, 0, len(hd.activeIPs))
+
+    for k := range hd.activeIPs {
+        keys = append(keys, k)
+    }
+
+    sort.Slice(keys, func(i, j int) bool {
+        for idx := range 4 {
+            if keys[i][idx] != keys[j][idx] {
+                return keys[i][idx] < keys[j][idx]
+            }
+        }
+        return false
+    })
+    
+    return keys
+}
+
+
+
 func (hd *hostDiscovery) displayResult() {
-	hd.mut.Lock()
+    hd.mut.Lock()
     defer hd.mut.Unlock()
 
     if len(hd.activeIPs) < 1 {
@@ -180,10 +191,10 @@ func (hd *hostDiscovery) displayResult() {
 
     fmt.Println("")
 
-	for ipBytes, info := range hd.activeIPs {
+    for _, ipBytes := range hd.getSortedActiveIPs() {
+        info := hd.activeIPs[ipBytes]
         ip := net.IP(ipBytes[:])
-        
-        fmt.Printf("# %-15s  %s  %s", ip.String(), info.Mac.String(), info.Name)
-        fmt.Println("")
+
+        fmt.Printf("# %-15s  %s  %s\n", ip.String(), info.Mac.String(), info.Name)
     }
 }

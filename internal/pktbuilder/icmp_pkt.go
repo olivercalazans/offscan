@@ -18,45 +18,52 @@
 package pktbuilder
 
 import (
+	"encoding/binary"
 	"net"
-
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 )
 
 
-func PingPkt(srcIP, dstIP net.IP) ([]byte, error) {
-	ip := &layers.IPv4{
-		Version    : 4,
-		IHL        : 5,
-		TOS 	   : 0,
-		Length	   : 0,
-		Id 		   : 0x1234,
-		Flags      : layers.IPv4DontFragment,
-		FragOffset : 0,
-		TTL		   : 64,
-		Protocol   : layers.IPProtocolICMPv4,
-		SrcIP      : srcIP,
-		DstIP      : dstIP,
-	}
+type IcmpPacket struct {
+	buffer    [28]byte
+	ipLayer  *ipHeader
+	offset    uint8
+}
 
-	icmp := &layers.ICMPv4{
-		TypeCode : layers.CreateICMPv4TypeCode(layers.ICMPv4TypeEchoRequest, 0),
-		Id	     : 0x1234,
-		Seq	     : 1,
-	}
 
-	buf  := gopacket.NewSerializeBuffer()
-	opts := gopacket.SerializeOptions{
-		FixLengths:       true,
-		ComputeChecksums: true,
-	}
 
-	err := gopacket.SerializeLayers(buf, opts, ip, icmp)
+func NewIcmpPkt() *IcmpPacket {
+	i := &IcmpPacket{ offset: 20 }
 	
-	if err != nil {
-		return nil, err
-	}
+	i.ipLayer = newIpHeader((*[20]byte)(i.buffer[0:20]))
+	i.buildFixed()
 	
-	return buf.Bytes(), nil
+	return i
+}
+
+
+
+func (i *IcmpPacket) buildFixed() {
+	i.ipLayer.fixedIpInfo()
+	i.ipLayer.setProto(1)
+	i.ipLayer.setLen(8)
+
+	i.buffer[i.offset]     = 8
+	i.buffer[i.offset + 1] = 0
+	
+	binary.BigEndian.PutUint16(i.buffer[i.offset + 2 : i.offset + 4], 0)
+	binary.BigEndian.PutUint16(i.buffer[i.offset + 4 : i.offset + 6], 0x1234)
+	binary.BigEndian.PutUint16(i.buffer[i.offset + 6 : i.offset + 8], 1)
+
+	ck := IcmpSum(i.buffer[i.offset : i.offset + 8])
+	binary.BigEndian.PutUint16(i.buffer[i.offset + 2 : i.offset + 4], ck)
+}
+
+
+
+
+func (i *IcmpPacket) L3PingPkt(srcIP, dstIP net.IP) []byte {
+	i.ipLayer.setSrcIp(srcIP)
+	i.ipLayer.setDstIp(dstIP)
+	i.ipLayer.calculateChecksum()
+	return i.buffer[:28]
 }

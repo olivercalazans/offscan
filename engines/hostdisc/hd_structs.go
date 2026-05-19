@@ -15,20 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package frame80211
+package hostdisc
+
+import (
+	"net"
+	"offscan/internal/pktbuilder"
+)
 
 
-func minimalRariotapHeader(buffer []byte) {
-	buffer[0]  = 0x00  // Header revision
-	buffer[1]  = 0x00  // Header pad
-	buffer[2]  = 0x0c  // Header length
-	buffer[3]  = 0x00  //
-	buffer[4]  = 0x04  // Bitmap
-	buffer[5]  = 0x80  //
-	buffer[6]  = 0x00  //
-	buffer[7]  = 0x00  //
-	buffer[8]  = 0x02  // Rate
-	buffer[9]  = 0x00  // Rate pad
-	buffer[10] = 0x18  // TX flags
-	buffer[11] = 0x00  //
+type protocols struct {
+    arp, icmp, tcp bool
+}
+
+
+type hostInfo struct {
+    Mac  net.HardwareAddr
+    Name string
+}
+
+
+type packets struct {
+	arp   *pktbuilder.ArpPacket
+	icmp  *pktbuilder.IcmpPacket
+	tcp   *pktbuilder.TcpPacket
 }
