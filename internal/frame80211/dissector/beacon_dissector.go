@@ -18,76 +18,112 @@
 package dissector
 
 import (
+	"encoding/binary"
 	"fmt"
-
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
+	"net"
 )
 
 
 
-func DissecBeacon(data []byte) ([]string, bool) {
-	packet := gopacket.NewPacket(data, layers.LayerTypeRadioTap, gopacket.Default)
+type BeaconDissector struct {
+	pkt         []byte
+	dot11Start  int
+}
+
+
+
+func NewBeaconDissector() *BeaconDissector {
+	return &BeaconDissector{}
+}
+
+
+
+func (bd *BeaconDissector) UpdatePkt(rawPkt []byte) {
+	bd.pkt        = rawPkt
+	bd.dot11Start = 0
+
+	if len(rawPkt) < 4 {
+		return
+	}
+
+	if rawPkt[0] != 0x00 { return }
 	
-	if packet.Layer(layers.LayerTypeDot11) == nil {
-		packet = gopacket.NewPacket(data, layers.LayerTypeDot11, gopacket.Default)
+	rtLen := int(binary.LittleEndian.Uint16(rawPkt[2:4]))
+	if rtLen > 0 && rtLen < len(rawPkt) {
+		bd.dot11Start = rtLen
 	}
+}
 
-	dot11Layer := packet.Layer(layers.LayerTypeDot11)
-	if dot11Layer == nil {
+
+
+func (bd *BeaconDissector) Dissec() ([]string, bool) {
+	if len(bd.pkt)-bd.dot11Start < 24 {
 		return nil, false
 	}
 
-	dot11, _ := dot11Layer.(*layers.Dot11)
+	dot11        := bd.pkt[bd.dot11Start:]
+	frameControl := dot11[0]
+	fType        := (frameControl >> 2) & 0x03
+	fSubtype     := (frameControl >> 4) & 0x0F
 
-	if dot11.Type != layers.Dot11TypeMgmtBeacon {
+	if fType != 0 || fSubtype != 8 {
 		return nil, false
 	}
 
-	bssid    := dot11.Address3.String()
+	bssid    := net.HardwareAddr(dot11[16:22]).String()
 	ssid     := "<hidden>"
 	channel  := "0"
-	sec 	 := "Open"
+	sec      := "Open"
 	standard := "802.11b/g"
 
-	for _, layer := range packet.Layers() {
-		if layer.LayerType() == layers.LayerTypeDot11InformationElement {
-			ie, _ := layer.(*layers.Dot11InformationElement)
-
-			switch ie.ID {
-			case layers.Dot11InformationElementIDSSID:
-				if len(ie.Info) > 0 {
-					ssid = string(ie.Info)
-				}
-			
-			case layers.Dot11InformationElementIDDSSet:
-				if len(ie.Info) > 0 {
-					channel = fmt.Sprintf("%d", ie.Info[0])
-				}
-			
-			case layers.Dot11InformationElementIDHTCapabilities:
-				standard = "802.11n"
-			
-			case layers.Dot11InformationElementIDVHTCapabilities:
-				standard = "802.11ac"
-
-			case 255: // HE Capabilities (802.11ax / Wi-Fi 6)
-				if len(ie.Info) > 0 && ie.Info[0] == 35 {
-					standard = "802.11ax"
-				}
-
-			case layers.Dot11InformationElementIDRSNInfo:
-				sec = parseRSN(ie.Info)
-			}
-		}
+	if len(dot11) < 36 {
+		return nil, false
 	}
 
-	if beaconLayer := packet.Layer(layers.LayerTypeDot11MgmtBeacon); beaconLayer != nil {
-		b, _ := beaconLayer.(*layers.Dot11MgmtBeacon)
-		
-		if sec == "Open" && (uint16(b.Flags)&0x0010) != 0 {
-			sec = "WEP"
+	capabilityInfo := binary.LittleEndian.Uint16(dot11[34:36])
+
+	offset := 36
+	for offset+2 <= len(dot11) {
+		ieID  := dot11[offset]
+		ieLen := int(dot11[offset+1])
+
+		if offset+2+ieLen > len(dot11) {
+			break
 		}
+
+		ieInfo := dot11[offset+2 : offset+2+ieLen]
+
+		switch ieID {
+		case 0: // SSID
+			if len(ieInfo) > 0 {
+				ssid = string(ieInfo)
+			}
+
+		case 3: // DS Parameter Set (Channel)
+			if len(ieInfo) > 0 {
+				channel = fmt.Sprintf("%d", ieInfo[0])
+			}
+		
+		case 45: // HT Capabilities (802.11n)
+			standard = "802.11n"
+	
+		case 61: // VHT Capabilities (802.11ac)
+			standard = "802.11ac"
+		
+		case 255: // HE Capabilities (802.11ax / Wi-Fi 6)
+			if len(ieInfo) > 0 && ieInfo[0] == 35 {
+				standard = "802.11ax"
+			}
+		
+		case 48: // RSN Info (WPA2/WPA3 Security)
+			sec = parseRSNManual(ieInfo)
+		}
+
+		offset += 2 + ieLen
+	}
+
+	if sec == "Open" && (capabilityInfo&0x0010) != 0 {
+		sec = "WEP"
 	}
 
 	return []string{ssid, bssid, channel, sec, standard}, true
@@ -95,50 +131,52 @@ func DissecBeacon(data []byte) ([]string, bool) {
 
 
 
-func parseRSN(data []byte) string {
+func parseRSNManual(data []byte) string {
 	if len(data) < 2 {
 		return "WPA2"
 	}
 
-	var auth, cipher string
 	ptr := 2
 
+	var cipher string
 	if len(data) >= ptr+4 {
-		cipher = decodeCipher(data[ptr : ptr+4])
+		cipher = decodeCipherManual(data[ptr : ptr+4])
 		ptr += 4
 	}
 
 	if len(data) >= ptr+2 {
-		count := int(data[ptr]) | int(data[ptr+1])<<8
-		ptr += 2
+		count := int(binary.LittleEndian.Uint16(data[ptr : ptr+2]))
+		ptr   += 2
 
-		if count > 0 && len(data) >= ptr+4 {
-			cipher = decodeCipher(data[ptr : ptr+4])
-			ptr += (count * 4)
+		if count > 0 && len(data) >= ptr+(count*4) {
+			cipher  = decodeCipherManual(data[ptr : ptr+4])
+			ptr    += (count * 4)
 		}
 	}
 
+	var auth string
 	if len(data) >= ptr+2 {
-		count := int(data[ptr]) | int(data[ptr+1])<<8
-		ptr += 2
+		count := int(binary.LittleEndian.Uint16(data[ptr : ptr+2]))
+		ptr   += 2
+		
 		if count > 0 && len(data) >= ptr+4 {
-			auth = decodeAKM(data[ptr : ptr+4])
+			auth = decodeAKMManual(data[ptr : ptr+4])
 		}
 	}
-
-	mfp := ""
 
 	if auth == "SAE (WPA3)" { return "WPA3-" + cipher }
 	if auth == "" { auth = "PSK" }
 
-	return fmt.Sprintf("WPA2-%s-%s%s", auth, cipher, mfp)
+	return fmt.Sprintf("WPA2-%s-%s", auth, cipher)
 }
 
-func decodeCipher(suite []byte) string {
+
+
+func decodeCipherManual(suite []byte) string {
 	if suite[0] != 0x00 || suite[1] != 0x0F || suite[2] != 0xAC {
 		return "Unknown"
 	}
-	
+
 	switch suite[3] {
 	case 2:  return "TKIP"
 	case 4:  return "CCMP(AES)"
@@ -150,7 +188,7 @@ func decodeCipher(suite []byte) string {
 
 
 
-func decodeAKM(suite []byte) string {
+func decodeAKMManual(suite []byte) string {
 	if suite[0] != 0x00 || suite[1] != 0x0F || suite[2] != 0xAC {
 		return "Unknown"
 	}

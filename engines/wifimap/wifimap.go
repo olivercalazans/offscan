@@ -88,18 +88,7 @@ func (wm *wifiMapper) startBeaconProcessor() {
     wm.wg.Add(1)
     go func() {
         defer wm.wg.Done()
-
-        tempBuf := make(map[string]wifiData)
-        
-		for {
-			pkt, ok := <-packetCh
-            if !ok { break }
-            wm.dissectAndUpdate(tempBuf, pkt)
-        }
-
-        wm.mut.Lock()
-        maps.Copy(wm.wInfo, tempBuf)
-		wm.mut.Unlock()
+        wm.processPkts(packetCh)
     }()
 }
 
@@ -111,8 +100,29 @@ func getBPFFilter() string {
 
 
 
-func (wm *wifiMapper) dissectAndUpdate(tempBuf map[string]wifiData, beacon []byte) {
-    info, ok := dissector.DissecBeacon(beacon)
+func (wm *wifiMapper) processPkts(packetCh <-chan []byte) {
+    tempBuf   := make(map[string]wifiData)
+    dissector := dissector.NewBeaconDissector()
+        
+	for {
+		beacon, ok := <-packetCh
+        if !ok { break }
+        dissector.UpdatePkt(beacon)
+        wm.dissectAndUpdate(dissector, tempBuf)
+    }
+
+    wm.mut.Lock()
+    maps.Copy(wm.wInfo, tempBuf)
+	wm.mut.Unlock()
+}
+
+
+
+func (wm *wifiMapper) dissectAndUpdate(
+    dissector  *dissector.BeaconDissector,
+    tempBuf     map[string]wifiData,
+) {
+    info, ok := dissector.Dissec()
     
 	if !ok || len(info) < 5 {
         return
