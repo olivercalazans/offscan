@@ -122,16 +122,6 @@ func (pd *PacketDissector) isTCP() bool {
 
 
 
-func (pd *PacketDissector) isUDP() bool {
-	if len(pd.pkt) < 24 {
-        return false
-    }
-
-	return pd.pkt[23] == 17
-}
-
-
-
 func (pd *PacketDissector) GetSrcMac() (net.HardwareAddr, bool) {
     if pd.isARP {
         return net.HardwareAddr(pd.pkt[22:28]), true

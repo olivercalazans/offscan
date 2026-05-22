@@ -61,12 +61,6 @@ func (ih *ipHeader) setProto(proto uint8) {
 
 
 
-func (ih *ipHeader) flushChecksum() {
-	binary.BigEndian.PutUint16(ih.header[10:12], 0)
-}
-
-
-
 func (ih *ipHeader) calculateChecksum() {
 	ck := Ipv4Sum(ih.header[0:20])
 	binary.BigEndian.PutUint16(ih.header[10:12], ck)
