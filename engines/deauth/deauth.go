@@ -22,7 +22,7 @@ import (
 	"net"
 	"time"
 
-	"offscan/internal/frame80211"
+	"offscan/internal/frame80211/builder"
 	"offscan/internal/ifconfig"
 	"offscan/internal/sockets"
 	"offscan/internal/utils"
@@ -37,7 +37,7 @@ func Run(args []string) {
 
 
 type deauthentication struct {
-    builder    *frame80211.Deauth
+    builder    *builder.Deauth
     frmsSent    int
     seqNum      uint16
     socket     *sockets.Layer2Socket
@@ -55,13 +55,13 @@ func newDeauth(argList []string) *deauthentication {
     displayInfo(args)
 
     return &deauthentication{
-        builder:   frame80211.NewDeauthFrame(args.Bssid),
-        frmsSent:  0,
-        seqNum:    1,
-        socket:    sockets.NewL2Socket(args.Iface),
-        targetMac: args.TargetMac,
-        apMac:     args.Bssid,
-        delay:     time.Duration(args.Delay) * time.Millisecond,
+        builder   : builder.NewDeauthFrame(args.Bssid),
+        frmsSent  : 0,
+        seqNum    : 1,
+        socket    : sockets.NewL2Socket(args.Iface),
+        targetMac : args.TargetMac,
+        apMac     : args.Bssid,
+        delay     : time.Duration(args.Delay) * time.Millisecond,
     }
 }
 

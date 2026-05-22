@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/generators"
-	"offscan/internal/pktbuilder"
+	"offscan/internal/packet/builder"
 	"time"
 )
 
@@ -75,16 +75,16 @@ func (hd *hostDiscovery) initPkts() {
     hd.pkts = &packets{}
     
     if hd.protocols.arp {
-        hd.pkts.arp = pktbuilder.NewArpPkt()
+        hd.pkts.arp = builder.NewArpPkt()
         hd.pkts.arp.AddStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
     }
 
     if hd.protocols.icmp {
-        hd.pkts.icmp = pktbuilder.NewIcmpPkt()
+        hd.pkts.icmp = builder.NewIcmpPkt()
     }
 
     if hd.protocols.tcp {
-        hd.pkts.tcp = pktbuilder.NewTcpPkt()
+        hd.pkts.tcp = builder.NewTcpPkt()
     }
 }
 

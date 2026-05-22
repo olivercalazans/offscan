@@ -30,9 +30,10 @@ import (
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
-	"offscan/internal/pktbuilder"
-	"offscan/internal/pktdissector"
-	"offscan/internal/pktsniffer"
+	"offscan/internal/packet/builder"
+	"offscan/internal/packet/dissector"
+	"offscan/internal/sniffer"
+
 	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
 )
@@ -55,7 +56,7 @@ type portScanner struct {
     openPorts   map[uint16]struct{}
     mut         sync.Mutex
     wg          sync.WaitGroup
-    sniffer    *pktsniffer.Sniffer
+    sniffer    *sniffer.Sniffer
     socket     *sockets.Layer3Socket
 }
 
@@ -99,7 +100,7 @@ func (ps *portScanner) displayInfo() {
 
 
 func (ps *portScanner) startPacketProcessor() {
-    ps.sniffer = pktsniffer.NewSniffer(ps.iface, ps.getBPFFilter(), false)
+    ps.sniffer = sniffer.NewSniffer(ps.iface, ps.getBPFFilter(), false)
     packetCh  := ps.sniffer.Start()
 
     ps.wg.Add(1)
@@ -107,7 +108,7 @@ func (ps *portScanner) startPacketProcessor() {
         defer ps.wg.Done()
         
         tempPorts := make(map[uint16]struct{})
-        dissector := pktdissector.NewPacketDissector()
+        dissector := dissector.NewPacketDissector()
 
         for {
 			pkt, ok := <-packetCh
@@ -133,7 +134,7 @@ func (ps *portScanner) getBPFFilter() string {
 
 
 func (ps *portScanner) dissectAndUpdate(
-    dissector  *pktdissector.PacketDissector, 
+    dissector  *dissector.PacketDissector, 
     tempPorts   map[uint16]struct{}, 
     pkt         []byte,
 ) {
@@ -158,7 +159,7 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
-    builder   := pktbuilder.NewTcpPkt()
+    builder   := builder.NewTcpPkt()
     ps.socket  = sockets.NewL3Socket(ps.iface)
     randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)

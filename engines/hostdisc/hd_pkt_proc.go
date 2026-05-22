@@ -23,14 +23,14 @@ import (
 	"math/bits"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/pktdissector"
-	"offscan/internal/pktsniffer"
+	"offscan/internal/packet/dissector"
+	"offscan/internal/sniffer"
 )
 
 
 
 func (hd *hostDiscovery) startPacketProcessor() {
-    hd.sniffer   = pktsniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)
+    hd.sniffer   = sniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)
     hd.snifferCh = hd.sniffer.Start()
 
     hd.wgPktProc.Add(1)
@@ -91,7 +91,7 @@ func (hd *hostDiscovery) cidrForBPFFilter() string {
 
 
 func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
-    dissector := pktdissector.NewPacketDissector()
+    dissector := dissector.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
     srcIP, ok := dissector.GetSrcIP()

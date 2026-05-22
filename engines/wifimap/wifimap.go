@@ -22,9 +22,9 @@ import (
 	"maps"
 	"net"
 	"offscan/internal/conv"
+	"offscan/internal/frame80211/dissector"
 	"offscan/internal/ifconfig"
-	"offscan/internal/pktdissector"
-	"offscan/internal/pktsniffer"
+	"offscan/internal/sniffer"
 	"sort"
 	"strings"
 	"sync"
@@ -50,7 +50,7 @@ type wifiData struct {
 type wifiMapper struct {
     wInfo     map[string]wifiData
     iface    *net.Interface
-    sniffer  *pktsniffer.Sniffer
+    sniffer  *sniffer.Sniffer
     mut       sync.Mutex
     cancel    chan struct{}
     wg        sync.WaitGroup
@@ -80,7 +80,7 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-    wm.sniffer  = pktsniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+    wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
     packetCh   := wm.sniffer.Start()
 
     fmt.Printf("[+] Sniffing beacons\n")
@@ -112,7 +112,7 @@ func getBPFFilter() string {
 
 
 func (wm *wifiMapper) dissectAndUpdate(tempBuf map[string]wifiData, beacon []byte) {
-    info, ok := pktdissector.DissecBeacon(beacon)
+    info, ok := dissector.DissecBeacon(beacon)
     
 	if !ok || len(info) < 5 {
         return
