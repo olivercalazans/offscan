@@ -23,7 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 
 	"offscan/internal/utils"
@@ -77,8 +76,6 @@ func (s *Sniffer) captureLoop() {
         utils.Abort(fmt.Sprintf("Failed to set filter: %v", err))
     }
 
-    source := gopacket.NewPacketSource(handle, handle.LinkType())
-
     for {
         select {
         
@@ -90,15 +87,17 @@ func (s *Sniffer) captureLoop() {
             return
         
 		default:
-            packet, err := source.NextPacket()
-
-			if err != nil {
+            data, _, err := handle.ReadPacketData()
+            if err != nil {
                 continue
             }
 
-			select {
-            	case s.resultCh <- packet.Data():
-				case <-s.stopChan: return
+            packetCopy := make([]byte, len(data))
+            copy(packetCopy, data)
+
+            select {
+            case s.resultCh <- packetCopy:
+            case <-s.stopChan: return
             }
         }
     }

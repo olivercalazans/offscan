@@ -18,114 +18,168 @@
 package dissector
 
 import (
+	"encoding/binary"
 	"net"
-
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 )
 
 
+
 type PacketDissector struct {
-    pkt  []byte
-
-    eth  layers.Ethernet
-	arp  layers.ARP
-	ipv4 layers.IPv4
-	tcp  layers.TCP
-	udp  layers.UDP
-
-	parser        *gopacket.DecodingLayerParser
-	decodedLayers []gopacket.LayerType
-
-	isARPReply bool
+    pkt     []byte
+    isARP   bool
 }
 
 
 
 func NewPacketDissector() *PacketDissector {
-	pd := &PacketDissector{
-		decodedLayers: []gopacket.LayerType{},
-	}
-
-    pd.parser = gopacket.NewDecodingLayerParser(
-		layers.LayerTypeEthernet,
-		&pd.eth, &pd.arp, &pd.ipv4, &pd.tcp, &pd.udp,
-	)
-
-    pd.parser.IgnoreUnsupported = true
-
-	return pd
+    return &PacketDissector{
+        pkt: make([]byte, 0),
+    }
 }
 
 
 
-func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
-	pd.pkt           = rawPkt
-	pd.isARPReply    = false
-	pd.decodedLayers = pd.decodedLayers[:0]
+func (pd *PacketDissector) UpdatePkt(rawPkt []byte) bool {
+	if len(rawPkt) < 28 { return false }
 
-	if err := pd.parser.DecodeLayers(pd.pkt, &pd.decodedLayers); err != nil {
+    pd.pkt = rawPkt
+    pd.isArpReply()
+	
+	return true
+}
+
+
+
+func (pd *PacketDissector) isIPv4() bool {
+    if len(pd.pkt) < 14 {
+        return false
+    }
+
+	ethertype := binary.BigEndian.Uint16(pd.pkt[12:14])
+    return ethertype == 0x0800
+}
+
+
+
+func (pd *PacketDissector) ihl() (uint8, bool) {
+    if len(pd.pkt) < 15 {
+        return 0, false
+    }
+
+	ihl := pd.pkt[14] & 0x0F
+
+	if ihl < 5 {
+        return 0, false
+    }
+
+	return ihl, true
+}
+
+
+
+func (pd *PacketDissector) ipHeaderLen() (int, bool) {
+    ihl, ok := pd.ihl()
+    
+	if !ok {
+        return 0, false
+    }
+    
+	return 14 + int(ihl)*4, true
+}
+
+
+
+func (pd *PacketDissector) isArpReply() {
+	if len(pd.pkt) < 42 {
+		pd.isARP = false
 		return
 	}
 
-	for _, layerType := range pd.decodedLayers {
-		if layerType == layers.LayerTypeARP && pd.arp.Operation == layers.ARPReply {
-			pd.isARPReply = true
-			break
-		}
+	etherType := (uint16(pd.pkt[12]) << 8) | uint16(pd.pkt[13])
+	if etherType != 0x0806 {
+		pd.isARP = false
+		return
 	}
+
+	operation := (uint16(pd.pkt[20]) << 8) | uint16(pd.pkt[21])
+	if operation != 2 {
+		pd.isARP = false
+		return
+	}
+
+    pd.isARP = true
+}
+
+
+
+func (pd *PacketDissector) isTCP() bool {
+    if len(pd.pkt) < 24 {
+        return false
+    }
+    
+	return pd.pkt[23] == 6
+}
+
+
+
+func (pd *PacketDissector) isUDP() bool {
+	if len(pd.pkt) < 24 {
+        return false
+    }
+
+	return pd.pkt[23] == 17
 }
 
 
 
 func (pd *PacketDissector) GetSrcMac() (net.HardwareAddr, bool) {
-	if pd.isARPReply {
-		return net.HardwareAddr(pd.arp.SourceHwAddress), true
-	}
+    if pd.isARP {
+        return net.HardwareAddr(pd.pkt[22:28]), true
+    }
 
-	if len(pd.decodedLayers) == 0 {
-		return nil, false
-	}
-
-    if pd.eth.SrcMAC != nil {
-		return pd.eth.SrcMAC, true
-	}
-
-    return nil, false
+    if len(pd.pkt) < 12 || !pd.isIPv4() {
+        return nil, false
+    }
+    
+	return net.HardwareAddr(pd.pkt[6:12]), true
 }
 
 
 
 func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
-	if pd.isARPReply {
-		return net.IP(pd.arp.SourceProtAddress), true
-	}
+    if pd.isARP {
+        return net.IP(pd.pkt[28:32]), true
+    }
 
-	for _, layerType := range pd.decodedLayers {
-		if layerType == layers.LayerTypeIPv4 {
-			return pd.ipv4.SrcIP, true
-		}
-	}
-
-    return nil, false
+    if len(pd.pkt) < 30 || !pd.isIPv4() {
+        return nil, false
+    }
+    
+	ip := net.IP(pd.pkt[26:30]).To4()
+    
+	if ip == nil {
+        return nil, false
+    }
+    
+	return ip, true
 }
 
 
 
 func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
-	hasIPv4 := false
-	hasTCP  := false
+    if len(pd.pkt) < 54 || !pd.isIPv4() || !pd.isTCP() {
+        return 0, false
+    }
 
-	for _, lt := range pd.decodedLayers {
-		switch lt {
-		case layers.LayerTypeIPv4 : hasIPv4 = true
-		case layers.LayerTypeTCP  : hasTCP  = true
-		}
-	}
+	offset, ok := pd.ipHeaderLen()
+    if !ok {
+        return 0, false
+    }
 
-	if hasIPv4 && hasTCP {
-		return uint16(pd.tcp.SrcPort), true
-	}
-	
-    return 0, false
+	if len(pd.pkt) < offset+2 {
+        return 0, false
+    }
+
+	port := binary.BigEndian.Uint16(pd.pkt[offset : offset+2])
+    return port, true
 }
