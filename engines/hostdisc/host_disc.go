@@ -29,7 +29,7 @@ import (
 	"offscan/internal/generators"
 	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
-	"offscan/internal/pktsniffer"
+	"offscan/internal/sniffer"
 	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
 )
@@ -52,7 +52,7 @@ type hostDiscovery struct {
     pkts       *packets
     protocols   protocols
     running     atomic.Bool
-    sniffer    *pktsniffer.Sniffer
+    sniffer    *sniffer.Sniffer
     snifferCh   <-chan []byte
     socket     *sockets.Layer3Socket
     wgPktProc   sync.WaitGroup

@@ -22,9 +22,9 @@ import (
 	"maps"
 	"net"
 	"offscan/internal/conv"
+	"offscan/internal/frame80211/dissector"
 	"offscan/internal/ifconfig"
-	"offscan/internal/pktdissector"
-	"offscan/internal/pktsniffer"
+	"offscan/internal/sniffer"
 	"sort"
 	"strings"
 	"sync"
@@ -50,7 +50,7 @@ type wifiData struct {
 type wifiMapper struct {
     wInfo     map[string]wifiData
     iface    *net.Interface
-    sniffer  *pktsniffer.Sniffer
+    sniffer  *sniffer.Sniffer
     mut       sync.Mutex
     cancel    chan struct{}
     wg        sync.WaitGroup
@@ -80,7 +80,7 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-    wm.sniffer  = pktsniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+    wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
     packetCh   := wm.sniffer.Start()
 
     fmt.Printf("[+] Sniffing beacons\n")
@@ -88,18 +88,7 @@ func (wm *wifiMapper) startBeaconProcessor() {
     wm.wg.Add(1)
     go func() {
         defer wm.wg.Done()
-
-        tempBuf := make(map[string]wifiData)
-        
-		for {
-			pkt, ok := <-packetCh
-            if !ok { break }
-            wm.dissectAndUpdate(tempBuf, pkt)
-        }
-
-        wm.mut.Lock()
-        maps.Copy(wm.wInfo, tempBuf)
-		wm.mut.Unlock()
+        wm.processPkts(packetCh)
     }()
 }
 
@@ -111,8 +100,29 @@ func getBPFFilter() string {
 
 
 
-func (wm *wifiMapper) dissectAndUpdate(tempBuf map[string]wifiData, beacon []byte) {
-    info, ok := pktdissector.DissecBeacon(beacon)
+func (wm *wifiMapper) processPkts(packetCh <-chan []byte) {
+    tempBuf   := make(map[string]wifiData)
+    dissector := dissector.NewBeaconDissector()
+        
+	for {
+		beacon, ok := <-packetCh
+        if !ok { break }
+        dissector.UpdatePkt(beacon)
+        wm.dissectAndUpdate(dissector, tempBuf)
+    }
+
+    wm.mut.Lock()
+    maps.Copy(wm.wInfo, tempBuf)
+	wm.mut.Unlock()
+}
+
+
+
+func (wm *wifiMapper) dissectAndUpdate(
+    dissector  *dissector.BeaconDissector,
+    tempBuf     map[string]wifiData,
+) {
+    info, ok := dissector.Dissec()
     
 	if !ok || len(info) < 5 {
         return

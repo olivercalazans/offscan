@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package pktbuilder
+package builder
 
 import (
 	"encoding/binary"
@@ -57,12 +57,6 @@ func (ih *ipHeader) setLen(layer4Len uint16) {
 
 func (ih *ipHeader) setProto(proto uint8) {
 	ih.header[9] = proto
-}
-
-
-
-func (ih *ipHeader) flushChecksum() {
-	binary.BigEndian.PutUint16(ih.header[10:12], 0)
 }
 
 

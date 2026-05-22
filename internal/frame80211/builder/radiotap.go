@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package frame80211
+package builder
 
 
 func minimalRariotapHeader(buffer []byte) {
