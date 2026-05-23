@@ -20,6 +20,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
@@ -100,9 +101,17 @@ func main() {
 func displayCommands() {
 	fmt.Println("# Available commands:")
 	
-    for name, handler := range registry {
-		fmt.Printf("  %-6s -> %s\n", name, handler.Desc)
-	}
-	
-    fmt.Printf("\nOBS.: Each command has its own --help\n")
+    keys := make([]string, 0, len(registry))
+    for k := range registry {
+        keys = append(keys, k)
+    }
+
+    sort.Strings(keys)
+
+    for _, k := range keys {
+        cmd := registry[k]
+        fmt.Printf("%-6s - %s\n", k, cmd.Desc)
+    }
+
+	fmt.Println("OBS.: Each command has its own flags.")
 }
