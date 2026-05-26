@@ -95,7 +95,7 @@ func (wm *wifiMapper) startBeaconProcessor() {
 
 
 func getBPFFilter() string {
-    return "type mgt and subtype beacon"
+    return "ether[36] == 0x80"
 }
 
 
@@ -254,17 +254,19 @@ func (wm *wifiMapper) displayResults() {
 
 
 func (wm *wifiMapper) displayHeader(maxLen int) {
-    fmt.Printf("\n%-*s  %-17s  %-3s  %s  %-8s  %s\n",
-        maxLen, "SSID", "BSSID", "Ch", "Freq", "Std", "Sec",
+    fmt.Printf("\n%-*s  %-4s  %-17s  %-3s  %-8s  %s\n",
+        maxLen, "SSID", "Freq", "BSSID", "Ch", "Std", "Sec",
     )
 
-	fmt.Printf("%s  %s  %s  %s  %s  %s\n",
-    strings.Repeat("-", maxLen),
-    strings.Repeat("-", 17),
-    strings.Repeat("-", 3),
-    strings.Repeat("-", 4),
-    strings.Repeat("-", 8),
-    strings.Repeat("-", 6))
+	fmt.Printf(
+        "%s  %s  %s  %s  %s  %s\n",
+        strings.Repeat("-", maxLen),
+        strings.Repeat("-", 4),
+        strings.Repeat("-", 17),
+        strings.Repeat("-", 3),
+        strings.Repeat("-", 8),
+        strings.Repeat("-", 6),
+    )
 }
 
 
@@ -281,13 +283,13 @@ func (wm *wifiMapper) displayWifiInfo(ssid string, info *wifiData, maxLen int) {
         firstBSSID = bssidStrs[0]
     }
 
-    line := fmt.Sprintf("%-*s  %-17s  %-3d  %sG  %-8s  %-4s\n",
-        maxLen, ssid, firstBSSID, info.Channel, info.Freq, info.Std, info.Sec)
+    line := fmt.Sprintf("%-*s  %-4s  %-17s  %-3d  %-8s  %-4s\n",
+        maxLen, ssid, info.Freq, firstBSSID, info.Channel, info.Std, info.Sec)
     
     fmt.Print(line)
 
     for i := 1; i < len(bssidStrs); i++ {
-        fmt.Printf("%-*s  %-17s\n", maxLen, "", bssidStrs[i])
+        fmt.Printf("%-*s  %-17s\n", maxLen + 6, "", bssidStrs[i])
     }
 
     sepLine := strings.Repeat("-", len(line))
