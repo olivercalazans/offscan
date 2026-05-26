@@ -95,7 +95,7 @@ func (wm *wifiMapper) startBeaconProcessor() {
 
 
 func getBPFFilter() string {
-    return "ether[36] == 0x80"
+    return "wlan type mgt subtype beacon"
 }
 
 
