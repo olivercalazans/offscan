@@ -35,7 +35,7 @@
 ## Dependencies
 
 This project uses **Go modules** to manage its dependencies.  
-If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/).
+If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/) to install the **latest version**.
 
 All Go dependencies are managed automatically via the `go.mod` file – no manual installation required.  
 You can find them listed in the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file.

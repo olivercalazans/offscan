@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"maps"
 	"net"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +32,7 @@ import (
 	"offscan/internal/packet/builder"
 	"offscan/internal/packet/dissector"
 	"offscan/internal/sniffer"
+	"offscan/internal/utils"
 
 	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
@@ -210,9 +210,8 @@ func (ps *portScanner) formatPorts() {
         fmt.Println("None")
         return
     }
-
-    iter       := maps.Keys(ps.openPorts)
-    portsSlice := slices.Sorted(iter)
+    
+    portsSlice := utils.SortKeys(ps.openPorts)
 
     portsStr := make([]string, len(portsSlice))
     for i, p := range portsSlice {

@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://gnu.org>.
+ * along with this program.  If not, see <https://www.gnu.org>.
  */
 
 package sniffer
@@ -36,6 +36,8 @@ import "C"
 
 import (
 	"fmt"
+	"offscan/internal/sysinfo"
+	"offscan/internal/utils"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -43,21 +45,26 @@ import (
 
 
 func (s *Sniffer) compileFilter() ([]unix.SockFilter, error) {
-	cFilterText := C.CString(s.filter)
-	defer C.free(unsafe.Pointer(cFilterText))
+    cFilterText := C.CString(s.filter)
+    defer C.free(unsafe.Pointer(cFilterText))
 
-	var bpfProg C.struct_bpf_program
+    var bpfProg C.struct_bpf_program
 
-	if res := C.compile_bpf_filter(1, cFilterText, &bpfProg); res < 0 {
-		return nil, fmt.Errorf("invalid BPF filter syntax")
+	linkType, err := sysinfo.GetIfaceLinkType(s.iface)
+
+	if err != nil {
+		utils.Abort(fmt.Sprintf("%v", err))
 	}
-	defer C.pcap_freecode(&bpfProg)
 
-	numInstructions := int(bpfProg.bf_len)
-	cInstructions   := unsafe.Slice((*unix.SockFilter)(unsafe.Pointer(bpfProg.bf_insns)), numInstructions)
+    if res := C.compile_bpf_filter(C.int(linkType), cFilterText, &bpfProg); res < 0 {
+        return nil, fmt.Errorf("Invalid BPF filter syntax")
+    }
+    defer C.pcap_freecode(&bpfProg)
 
-	goInstructions := make([]unix.SockFilter, numInstructions)
+    numInstructions := int(bpfProg.bf_len)
+    cInstructions   := unsafe.Slice((*unix.SockFilter)(unsafe.Pointer(bpfProg.bf_insns)), numInstructions)
+    goInstructions  := make([]unix.SockFilter, numInstructions)
+    
 	copy(goInstructions, cInstructions)
-
-	return goInstructions, nil
+    return goInstructions, nil
 }

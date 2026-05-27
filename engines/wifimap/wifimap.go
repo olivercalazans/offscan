@@ -25,7 +25,7 @@ import (
 	"offscan/internal/frame80211/dissector"
 	"offscan/internal/ifconfig"
 	"offscan/internal/sniffer"
-	"sort"
+	"offscan/internal/utils"
 	"strings"
 	"sync"
 	"time"
@@ -95,7 +95,7 @@ func (wm *wifiMapper) startBeaconProcessor() {
 
 
 func getBPFFilter() string {
-    return "ether[36] == 0x80"
+    return "wlan type mgt subtype beacon"
 }
 
 
@@ -234,20 +234,10 @@ func (wm *wifiMapper) displayResults() {
         }
     }
 
-    wifis    := wm.wInfo
-    wm.wInfo  = make(map[string]wifiData)
-
     wm.displayHeader(maxLen)
 
-    ssids := make([]string, 0, len(wifis))
-    for ssid := range wifis {
-        ssids = append(ssids, ssid)
-    }
-    sort.Strings(ssids)
-
-    for _, ssid := range ssids {
-        info := wifis[ssid]
-        wm.displayWifiInfo(ssid, &info, maxLen)
+    for _, ssid := range utils.SortKeys(wm.wInfo) {
+        wm.displayWifiInfo(ssid, maxLen)
     }
 }
 
@@ -271,20 +261,20 @@ func (wm *wifiMapper) displayHeader(maxLen int) {
 
 
 
-func (wm *wifiMapper) displayWifiInfo(ssid string, info *wifiData, maxLen int) {
-    bssidStrs := make([]string, 0, len(info.BSSIDs))
-    for bssid := range info.BSSIDs {
-        bssidStrs = append(bssidStrs, bssid)
-    }
-    sort.Strings(bssidStrs)
+func (wm *wifiMapper) displayWifiInfo(ssid string, maxLen int) {
+    info := wm.wInfo[ssid]
+
+    bssidStrs := utils.SortKeys(info.BSSIDs)
 
     firstBSSID := "N/A"
     if len(bssidStrs) > 0 {
         firstBSSID = bssidStrs[0]
     }
 
-    line := fmt.Sprintf("%-*s  %-4s  %-17s  %-3d  %-8s  %-4s\n",
-        maxLen, ssid, info.Freq, firstBSSID, info.Channel, info.Std, info.Sec)
+    line := fmt.Sprintf(
+        "%-*s  %-4s  %-17s  %-3d  %-8s  %-4s\n",
+        maxLen, ssid, info.Freq, firstBSSID, info.Channel, info.Std, info.Sec,
+    )
     
     fmt.Print(line)
 
