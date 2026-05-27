@@ -20,7 +20,6 @@ package dissector
 import (
 	"encoding/binary"
 	"fmt"
-	"net"
 )
 
 
@@ -107,13 +106,17 @@ func (dd *Dot11Dissector) GetSSID() string {
 
 
 
-func (dd *Dot11Dissector) GetBSSID() string {
-	if !dd.isBeacon {
-		return "unknown"
+func (dd *Dot11Dissector) GetBSSID() [6]byte {
+	var bssid [6]byte
+
+	if !dd.isBeacon || len(dd.frame) < 24 {
+		return bssid
 	}
 	
-	return net.HardwareAddr(dd.frame[16:22]).String()
+	copy(bssid[:], dd.frame[16:22])	
+	return bssid
 }
+
 
 
 

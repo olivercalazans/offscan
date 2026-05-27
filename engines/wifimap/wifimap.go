@@ -25,35 +25,36 @@ import (
 	"offscan/internal/frame80211/dissector"
 	"offscan/internal/ifconfig"
 	"offscan/internal/sniffer"
-	"offscan/internal/utils"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 )
 
 
-
 func Run(args []string) {
-    newWifiMapper(args).execute()
+	newWifiMapper(args).execute()
 }
+
 
 
 type wifiData struct {
-    BSSIDs   map[string]struct{}
-    Channel  uint8
-    Freq     string
-    Sec      string
-    Std      string
+	SSID  string
+	BSSID [6]byte
+	Chnl  uint8
+	Sec   string
+	Std   string
 }
 
 
+
 type wifiMapper struct {
-    wInfo     map[string]wifiData
-    iface    *net.Interface
-    sniffer  *sniffer.Sniffer
-    mut       sync.Mutex
-    cancel    chan struct{}
-    wg        sync.WaitGroup
+	wInfo   map[wifiData]struct{}
+	iface   *net.Interface
+	sniffer *sniffer.Sniffer
+	mut     sync.Mutex
+	cancel  chan struct{}
+	wg      sync.WaitGroup
 }
 
 
@@ -61,220 +62,226 @@ type wifiMapper struct {
 func newWifiMapper(argList []string) *wifiMapper {
 	args := ParseWmapArgs(argList)
 
-    return &wifiMapper{
-        wInfo: make(map[string]wifiData),
-        iface: conv.MustStrToIface(args.Iface),
-    }
+	return &wifiMapper{
+		wInfo: make(map[wifiData]struct{}),
+		iface: conv.MustStrToIface(args.Iface),
+	}
 }
 
 
 
 func (wm *wifiMapper) execute() {
-    wm.startBeaconProcessor()
-    wm.sniff2GChannels()
-    wm.sniff5GChannels()
-    wm.stopBeaconProcessor()
-    wm.displayResults()
+	wm.startBeaconProcessor()
+	wm.sniff2GChannels()
+	wm.sniff5GChannels()
+	wm.stopBeaconProcessor()
+	wm.displayResults()
 }
 
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-    wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
-    packetCh   := wm.sniffer.Start()
+	wm.sniffer = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+	packetCh := wm.sniffer.Start()
 
-    fmt.Printf("[+] Sniffing beacons\n")
+	fmt.Printf("[+] Sniffing beacons\n")
 
-    wm.wg.Add(1)
-    go func() {
-        defer wm.wg.Done()
-        wm.processPkts(packetCh)
-    }()
+	wm.wg.Add(1)
+	go func() {
+		defer wm.wg.Done()
+		wm.processPkts(packetCh)
+	}()
 }
 
 
 
 func getBPFFilter() string {
-    return "wlan type mgt subtype beacon"
+	return "wlan type mgt subtype beacon"
 }
 
 
 
 func (wm *wifiMapper) processPkts(packetCh <-chan []byte) {
-    tempBuf   := make(map[string]wifiData)
-    dissector := dissector.NewBeaconDissector()
-        
+	tempBuf := make(map[wifiData]struct{})
+	dissector := dissector.NewBeaconDissector()
+
 	for {
 		beacon, ok := <-packetCh
-        if !ok { break }
-        dissector.UpdatePkt(beacon)
-        wm.dissectAndUpdate(dissector, tempBuf)
-    }
+		if !ok {
+			break
+		}
+		dissector.UpdatePkt(beacon)
+		wm.dissectAndUpdate(dissector, tempBuf)
+	}
 
-    wm.mut.Lock()
-    maps.Copy(wm.wInfo, tempBuf)
+	wm.mut.Lock()
+	maps.Copy(wm.wInfo, tempBuf)
 	wm.mut.Unlock()
 }
 
 
 
 func (wm *wifiMapper) dissectAndUpdate(
-    dissector  *dissector.Dot11Dissector,
-    tempBuf     map[string]wifiData,
+	dissector *dissector.Dot11Dissector,
+	tempBuf map[wifiData]struct{},
 ) {
-	ssid     := dissector.GetSSID()
-    bssid    := dissector.GetBSSID()
-    chnl     := dissector.GetChannel()
-    sec      := dissector.GetSecurity()
-    freq     := getFrequency(chnl)
-    std      := dissector.GetStandard()
+	info := wifiData{
+		SSID:  dissector.GetSSID(),
+		BSSID: dissector.GetBSSID(),
+		Chnl:  dissector.GetChannel(),
+		Sec:   dissector.GetSecurity(),
+		Std:   dissector.GetStandard(),
+	}
 
-    wm.addInfo(tempBuf, ssid, bssid, chnl, freq, sec, std)
-}
-
-
-
-func getFrequency(chnl uint8) string {
-    if chnl <= 14 {
-        return "2.4"
-    }
-    return "5"
-}
-
-
-
-func (wm *wifiMapper) addInfo(
-	tempBuf  map[string]wifiData, 
-	ssid     string, 
-	bssid    string, 
-	chnl     uint8, 
-	freq     string,
-	sec      string,
-    std      string,
-) {
-    existing, ok := tempBuf[ssid]
-
-    if ok {
-        if _, ok := existing.BSSIDs[bssid]; ok {
-            return
-        }
-
-        existing.BSSIDs[bssid] = struct{}{} 
-        tempBuf[ssid]          = existing
-
-    } else {
-        tempBuf[ssid] = wifiData{
-   			BSSIDs  : map[string]struct{}{bssid: {}},
-			Channel : chnl,
-            Freq    : freq,
-            Sec     : sec,
-            Std     : std,
-        }
-    }
+	tempBuf[info] = struct{}{}
 }
 
 
 
 func (wm *wifiMapper) sniff2GChannels() {
-    channels := ifconfig.Channels2()
-    wm.sniffChannels(channels, "2.4")
+	channels := ifconfig.Channels2()
+	wm.sniffChannels(channels, "2.4")
 }
 
 
 
 func (wm *wifiMapper) sniff5GChannels() {
-    channels := ifconfig.Channels5()
-    wm.sniffChannels(channels, "5")
+	channels := ifconfig.Channels5()
+	wm.sniffChannels(channels, "5")
 }
 
 
 
 func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
-    var errChannels []int
+	var errChannels []int
 
 	for _, chnl := range channels {
-        ok := ifconfig.TrySetChannel(wm.iface, chnl)
+		ok := ifconfig.TrySetChannel(wm.iface, chnl)
 
 		if ok != nil {
-            errChannels = append(errChannels, chnl)
-            continue
-        }
+			errChannels = append(errChannels, chnl)
+			continue
+		}
 
 		time.Sleep(350 * time.Millisecond)
-    }
+	}
 
 	if len(errChannels) > 0 {
-        fmt.Printf("[!] Unable to sniff these channels (%sG):\n%v\n", freq, errChannels)
-    }
+		fmt.Printf("[!] Unable to sniff these channels (%sG):\n%v\n", freq, errChannels)
+	}
 }
 
 
 
 func (wm *wifiMapper) stopBeaconProcessor() {
-    wm.sniffer.Stop()
-    fmt.Printf("[-] Sniffer stopped\n")
-    wm.wg.Wait()
+	wm.sniffer.Stop()
+	fmt.Printf("[-] Sniffer stopped\n")
+	wm.wg.Wait()
+}
+
+
+
+func getBandPriority(canal uint8) int {
+	if canal >= 1 && canal <= 14 {
+		return 1
+	}
+
+	if canal >= 32 {
+		return 2
+	}
+	
+    return 3
 }
 
 
 
 func (wm *wifiMapper) displayResults() {
-    maxLen := 4
-    
-	for ssid := range wm.wInfo {
-        if len(ssid) > maxLen {
-            maxLen = len(ssid)
-        }
-    }
+	keys, maxLen := wm.extractKeysAndMaxLen()
+	wm.sortWifiData(keys)
+	wm.renderTable(keys, maxLen)
+}
 
-    wm.displayHeader(maxLen)
 
-    for _, ssid := range utils.SortKeys(wm.wInfo) {
-        wm.displayWifiInfo(ssid, maxLen)
-    }
+
+func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData, int) {
+	maxLen := 4
+	keys   := make([]wifiData, 0, len(wm.wInfo))
+	
+	for netData := range wm.wInfo {
+		keys = append(keys, netData)
+
+        if len(netData.SSID) > maxLen {
+			maxLen = len(netData.SSID)
+		}
+	}
+
+    return keys, maxLen
+}
+
+
+
+func (wm *wifiMapper) sortWifiData(keys []wifiData) {
+	slices.SortFunc(keys, func(a, b wifiData) int {
+		if a.SSID != b.SSID {
+			if a.SSID < b.SSID {
+				return -1
+			}
+			return 1
+		}
+
+		return int(a.Chnl) - int(b.Chnl)
+	})
+}
+
+
+
+
+func (wm *wifiMapper) renderTable(keys []wifiData, maxLen int) {
+	wm.displayHeader(maxLen)
+
+	for _, netData := range keys {
+		wm.displayWifiInfo(netData, maxLen)
+	}
 }
 
 
 
 func (wm *wifiMapper) displayHeader(maxLen int) {
-    fmt.Printf("\n%-*s  %-4s  %-17s  %-3s  %-8s  %s\n",
-        maxLen, "SSID", "Freq", "BSSID", "Ch", "Std", "Sec",
-    )
+	fmt.Printf(
+        "\n%-*s  %-4s  %-17s  %-3s  %-8s  %s\n",
+		maxLen, "SSID", "Freq", "BSSID", "Ch", "Std", "Sec",
+	)
 
 	fmt.Printf(
-        "%s  %s  %s  %s  %s  %s\n",
-        strings.Repeat("-", maxLen),
-        strings.Repeat("-", 4),
-        strings.Repeat("-", 17),
-        strings.Repeat("-", 3),
-        strings.Repeat("-", 8),
-        strings.Repeat("-", 6),
-    )
+		"%s  %s  %s  %s  %s  %s\n",
+		strings.Repeat("-", maxLen),
+		strings.Repeat("-", 4),
+		strings.Repeat("-", 17),
+		strings.Repeat("-", 3),
+		strings.Repeat("-", 8),
+		strings.Repeat("-", 6),
+	)
 }
 
 
 
-func (wm *wifiMapper) displayWifiInfo(ssid string, maxLen int) {
-    info := wm.wInfo[ssid]
+func (wm *wifiMapper) displayWifiInfo(netData wifiData, maxLen int) {
+	bssidStr := conv.Byte6ToStr(netData.BSSID)
 
-    bssidStrs := utils.SortKeys(info.BSSIDs)
+	line := fmt.Sprintf(
+		"%-*s  %-4s  %-17s  %-3d  %-8s  %-s\n",
+		maxLen, netData.SSID, getFrequency(netData.Chnl), 
+        bssidStr, netData.Chnl, netData.Std, netData.Sec,
+	)
 
-    firstBSSID := "N/A"
-    if len(bssidStrs) > 0 {
-        firstBSSID = bssidStrs[0]
-    }
+	fmt.Print(line)
+}
 
-    line := fmt.Sprintf(
-        "%-*s  %-4s  %-17s  %-3d  %-8s  %-4s\n",
-        maxLen, ssid, info.Freq, firstBSSID, info.Channel, info.Std, info.Sec,
-    )
-    
-    fmt.Print(line)
 
-    for i := 1; i < len(bssidStrs); i++ {
-        fmt.Printf("%-*s  %-17s\n", maxLen + 6, "", bssidStrs[i])
-    }
 
-    sepLine := strings.Repeat("-", len(line))
-    fmt.Println(sepLine)
+func getFrequency(chnl uint8) string {
+	if chnl <= 14 {
+		return "2.4"
+	}
+	return "5"
 }
