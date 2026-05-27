@@ -119,24 +119,17 @@ func (wm *wifiMapper) processPkts(packetCh <-chan []byte) {
 
 
 func (wm *wifiMapper) dissectAndUpdate(
-    dissector  *dissector.BeaconDissector,
+    dissector  *dissector.Dot11Dissector,
     tempBuf     map[string]wifiData,
 ) {
-    info, ok := dissector.Dissec()
-    
-	if !ok || len(info) < 5 {
-        return
-    }
-    
-	ssid     := info[0]
-    bssidStr := info[1]
-    chnl     := conv.StrToU8(info[2])
-    sec      := info[3]
-    bssid    := conv.MustStrToMac(bssidStr)
+	ssid     := dissector.GetSSID()
+    bssid    := dissector.GetBSSID()
+    chnl     := dissector.GetChannel()
+    sec      := dissector.GetSecurity()
     freq     := getFrequency(chnl)
-    std      := info[4]
+    std      := dissector.GetStandard()
 
-    wm.addInfo(tempBuf, ssid, bssid.String(), chnl, freq, sec, std)
+    wm.addInfo(tempBuf, ssid, bssid, chnl, freq, sec, std)
 }
 
 
