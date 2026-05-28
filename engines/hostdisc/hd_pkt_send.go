@@ -27,24 +27,20 @@ import (
 
 
 
-const delayBetween = 40 * time.Millisecond
+const delayBetween = 30 * time.Millisecond
 
 
 
 func (hd *hostDiscovery) sendProbes() {
-    delays  := generators.NewDelayIter(hd.delay, int(hd.ips.Total()))
     randGen := generators.NewRandomValues()
     hd.initPkts()
     
     var pktErr uint16 = 0
 
 	for {
-        dstIP, hasIP    := hd.ips.Next()
-        delay, hasDelay := delays.Next()
+        dstIP, hasIP := hd.ips.Next()
         
-        if !hasIP || !hasDelay  {
-            break
-        }
+        if !hasIP { break }
 
         if hd.protocols.arp {
             ok := hd.sendArpProbe(dstIP)
@@ -60,8 +56,6 @@ func (hd *hostDiscovery) sendProbes() {
             ok := hd.sendTcpProbe(dstIP, randGen.RandomPort())
             if !ok { pktErr++ }
         }
-
-        time.Sleep(time.Duration(delay * float64(time.Second)))
     }
 
     hd.stopSocket()
