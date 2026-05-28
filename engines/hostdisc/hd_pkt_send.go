@@ -27,7 +27,7 @@ import (
 
 
 
-const delayBetween = 30 * time.Millisecond
+const delay = 30 * time.Millisecond
 
 
 
@@ -87,7 +87,7 @@ func (hd *hostDiscovery) initPkts() {
 func (hd *hostDiscovery) sendArpProbe(dstIP net.IP) bool {
     pkt := hd.pkts.arp.L3RequestPkt(dstIP)
     hd.socket.SendTo(pkt, dstIP)
-    time.Sleep(delayBetween)
+    time.Sleep(delay)
     return true
 }
 
@@ -96,7 +96,7 @@ func (hd *hostDiscovery) sendArpProbe(dstIP net.IP) bool {
 func (hd *hostDiscovery) sendIcmpProbe(dstIP net.IP) bool {
     pkt := hd.pkts.icmp.L3PingPkt(hd.myIP, dstIP)    
     hd.socket.SendTo(pkt, dstIP)
-    time.Sleep(delayBetween)
+    time.Sleep(delay)
     return true
 }
 
@@ -105,7 +105,7 @@ func (hd *hostDiscovery) sendIcmpProbe(dstIP net.IP) bool {
 func (hd *hostDiscovery) sendTcpProbe(dstIP net.IP, srcPort uint16) bool {
     pkt := hd.pkts.tcp.L3SynPkt(hd.myIP, srcPort, dstIP, 80)
     hd.socket.SendTo(pkt, dstIP)
-    time.Sleep(delayBetween)
+    time.Sleep(delay)
     return true
 }
 

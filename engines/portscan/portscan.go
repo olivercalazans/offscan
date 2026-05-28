@@ -45,6 +45,8 @@ func Run(args []string) {
 }
 
 
+const delay = 30 * time.Millisecond
+
 
 type portScanner struct {
     iface      *net.Interface
@@ -52,7 +54,6 @@ type portScanner struct {
     targetIP    net.IP
     ports      *string
     random      bool
-    delay       string
     openPorts   map[uint16]struct{}
     mut         sync.Mutex
     wg          sync.WaitGroup
@@ -74,7 +75,6 @@ func newPortScanner(argList []string) *portScanner {
         targetIP  : dstIP,
         ports     : args.Ports,
         random    : args.Random,
-        delay     : args.Delay,
         openPorts : make(map[uint16]struct{}),
     }
 }
@@ -163,19 +163,17 @@ func (ps *portScanner) sendTcpProbes() {
     ps.socket  = sockets.NewL3Socket(ps.iface)
     randGen   := generators.NewRandomValues()
     portIter  := generators.NewPortIter(ps.ports, ps.random)
-    delayIter := generators.NewDelayIter(ps.delay, portIter.Len())
 
     for {
-        port,  hasPort  := portIter.Next()
-        delay, hasDelay := delayIter.Next()
+        port, hasPort := portIter.Next()
         
-        if !hasPort || !hasDelay { break }
+        if !hasPort { break }
         
 		srcPort := randGen.RandomPort()
         pkt     := builder.L3SynPkt(ps.myIP, srcPort, ps.targetIP, port)
         
         ps.socket.SendTo(pkt, ps.targetIP)
-        time.Sleep(time.Duration(float64(delay) * float64(time.Second)))
+        time.Sleep(delay)
     }
 
     ps.closeSocket()

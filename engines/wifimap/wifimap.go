@@ -181,20 +181,6 @@ func (wm *wifiMapper) stopBeaconProcessor() {
 
 
 
-func getBandPriority(canal uint8) int {
-	if canal >= 1 && canal <= 14 {
-		return 1
-	}
-
-	if canal >= 32 {
-		return 2
-	}
-	
-    return 3
-}
-
-
-
 func (wm *wifiMapper) displayResults() {
 	keys, maxLen := wm.extractKeysAndMaxLen()
 	wm.sortWifiData(keys)
@@ -232,7 +218,6 @@ func (wm *wifiMapper) sortWifiData(keys []wifiData) {
 		return int(a.Chnl) - int(b.Chnl)
 	})
 }
-
 
 
 
