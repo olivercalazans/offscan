@@ -44,7 +44,6 @@ func Run(args []string) {
 
 type hostDiscovery struct {
     activeIPs   map[[4]byte]hostInfo
-    delay       string
     ips        *generators.Ipv4Iter
     iface      *net.Interface
     mut         sync.Mutex
@@ -78,7 +77,6 @@ func newHostDisc(argList []string) *hostDiscovery {
         myIP      : ifaceinfo.MustIPv4(iface),
         socket    : sockets.NewL3Socket(iface),
         iface     : iface,
-        delay     : args.Delay,
         protocols : protoFlags(args, iface),
     }
 }

@@ -234,12 +234,3 @@ func (it *Ipv4Iter) Next() (net.IP, bool) {
     it.current++
     return ip, true
 }
-
-
-
-func (it *Ipv4Iter) Total() uint64 {
-    return it.total
-}
-
-
-

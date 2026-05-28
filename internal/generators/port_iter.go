@@ -168,9 +168,3 @@ func (pi *PortIter) Next() (uint16, bool) {
     
 	return port, true
 }
-
-
-
-func (pi *PortIter) Len() int {
-    return len(pi.ports)
-}

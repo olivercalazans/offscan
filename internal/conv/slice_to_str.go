@@ -17,16 +17,13 @@
 
 package conv
 
-import "strconv"
+import "fmt"
 
 
-
-func StrToU8(s string) uint8 {
-    n, err := strconv.ParseUint(s, 10, 8)
-
-    if err != nil {
-        return 0
-    }
-
-    return uint8(n)
+func Byte6ToStr(bytes [6]byte) string{
+	return fmt.Sprintf(
+		"%02x:%02x:%02x:%02x:%02x:%02x",
+		bytes[0], bytes[1], bytes[2], 
+		bytes[3], bytes[4], bytes[5],
+	)
 }
