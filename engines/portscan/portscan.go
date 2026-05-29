@@ -52,7 +52,7 @@ type portScanner struct {
     iface      *net.Interface
     myIP        net.IP
     targetIP    net.IP
-    ports      *string
+    ports       string
     random      bool
     openPorts   map[uint16]struct{}
     mut         sync.Mutex
@@ -64,8 +64,10 @@ type portScanner struct {
 
 
 func newPortScanner(argList []string) *portScanner {
-	args  := parsePortScanArgs(argList)
-	dstIP := conv.MustStrToIPv4(args.TargetIP)
+    parser  := newParser()
+	parser.parsePortScanArgs(argList)
+
+	dstIP := conv.MustStrToIPv4(parser.TargetIP)
 	iface := netroute.MustRouteIfaceForDstIP(dstIP)
 	myIP  := ifaceinfo.MustIPv4(iface)
     
@@ -73,8 +75,8 @@ func newPortScanner(argList []string) *portScanner {
         iface     : iface,
         myIP      : myIP,
         targetIP  : dstIP,
-        ports     : args.Ports,
-        random    : args.Random,
+        ports     : parser.Ports,
+        random    : parser.Random,
         openPorts : make(map[uint16]struct{}),
     }
 }

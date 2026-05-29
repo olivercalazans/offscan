@@ -17,38 +17,46 @@
 
 package portscan
 
-import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
+import "offscan/internal/argparser"
 
-	"github.com/jessevdk/go-flags"
+
+
+type portScanParser struct {
+    TargetIP  string
+    Ports     string
+    Random    bool
+}
+
+
+const (
+	target uint8 = 1
+	ports  uint8 = 2
+	random uint8 = 3
 )
 
 
 
-type portScanArgs struct {
-    TargetIP   string  `short:"t" long:"target" description:"Target IP" required:"true"`
-    Ports     *string  `short:"p" long:"ports" description:"Specific ports or ranges (e.g., 22,80 or 20-50)"`
-    Random     bool    `short:"r" long:"random" description:"Scan ports in random order"`
+func newParser() *portScanParser {
+	return &portScanParser{}
 }
 
 
 
-func parsePortScanArgs(args []string) *portScanArgs {
-    var opts portScanArgs
+func (psp *portScanParser) parsePortScanArgs(args []string) {
+    flags := []argparser.Flag{
+		{ID: target, Short: "t", Long: "target", HasValue: true,  Desc: "Target IP"},
+		{ID: ports,  Short: "p", Long: "ports",  HasValue: true,  Desc: "Specific ports or ranges (e.g., 22,80 or 20-50)"},		
+		{ID: random, Short: "r", Long: "random", HasValue: false, Desc: "Scan ports in random order"},		
+	}
 
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(args)
+	parser := argparser.NewArgParser(flags, args)
+	parser.ParseFlags()
 
-	if err != nil {
-        if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
+	for _, flag := range flags {
+		switch flag.ID {
+		case 1: psp.TargetIP = flag.ValueStr
+		case 2: psp.Ports    = flag.ValueStr
+		case 3: psp.Random   = flag.ValueBool
 		}
-        
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
-
-	return &opts
+	}
 }

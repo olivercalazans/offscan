@@ -20,17 +20,20 @@ package argparser
 import (
 	"fmt"
 	"offscan/internal/utils"
+	"slices"
+	"sort"
+	"strings"
 )
 
 
 type Flag struct {
-    destBool     *bool
-    destStr      *string
-    name          string
-    short         string
-    long          string
-    hasValue      bool
-    description   string
+    ID         uint8
+    ValueBool  bool
+    ValueStr   string
+    Short      string
+    Long       string
+    HasValue   bool
+    Desc       string
 }
 
 
@@ -53,15 +56,48 @@ func NewArgParser(flags []Flag, args []string) *ArgParser {
 
 func (ap *ArgParser) ParseFlags() {
     ap.saveAllFlags()
+    ap.verifyIfHasTheHelper()
     ap.parseFlagsWithValue()
+    ap.parseBoolFlags()
+    ap.checkForRemaining()
 }
 
 
 
 func (ap *ArgParser) saveAllFlags() {
     for _, flag := range ap.flagsInfo {
-        if flag.short != "" { ap.flags = append(ap.flags, flag.short) }
-        if flag.long  != "" { ap.flags = append(ap.flags, flag.long) }
+        if flag.Short != "" {
+            flag.Short = fmt.Sprintf("-%s", flag.Short)
+            ap.flags   = append(ap.flags, flag.Short)
+        }
+        
+        if flag.Long  != "" {
+            flag.Long = fmt.Sprintf("--%s", flag.Long)
+            ap.flags  = append(ap.flags, flag.Long)
+        }
+    }
+}
+
+
+
+func (ap *ArgParser) verifyIfHasTheHelper() {
+    indexShort := slices.Index(ap.args, "-h")
+    indexLong  := slices.Index(ap.args, "--help")
+
+    if indexShort > -1 || indexLong > -1 {
+        ap.displayDescriptions()
+    }
+}
+
+
+
+func (ap *ArgParser) displayDescriptions() {
+    sort.Slice(ap.flagsInfo, func(i, j int) bool {
+        return ap.flagsInfo[i].ID < ap.flagsInfo[j].ID
+    })
+
+    for _, f := range ap.flagsInfo {
+        fmt.Printf("%s, %s : %s\n", f.Short, f.Long, f.Desc)
     }
 }
 
@@ -69,26 +105,74 @@ func (ap *ArgParser) saveAllFlags() {
 
 func (ap *ArgParser) parseFlagsWithValue() {
 	for _, flag := range ap.flagsInfo {
-		if !flag.hasValue { continue }
+		if !flag.HasValue { continue }
 		
-		short, long := ap.checkForDuplicates(&flag)
+		short, long := ap.checkIfIsUsed(&flag)
 		
-		
+        if short { flag.ValueStr = ap.processFlagAndValue(flag.Short) }
+        if long  { flag.ValueStr = ap.processFlagAndValue(flag.Long)  }
 	}
 }
 
 
-func (ap *ArgParser) checkForDuplicates(flag *Flag) (uint8, uint8) {
+
+func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
 	var shortTimes, longTimes uint8 
 
 	for _, arg := range ap.args {
-		if arg == flag.short { shortTimes++ } 
-		if arg == flag.long  { longTimes++ }
+		if arg == flag.Short { shortTimes++ } 
+		if arg == flag.Long  { longTimes++  }
 	}
 
 	if shortTimes + longTimes > 1 {
-		utils.Abort(fmt.Sprintf("Flag used more than once: %s %s", flag.short, flag.long))
+		utils.Abort(fmt.Sprintf("Flag used more than once: %s %s", flag.Short, flag.Long))
 	}
 
-	return shortTimes, longTimes
+	return shortTimes > 0, longTimes > 0
+}
+
+
+
+func (ap *ArgParser) processFlagAndValue(flag string) string {
+    index := slices.Index(ap.args, flag)
+    value := ap.args[index + 1]
+    ap.validateValue(value, flag)
+    ap.args = slices.Delete(ap.args, index, index + 2)
+    return value
+}
+
+
+
+func (ap *ArgParser) validateValue(value, flag string) {
+    for _, arg := range ap.flags {
+        if arg == value {
+            utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
+        }
+    }
+}
+
+
+
+func (ap *ArgParser) parseBoolFlags() {
+    for _, flag := range ap.flagsInfo {
+		if flag.HasValue { continue }
+		
+		short, long := ap.checkIfIsUsed(&flag)
+		var index int
+
+        if short { index = slices.Index(ap.args, flag.Short) }
+        if long  { index = slices.Index(ap.args, flag.Long)  }
+
+        ap.args = slices.Delete(ap.args, index, index+1)
+        flag.ValueBool = short || long
+	}
+}
+
+
+
+func (ap *ArgParser) checkForRemaining() {
+    if len(ap.args) > 0 {
+        unknown := strings.Join(ap.args, ", ")
+        utils.Abort(fmt.Sprintf("Unknown flags: %s", unknown))
+    }
 }
