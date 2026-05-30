@@ -61,7 +61,7 @@ type wifiMapper struct {
 
 func newWifiMapper(argList []string) *wifiMapper {
 	parser := newParser()
-	parser.parsePortScanArgs(argList)
+	parser.parseWMapArgs(argList)
 
 	return &wifiMapper{
 		wInfo: make(map[wifiData]struct{}),

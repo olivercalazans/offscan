@@ -48,7 +48,7 @@ func newParser() *hostDiscParser {
 
 
 
-func (hdp *hostDiscParser) parsePortScanArgs(args []string) {
+func (hdp *hostDiscParser) parseHostDiscArgs(args []string) {
     flags := []argparser.Flag{
 		{ID: iface,   Short: "i", Long: "iface", HasValue: true, Desc: "Network interface to send packets (default: system default)"},
 		{ID: ipRange, Short: "r", Long: "range", HasValue: true, Desc: "IP range to scan"},		

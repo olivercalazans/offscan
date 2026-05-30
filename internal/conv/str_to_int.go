@@ -15,39 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package wifimap
+package conv
 
 import (
-	"offscan/internal/argparser"
+	"fmt"
+	"offscan/internal/utils"
+	"strconv"
 )
 
 
-type wmapParser struct {
-    Iface  string
-}
+func StrToInt(str string) int {
+	value, err := strconv.Atoi(str)
 
-
-const iface uint8 = 1	
-
-
-
-func newParser() *wmapParser {
-	return &wmapParser{}
-}
-
-
-
-func (wmp *wmapParser) parseWMapArgs(args []string) {
-    flags := []argparser.Flag{
-		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Interface to be used to sniff"},
+	if err != nil {
+		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
 	}
 
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
-
-	for _, flag := range flags {
-		switch flag.ID {
-		case iface : wmp.Iface = flag.ValueStr
-		}
-	}
+	return value
 }

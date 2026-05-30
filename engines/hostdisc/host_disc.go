@@ -61,7 +61,7 @@ type hostDiscovery struct {
 
 func newHostDisc(argList []string) *hostDiscovery {
     parser := newParser()
-    parser.parsePortScanArgs(argList)
+    parser.parseHostDiscArgs(argList)
 
 	var iface *net.Interface
 	if parser.iface == "" {
