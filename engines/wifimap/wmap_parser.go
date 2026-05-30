@@ -15,38 +15,44 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package wifimap
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
+	"offscan/internal/argparser"
 )
 
 
+type wmapParser struct {
+    Iface  string
+}
 
-type netInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
+
+const iface uint8 = 1	
+
+
+
+func newParser() *wmapParser {
+	return &wmapParser{}
 }
 
 
 
-func ParseNetInfoArgs(argList []string) *netInfoArgs {
-    var opts netInfoArgs
+func (wmp *wmapParser) parseWMapArgs(args []string) {
+    flags := []argparser.Flag{{
+			ID	     : iface, 
+			Short	 : "i", 
+			Long	 : "iface", 
+			HasValue : true, 
+			Req      : true, 
+			Desc	 : "Interface to be used to sniff",
+	},}
 
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
+	parser := argparser.NewArgParser(flags, args)
+	parser.ParseFlags()
 
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
+	for _, flag := range flags {
+		switch flag.ID {
+		case iface : wmp.Iface = flag.ValueStr
 		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
-
-	return &opts
+	}
 }

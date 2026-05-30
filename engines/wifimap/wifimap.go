@@ -60,11 +60,12 @@ type wifiMapper struct {
 
 
 func newWifiMapper(argList []string) *wifiMapper {
-	args := ParseWmapArgs(argList)
+	parser := newParser()
+	parser.parseWMapArgs(argList)
 
 	return &wifiMapper{
 		wInfo: make(map[wifiData]struct{}),
-		iface: conv.MustStrToIface(args.Iface),
+		iface: conv.MustStrToIface(parser.Iface),
 	}
 }
 
@@ -233,14 +234,13 @@ func (wm *wifiMapper) renderTable(keys []wifiData, maxLen int) {
 
 func (wm *wifiMapper) displayHeader(maxLen int) {
 	fmt.Printf(
-        "\n%-*s  %-4s  %-17s  %-3s  %-8s  %s\n",
-		maxLen, "SSID", "Freq", "BSSID", "Ch", "Std", "Sec",
+        "\n%-*s  %-17s  %-3s  %-8s  %s\n",
+		maxLen, "SSID", "BSSID", "Ch", "Std", "Sec",
 	)
 
 	fmt.Printf(
-		"%s  %s  %s  %s  %s  %s\n",
+		"%s  %s  %s  %s  %s\n",
 		strings.Repeat("-", maxLen),
-		strings.Repeat("-", 4),
 		strings.Repeat("-", 17),
 		strings.Repeat("-", 3),
 		strings.Repeat("-", 8),
@@ -254,19 +254,9 @@ func (wm *wifiMapper) displayWifiInfo(netData wifiData, maxLen int) {
 	bssidStr := conv.Byte6ToStr(netData.BSSID)
 
 	line := fmt.Sprintf(
-		"%-*s  %-4s  %-17s  %-3d  %-8s  %-s\n",
-		maxLen, netData.SSID, getFrequency(netData.Chnl), 
-        bssidStr, netData.Chnl, netData.Std, netData.Sec,
+		"%-*s  %-17s  %-3d  %-8s  %-s\n",
+		maxLen, netData.SSID, bssidStr, netData.Chnl, netData.Std, netData.Sec,
 	)
 
 	fmt.Print(line)
-}
-
-
-
-func getFrequency(chnl uint8) string {
-	if chnl <= 14 {
-		return "2.4"
-	}
-	return "5"
 }

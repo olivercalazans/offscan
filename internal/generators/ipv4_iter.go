@@ -38,7 +38,7 @@ type Ipv4Iter struct {
 
 
 
-func NewIpv4Iter(cidr string, rangeStr *string) *Ipv4Iter {
+func NewIpv4Iter(cidr string, rangeStr string) *Ipv4Iter {
     networkU32, broadcastU32 := parseCIDR(cidr)
 
     usableStart   := networkU32 + 1
@@ -47,8 +47,8 @@ func NewIpv4Iter(cidr string, rangeStr *string) *Ipv4Iter {
 
     var startRange, endRange uint32
     
-    if rangeStr != nil && *rangeStr != "" {
-        s := strings.TrimSpace(*rangeStr)
+    if rangeStr != "" {
+        s := strings.TrimSpace(rangeStr)
         startRange, endRange  = parseRange(s, usableStart, usableEnd, cidrHasUsable)
     
 	} else {

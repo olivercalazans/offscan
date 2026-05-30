@@ -34,14 +34,17 @@ func Run(args []string) {
 
 
 type ifaceConfig struct {
-	args  *ifConfArgs
+	args  *ifConfParser
 }
 
 
 
 func newIfaceConfig(args []string) *ifaceConfig {
+	parser := newParser()
+	parser.parseIfConfigArgs(args)
+
 	return &ifaceConfig{
-		args: parseIfConfigArgs(args),
+		args: parser,
 	}
 }
 

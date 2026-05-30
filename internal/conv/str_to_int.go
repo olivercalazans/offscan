@@ -15,40 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package portscan
+package conv
 
 import (
 	"fmt"
 	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
+	"strconv"
 )
 
 
-
-type portScanArgs struct {
-    TargetIP   string  `short:"t" long:"target" description:"Target IP" required:"true"`
-    Ports     *string  `short:"p" long:"ports" description:"Specific ports or ranges (e.g., 22,80 or 20-50)"`
-    Random     bool    `short:"r" long:"random" description:"Scan ports in random order"`
-}
-
-
-
-func parsePortScanArgs(args []string) *portScanArgs {
-    var opts portScanArgs
-
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(args)
+func StrToInt(str string) int {
+	value, err := strconv.Atoi(str)
 
 	if err != nil {
-        if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
-		}
-        
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
+		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
+	}
 
-	return &opts
+	return value
 }

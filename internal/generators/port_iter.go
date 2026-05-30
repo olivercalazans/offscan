@@ -35,13 +35,13 @@ type PortIter struct {
 
 
 
-func NewPortIter(portsStr *string, random bool) *PortIter {
+func NewPortIter(portsStr string, random bool) *PortIter {
     var portsSet map[uint16]bool
 
-    if portsStr == nil || *portsStr == "" {
+    if portsStr == "" {
         portsSet = getDefaultPortsSet()
     } else {
-        portsSet = parsePorts(*portsStr)
+        portsSet = parsePorts(portsStr)
     }
 
 

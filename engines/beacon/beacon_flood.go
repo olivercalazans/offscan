@@ -49,16 +49,17 @@ type beaconFlood struct {
 
 
 func newBeaconFlooder(argList []string) *beaconFlood {
-	bcArgs := parseArgs(argList)
+    parser := newParser()
+    parser.parseBcFloodArgs(argList)
 
-    ifconfig.MustSetChannel(bcArgs.Iface, bcArgs.Channel)
+    ifconfig.MustSetChannel(parser.iface, parser.channel)
 
     return &beaconFlood{
-        channel : uint8(bcArgs.Channel),
-        ssid    : bcArgs.Ssid,
+        channel : uint8(parser.channel),
+        ssid    : parser.ssid,
         bcSent  : 0,
         builder : builder.NewBeacon(),
-        socket  : sockets.NewL2Socket(bcArgs.Iface),
+        socket  : sockets.NewL2Socket(parser.iface),
         randGen : generators.NewRandomValues(),
     }
 }

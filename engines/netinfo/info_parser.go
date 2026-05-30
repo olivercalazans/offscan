@@ -15,40 +15,39 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifconf
+package netinfo
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
+	"offscan/internal/argparser"
 )
 
 
+type netInfoParser struct {
+    Iface  string
+}
 
-type ifConfArgs struct {
-	Iface  string  `short:"i" long:"iface" description:"Interface to set mode" required:"true"`
-	Man    bool    `long:"man" description:"Set interface on managed mode"`
-    Mon    bool    `long:"mon" description:"Set interface on monitor mode"`
+
+const iface uint8 = 1	
+
+
+
+func newParser() *netInfoParser {
+	return &netInfoParser{}
 }
 
 
 
-func parseIfConfigArgs(args []string) *ifConfArgs {
-    var opts ifConfArgs
+func (nip *netInfoParser) parseNetInfoArgs(args []string) {
+    flags := []argparser.Flag{
+		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Define a network interface to get information (optional)"},
+	}
 
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(args)
+	parser := argparser.NewArgParser(flags, args)
+	parser.ParseFlags()
 
-	if err != nil {
-        if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
+	for _, flag := range flags {
+		switch flag.ID {
+		case iface : nip.Iface = flag.ValueStr
 		}
-        
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
-
-	return &opts
+	}
 }

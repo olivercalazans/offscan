@@ -49,29 +49,30 @@ type deauthentication struct {
 
 
 func newDeauth(argList []string) *deauthentication {
-    args := ParseArgs(argList)
+    parser := newParser()
+    parser.parseDeauthArgs(argList)
     
-    ifconfig.MustSetChannel(args.Iface, args.Channel)
-    displayInfo(args)
+    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    displayInfo(parser)
 
     return &deauthentication{
-        builder   : builder.NewDeauthFrame(args.Bssid),
+        builder   : builder.NewDeauthFrame(parser.bssid),
         frmsSent  : 0,
         seqNum    : 1,
-        socket    : sockets.NewL2Socket(args.Iface),
-        targetMac : args.TargetMac,
-        apMac     : args.Bssid,
-        delay     : time.Duration(args.Delay) * time.Millisecond,
+        socket    : sockets.NewL2Socket(parser.iface),
+        targetMac : parser.targetMac,
+        apMac     : parser.bssid,
+        delay     : time.Duration(parser.delay) * time.Millisecond,
     }
 }
 
 
 
-func displayInfo(args *deauthArgs) {
-    fmt.Printf("[*] IFACE...: %s\n", args.Iface.Name)
-    fmt.Printf("[*] BSSID...: %s\n", args.Bssid.String())
-    fmt.Printf("[*] TARGET..: %s\n", args.TargetMac.String())
-    fmt.Printf("[*] CHANNEL.: %d\n", args.Channel)
+func displayInfo(args *deauthParser) {
+    fmt.Printf("[*] IFACE...: %s\n", args.iface.Name)
+    fmt.Printf("[*] BSSID...: %s\n", args.bssid.String())
+    fmt.Printf("[*] TARGET..: %s\n", args.targetMac.String())
+    fmt.Printf("[*] CHANNEL.: %d\n", args.channel)
 }
 
 

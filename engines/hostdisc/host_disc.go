@@ -60,48 +60,49 @@ type hostDiscovery struct {
 
 
 func newHostDisc(argList []string) *hostDiscovery {
-    var args *hostDiscArgs = ParseNetMapArgs(argList)
+    parser := newParser()
+    parser.parseHostDiscArgs(argList)
 
 	var iface *net.Interface
-	if args.Iface == nil {
+	if parser.iface == "" {
 		iface = sysinfo.MustDefaultInterface()
 	} else {
-		iface = conv.MustStrToIface(*args.Iface)
+		iface = conv.MustStrToIface(parser.iface)
 	}
 
 	cidr := ifaceinfo.MustCIDR(iface)
 
     return &hostDiscovery{
         activeIPs : make(map[[4]byte]hostInfo),
-        ips       : generators.NewIpv4Iter(cidr, args.Range),
+        ips       : generators.NewIpv4Iter(cidr, parser.ipRange),
         myIP      : ifaceinfo.MustIPv4(iface),
         socket    : sockets.NewL3Socket(iface),
         iface     : iface,
-        protocols : protoFlags(args, iface),
+        protocols : protoFlags(parser, iface),
     }
 }
 
 
 
-func protoFlags(args *hostDiscArgs, iface *net.Interface) protocols {
+func protoFlags(parser *hostDiscParser, iface *net.Interface) protocols {
     prots := protocols{
         arp  : true,
         icmp : true,
         tcp  : true,
     }
 
-    if args.Arp || args.Icmp || args.Tcp {
-        prots.arp  = args.Arp
-        prots.icmp = args.Icmp
-        prots.tcp  = args.Tcp
+    if parser.arp || parser.icmp || parser.tcp {
+        prots.arp  = parser.arp
+        prots.icmp = parser.icmp
+        prots.tcp  = parser.tcp
 
         return prots
     }
     
     isLocal := true
 
-    if args.Range != nil {
-        for _, ip := range strings.Split(*args.Range, "*") {
+    if parser.ipRange != "" {
+        for _, ip := range strings.Split(parser.ipRange, "*") {
             ipv4    := conv.MustStrToIPv4(ip)
             isLocal  = isLocal && netroute.IsLocal(iface, ipv4)
         }
