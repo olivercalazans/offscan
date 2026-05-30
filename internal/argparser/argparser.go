@@ -87,7 +87,7 @@ func (ap *ArgParser) verifyIfHasTheHelper() {
     indexShort := slices.Index(ap.args, "-h")
     indexLong  := slices.Index(ap.args, "--help")
 
-    if indexShort > -1 || indexLong > -1 {
+    if (indexShort > -1 || indexLong > -1) && len(ap.args) == 1 {
         ap.displayDescriptions()
     }
 }
@@ -159,6 +159,10 @@ func (ap *ArgParser) validateValue(flag string, flagIndex int) string {
     }
 
     value := ap.args[valueIndex]
+
+    if strings.HasPrefix(value, "-") {
+        utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
+    }
 
     for _, arg := range ap.flagList {
         if arg == value {

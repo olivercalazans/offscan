@@ -18,34 +18,36 @@
 package wifimap
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
+	"offscan/internal/argparser"
 )
 
 
-type wmapArgs struct {
-    Iface  string  `short:"i" long:"iface" description:"Interface to be used to get the beacons" required:"true"`
+type wmapParser struct {
+    Iface  string
+}
+
+
+const iface uint8 = 1	
+
+
+
+func newParser() *wmapParser {
+	return &wmapParser{}
 }
 
 
 
-func ParseWmapArgs(args []string) *wmapArgs {
-    var opts wmapArgs
-    
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(args)
-    
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
+func (wmp *wmapParser) parsePortScanArgs(args []string) {
+    flags := []argparser.Flag{
+		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Interface to be used to sniff"},
+	}
+
+	parser := argparser.NewArgParser(flags, args)
+	parser.ParseFlags()
+
+	for _, flag := range flags {
+		switch flag.ID {
+		case iface : wmp.Iface = flag.ValueStr
 		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
-    
-	return &opts
+	}
 }

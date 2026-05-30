@@ -18,7 +18,6 @@
 package portscan
 
 import (
-	"fmt"
 	"offscan/internal/argparser"
 )
 
@@ -62,6 +61,4 @@ func (psp *portScanParser) parsePortScanArgs(args []string) {
 		case random : psp.Random   = flag.ValueBool
 		}
 	}
-
-	if psp.Random {fmt.Println("okflag")}
 }
