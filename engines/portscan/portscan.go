@@ -64,13 +64,13 @@ type portScanner struct {
 
 
 func newPortScanner(argList []string) *portScanner {
-    parser  := newParser()
+    parser := newParser()
 	parser.parsePortScanArgs(argList)
 
 	dstIP := conv.MustStrToIPv4(parser.TargetIP)
 	iface := netroute.MustRouteIfaceForDstIP(dstIP)
 	myIP  := ifaceinfo.MustIPv4(iface)
-    
+
     return &portScanner{
         iface     : iface,
         myIP      : myIP,
@@ -94,9 +94,12 @@ func (ps *portScanner) execute() {
 
 
 func (ps *portScanner) displayInfo() {
+    var scan string
+    if ps.random { scan = "Random" } else { scan = "Serial" }
+
 	fmt.Printf("[*] Iface...: %s\n", ps.iface.Name)
     fmt.Printf("[*] Target..: %s\n", ps.targetIP.String())
-    fmt.Printf("[*] Proto...: TCP\n")
+    fmt.Printf("[*] Proto...: TCP (%s)\n", scan)
 }
 
 

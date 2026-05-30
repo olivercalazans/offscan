@@ -20,6 +20,7 @@ package argparser
 import (
 	"fmt"
 	"offscan/internal/utils"
+	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -38,17 +39,17 @@ type Flag struct {
 
 
 type ArgParser struct {
-    flagsInfo  []Flag
-    flags      []string
-    args       []string
+    flags     []Flag
+    flagList  []string
+    args      []string
 }
 
 
 
 func NewArgParser(flags []Flag, args []string) *ArgParser {
     return &ArgParser{
-		flagsInfo : flags,
-        args      : args,
+		flags : flags,
+        args  : args,
 	}
 }
 
@@ -65,15 +66,17 @@ func (ap *ArgParser) ParseFlags() {
 
 
 func (ap *ArgParser) saveAllFlags() {
-    for _, flag := range ap.flagsInfo {
+    for i := range ap.flags {
+        flag := &ap.flags[i]
+        
         if flag.Short != "" {
-            flag.Short = fmt.Sprintf("-%s", flag.Short)
-            ap.flags   = append(ap.flags, flag.Short)
+            flag.Short  = fmt.Sprintf("-%s", flag.Short)
+            ap.flagList = append(ap.flagList, flag.Short)
         }
         
         if flag.Long  != "" {
-            flag.Long = fmt.Sprintf("--%s", flag.Long)
-            ap.flags  = append(ap.flags, flag.Long)
+            flag.Long   = fmt.Sprintf("--%s", flag.Long)
+            ap.flagList = append(ap.flagList, flag.Long)
         }
     }
 }
@@ -92,22 +95,28 @@ func (ap *ArgParser) verifyIfHasTheHelper() {
 
 
 func (ap *ArgParser) displayDescriptions() {
-    sort.Slice(ap.flagsInfo, func(i, j int) bool {
-        return ap.flagsInfo[i].ID < ap.flagsInfo[j].ID
+    sort.Slice(ap.flags, func(i, j int) bool {
+        return ap.flags[i].ID < ap.flags[j].ID
     })
 
-    for _, f := range ap.flagsInfo {
+    for _, f := range ap.flags {
         fmt.Printf("%s, %s : %s\n", f.Short, f.Long, f.Desc)
     }
+
+    os.Exit(0)
 }
 
 
 
 func (ap *ArgParser) parseFlagsWithValue() {
-	for _, flag := range ap.flagsInfo {
+    if len(ap.args) <= 0 { return }
+
+    for i := range ap.flags {
+        flag := &ap.flags[i]
 		if !flag.HasValue { continue }
 		
-		short, long := ap.checkIfIsUsed(&flag)
+		short, long := ap.checkIfIsUsed(flag)
+        if !short && !long { continue }
 		
         if short { flag.ValueStr = ap.processFlagAndValue(flag.Short) }
         if long  { flag.ValueStr = ap.processFlagAndValue(flag.Long)  }
@@ -134,36 +143,50 @@ func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
 
 
 func (ap *ArgParser) processFlagAndValue(flag string) string {
-    index := slices.Index(ap.args, flag)
-    value := ap.args[index + 1]
-    ap.validateValue(value, flag)
-    ap.args = slices.Delete(ap.args, index, index + 2)
+    index   := slices.Index(ap.args, flag)
+    value   := ap.validateValue(flag, index)
+    ap.args  = slices.Delete(ap.args, index, index + 2)
     return value
 }
 
 
 
-func (ap *ArgParser) validateValue(value, flag string) {
-    for _, arg := range ap.flags {
+func (ap *ArgParser) validateValue(flag string, flagIndex int) string {
+    valueIndex := flagIndex + 1
+
+    if valueIndex >= len(ap.args) {
+        utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
+    }
+
+    value := ap.args[valueIndex]
+
+    for _, arg := range ap.flagList {
         if arg == value {
             utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
         }
     }
+
+    return value
 }
 
 
 
 func (ap *ArgParser) parseBoolFlags() {
-    for _, flag := range ap.flagsInfo {
+    if len(ap.args) <= 0 { return }
+
+    for i := range ap.flags {
+        flag := &ap.flags[i]
 		if flag.HasValue { continue }
 		
-		short, long := ap.checkIfIsUsed(&flag)
+        short, long := ap.checkIfIsUsed(flag)
+        if !short && !long { continue }
+
 		var index int
 
         if short { index = slices.Index(ap.args, flag.Short) }
         if long  { index = slices.Index(ap.args, flag.Long)  }
 
-        ap.args = slices.Delete(ap.args, index, index+1)
+        ap.args        = slices.Delete(ap.args, index, index + 1)
         flag.ValueBool = short || long
 	}
 }
