@@ -116,8 +116,8 @@ func (ap *ArgParser) getFlagMaxLen() int {
     var maxLen int
 
     for _, f := range ap.flags {
-        tempStr := getFormatedFlags(&f)
-        len     := len(tempStr)
+        str := getFormatedFlags(&f)
+        len := len(str)
         
         if len > maxLen { maxLen = len }
     }
@@ -167,7 +167,8 @@ func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
 	}
 
 	if shortTimes + longTimes > 1 {
-		utils.Abort(fmt.Sprintf("Flag used more than once: %s %s", flag.Short, flag.Long))
+        str := getFormatedFlags(flag)
+		utils.Abort(fmt.Sprintf("Flag used more than once: %s", str))
 	}
 
 	return shortTimes > 0, longTimes > 0
@@ -177,8 +178,8 @@ func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
 
 func abortIfRequired(flag *Flag) {
     if flag.Req {
-        tempStr := getFormatedFlags(flag)
-        utils.Abort(fmt.Sprintf("Missing required flag: %s (%s)", tempStr, flag.Desc))
+        str := getFormatedFlags(flag)
+        utils.Abort(fmt.Sprintf("Missing required flag: %s (%s)", str, flag.Desc))
     }
 }
 
