@@ -40,8 +40,11 @@ type ifaceConfig struct {
 
 
 func newIfaceConfig(args []string) *ifaceConfig {
+	parser := newParser()
+	parser.parseIfConfigArgs(args)
+
 	return &ifaceConfig{
-		args: parseIfConfigArgs(args),
+		args: parser,
 	}
 }
 
