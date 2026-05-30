@@ -99,11 +99,34 @@ func (ap *ArgParser) displayDescriptions() {
         return ap.flags[i].ID < ap.flags[j].ID
     })
 
+    descLen := ap.getFlagMaxLen()
+
     for _, f := range ap.flags {
-        fmt.Printf("%s, %s : %s\n", f.Short, f.Long, f.Desc)
+        var flags []string
+        if f.Short != "" { flags = append(flags, f.Short) }
+		if f.Long  != "" { flags = append(flags, f.Long)  }
+        fmt.Printf("%-*s : %s\n", descLen, strings.Join(flags[:], ", "), f.Desc)
     }
 
     os.Exit(0)
+}
+
+
+
+func (ap *ArgParser) getFlagMaxLen() int {
+    var maxLen int
+
+    for _, f := range ap.flags {
+        var flags []string
+        if f.Short != "" { flags = append(flags, f.Short) }
+		if f.Long  != "" { flags = append(flags, f.Long)  }
+        tempStr := strings.Join(flags[:], ", ")
+        len     := len(tempStr)
+        
+        if len > maxLen { maxLen = len }
+    }
+
+    return maxLen
 }
 
 
