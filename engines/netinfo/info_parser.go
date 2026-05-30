@@ -18,35 +18,36 @@
 package netinfo
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
+	"offscan/internal/argparser"
 )
 
 
+type netInfoParser struct {
+    Iface  string
+}
 
-type netInfoArgs struct {
-    Iface string `short:"i" long:"iface" description:"Define a network interface to get information (optional)" value-name:"IFACE"`
+
+const iface uint8 = 1	
+
+
+
+func newParser() *netInfoParser {
+	return &netInfoParser{}
 }
 
 
 
-func ParseNetInfoArgs(argList []string) *netInfoArgs {
-    var opts netInfoArgs
+func (nip *netInfoParser) parseNetInfoArgs(args []string) {
+    flags := []argparser.Flag{
+		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Define a network interface to get information (optional)"},
+	}
 
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(argList)
+	parser := argparser.NewArgParser(flags, args)
+	parser.ParseFlags()
 
-	if err != nil {
-		if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
+	for _, flag := range flags {
+		switch flag.ID {
+		case iface : nip.Iface = flag.ValueStr
 		}
-		
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
-
-	return &opts
+	}
 }

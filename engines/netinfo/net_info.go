@@ -54,13 +54,14 @@ type networkInfo struct {
 
 
 func newNetInfo(argList []string) *networkInfo {
-	args := ParseNetInfoArgs(argList)
+    parser := newParser()
+	parser.parseNetInfoArgs(argList)
     var ifaceList []net.Interface
 
-    if  args.Iface == "" {
+    if  parser.Iface == "" {
         ifaceList = sysinfo.MustAllIfaces()
     } else {
-        ifaceList = append(ifaceList, *conv.MustStrToIface(args.Iface))
+        ifaceList = append(ifaceList, *conv.MustStrToIface(parser.Iface))
     }
 
     return &networkInfo{
