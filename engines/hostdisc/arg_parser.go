@@ -18,39 +18,55 @@
 package hostdisc
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"os"
-
-	"github.com/jessevdk/go-flags"
+	"offscan/internal/argparser"
 )
 
 
 
-type hostDiscArgs struct {
-    Iface  *string  `short:"i" long:"iface" description:"Network interface to send packets (default: system default)"`
-    Range  *string  `short:"r" long:"range" description:"IP range to scan"`
-	Arp     bool    `long:"arp" description:"Use only/and ARP probes"`
-    Icmp    bool    `long:"icmp" description:"Use only/and ICMP probes"`
-    Tcp     bool    `long:"tcp" description:"Use only/and TCP probes"`
+type hostDiscParser struct {
+    iface  string
+    ipRange  string
+	arp    bool
+    icmp   bool
+    tcp    bool
+}
+
+
+const (
+	iface   uint8 = 1
+	ipRange uint8 = 2
+	arp     uint8 = 3
+	icmp    uint8 = 4
+	tcp     uint8 = 5
+)
+
+
+
+func newParser() *hostDiscParser {
+	return &hostDiscParser{}
 }
 
 
 
-func ParseNetMapArgs(args []string) *hostDiscArgs {
-    var opts hostDiscArgs
-    
-	parser := flags.NewParser(&opts, flags.HelpFlag)
-    _, err := parser.ParseArgs(args)
-    
-	if err != nil {
-        if flags.WroteHelp(err) {
-			fmt.Printf("%v", err)
-			os.Exit(0)
+func (hdp *hostDiscParser) parsePortScanArgs(args []string) {
+    flags := []argparser.Flag{
+		{ID: iface,   Short: "i", Long: "iface", HasValue: true, Desc: "Network interface to send packets (default: system default)"},
+		{ID: ipRange, Short: "r", Long: "range", HasValue: true, Desc: "IP range to scan"},		
+		{ID: arp,  Long: "arp",  HasValue: false, Desc: "Use only/and ARP probes"},		
+		{ID: icmp, Long: "icmp", HasValue: false, Desc: "Use only/and ICMP probes"},		
+		{ID: tcp,  Long: "tcp",  HasValue: false, Desc: "Use only/and TCP probes"},		
+	}
+
+	parser := argparser.NewArgParser(flags, args)
+	parser.ParseFlags()
+
+	for _, flag := range flags {
+		switch flag.ID {
+		case iface   : hdp.iface   = flag.ValueStr
+		case ipRange : hdp.ipRange = flag.ValueStr
+		case arp     : hdp.arp     = flag.ValueBool
+		case icmp    : hdp.icmp    = flag.ValueBool
+		case tcp     : hdp.tcp     = flag.ValueBool 
 		}
-        
-        utils.Abort(fmt.Sprintf("Unable to create argument parser: %v", err))
-    }
-    
-	return &opts
+	}
 }

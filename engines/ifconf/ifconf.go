@@ -34,7 +34,7 @@ func Run(args []string) {
 
 
 type ifaceConfig struct {
-	args  *ifConfArgs
+	args  *ifConfParser
 }
 
 

@@ -21,7 +21,7 @@ import "offscan/internal/argparser"
 
 
 
-type ifConfArgs struct {
+type ifConfParser struct {
 	Iface  string
 	Man    bool
     Mon    bool
@@ -36,13 +36,13 @@ const (
 
 
 
-func newParser() *ifConfArgs {
-	return &ifConfArgs{}
+func newParser() *ifConfParser {
+	return &ifConfParser{}
 }
 
 
 
-func (ica *ifConfArgs) parseIfConfigArgs(args []string) {
+func (icp *ifConfParser) parseIfConfigArgs(args []string) {
     flags := []argparser.Flag{
 		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Interface to set mode"},
 		{ID: mon,   Short: "",  Long: "mon",   HasValue: false, Desc: "Set interface on monitor mode"},
@@ -54,9 +54,9 @@ func (ica *ifConfArgs) parseIfConfigArgs(args []string) {
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case iface : ica.Iface = flag.ValueStr
-		case mon   : ica.Mon   = flag.ValueBool
-		case man   : ica.Man   = flag.ValueBool
+		case iface : icp.Iface = flag.ValueStr
+		case mon   : icp.Mon   = flag.ValueBool
+		case man   : icp.Man   = flag.ValueBool
 		}
 	}
 }

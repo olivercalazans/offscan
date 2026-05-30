@@ -27,7 +27,7 @@ import (
 
 
 
-const delay = 30 * time.Millisecond
+const delay = 40 * time.Millisecond
 
 
 
