@@ -46,7 +46,7 @@ func newParser() *portScanParser {
 
 func (psp *portScanParser) parsePortScanArgs(args []string) {
     flags := []argparser.Flag{
-		{ID: target, Short: "t", Long: "target", HasValue: true,  Desc: "Target IP"},
+		{ID: target, Short: "t", Long: "target", HasValue: true,  Req: true,  Desc: "Target IP"},
 		{ID: ports,  Short: "p", Long: "ports",  HasValue: true,  Desc: "Specific ports or ranges (e.g., 22,80 or 20-50)"},		
 		{ID: random, Short: "r", Long: "random", HasValue: false, Desc: "Scan ports in random order"},		
 	}

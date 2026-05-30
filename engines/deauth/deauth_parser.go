@@ -38,8 +38,8 @@ const (
 	iface     uint8 = 1
 	targetMac uint8 = 2
 	bssid     uint8 = 3
-	delay     uint8 = 4
-	channel   uint8 = 5
+	channel   uint8 = 4
+	delay     uint8 = 5
 )
 
 
@@ -52,23 +52,30 @@ func newParser() *deauthParser {
 
 func (dp *deauthParser) parseDeauthArgs(args []string) {
     flags := []argparser.Flag{
-		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Desc: "Network interface to send frames"},
-		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Desc: "Target MAC"},		
-		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Desc: "BSSID"},		
+		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
+		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Req: true, Desc: "Target MAC"},		
+		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Req: true, Desc: "BSSID"},		
+		{ID: channel,   Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
 		{ID: delay,     Short: "d", Long: "delay",   HasValue: true, Desc: "Delay in ms"},		
-		{ID: channel,   Short: "c", Long: "channel", HasValue: true, Desc: "Channel"},		
 	}
 
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
-
-	for _, flag := range flags {    
-		switch flag.ID {
-		case iface     : dp.iface     = conv.MustStrToIface(flag.ValueStr)
-		case targetMac : dp.targetMac = conv.MustStrToMac(flag.ValueStr)
-		case bssid     : dp.bssid     = conv.MustStrToMac(flag.ValueStr)
-		case delay     : dp.delay     = conv.StrToInt(flag.ValueStr)
-		case channel   : dp.channel   = conv.StrToInt(flag.ValueStr)
+	
+	for _, f := range flags {
+		switch f.ID {
+		case iface     : dp.iface     = conv.MustStrToIface(f.ValueStr)
+		case targetMac : dp.targetMac = conv.MustStrToMac(f.ValueStr)
+		case bssid     : dp.bssid     = conv.MustStrToMac(f.ValueStr)
+		case delay     : dp.delay     = getChannelValue(f.ValueStr)
+		case channel   : dp.channel   = conv.StrToInt(f.ValueStr)
 		}
 	}
+}
+
+
+
+func getChannelValue(str string) int {
+	if str == "" { return 30 }
+	return conv.StrToInt(str)
 }

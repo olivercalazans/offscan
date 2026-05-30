@@ -35,6 +35,7 @@ type Flag struct {
     Long       string
     HasValue   bool
     Desc       string
+    Req        bool
 }
 
 
@@ -102,10 +103,8 @@ func (ap *ArgParser) displayDescriptions() {
     descLen := ap.getFlagMaxLen()
 
     for _, f := range ap.flags {
-        var flags []string
-        if f.Short != "" { flags = append(flags, f.Short) }
-		if f.Long  != "" { flags = append(flags, f.Long)  }
-        fmt.Printf("%-*s : %s\n", descLen, strings.Join(flags[:], ", "), f.Desc)
+        flags := getFormatedFlags(&f)
+        fmt.Printf("%-*s : %s\n", descLen, flags, f.Desc)
     }
 
     os.Exit(0)
@@ -117,16 +116,24 @@ func (ap *ArgParser) getFlagMaxLen() int {
     var maxLen int
 
     for _, f := range ap.flags {
-        var flags []string
-        if f.Short != "" { flags = append(flags, f.Short) }
-		if f.Long  != "" { flags = append(flags, f.Long)  }
-        tempStr := strings.Join(flags[:], ", ")
+        tempStr := getFormatedFlags(&f)
         len     := len(tempStr)
         
         if len > maxLen { maxLen = len }
     }
 
     return maxLen
+}
+
+
+
+func getFormatedFlags(flag *Flag) string {
+    var flags []string
+        
+    if flag.Short != "" { flags = append(flags, flag.Short) }
+    if flag.Long  != "" { flags = append(flags, flag.Long)  }
+    
+    return  strings.Join(flags, ", ")
 }
 
 
@@ -139,7 +146,10 @@ func (ap *ArgParser) parseFlagsWithValue() {
 		if !flag.HasValue { continue }
 		
 		short, long := ap.checkIfIsUsed(flag)
-        if !short && !long { continue }
+        if !short && !long {
+            abortIfRequired(flag)
+            continue
+        }
 		
         if short { flag.ValueStr = ap.processFlagAndValue(flag.Short) }
         if long  { flag.ValueStr = ap.processFlagAndValue(flag.Long)  }
@@ -161,6 +171,15 @@ func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
 	}
 
 	return shortTimes > 0, longTimes > 0
+}
+
+
+
+func abortIfRequired(flag *Flag) {
+    if flag.Req {
+        tempStr := getFormatedFlags(flag)
+        utils.Abort(fmt.Sprintf("Missing required flag: %s (%s)", tempStr, flag.Desc))
+    }
 }
 
 

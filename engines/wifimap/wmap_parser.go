@@ -38,9 +38,14 @@ func newParser() *wmapParser {
 
 
 func (wmp *wmapParser) parseWMapArgs(args []string) {
-    flags := []argparser.Flag{
-		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Interface to be used to sniff"},
-	}
+    flags := []argparser.Flag{{
+			ID	     : iface, 
+			Short	 : "i", 
+			Long	 : "iface", 
+			HasValue : true, 
+			Req      : true, 
+			Desc	 : "Interface to be used to sniff",
+	},}
 
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()

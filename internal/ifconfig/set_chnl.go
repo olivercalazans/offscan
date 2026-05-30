@@ -50,7 +50,7 @@ type iw_freq struct {
 
 
 func TrySetChannel(iface *net.Interface, channel int) error {
-	validateChannel(channel)
+	ValidateChannel(channel)
 
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
 	

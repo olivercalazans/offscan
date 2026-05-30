@@ -48,9 +48,9 @@ func newParser() *bcFloodParser {
 
 func (bfp *bcFloodParser) parseBcFloodArgs(args []string) {
     flags := []argparser.Flag{
-		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Desc: "Network interface to send frames"},
-		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Desc: "SSID/Network name"},		
-		{ID: channel, Short: "c", Long: "channel", HasValue: true, Desc: "Channel"},		
+		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
+		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true, Desc: "SSID/Network name"},		
+		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
 	}
 
 	parser := argparser.NewArgParser(flags, args)
