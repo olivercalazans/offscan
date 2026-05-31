@@ -58,11 +58,11 @@ func NewArgParser(flags []Flag, args []string) *ArgParser {
 
 func (ap *ArgParser) ParseFlags() {
     ap.saveAllFlags()
-    ap.verifyIfHasTheHelper()
-    ap.checkIfMissingRequired()
+    ap.checkHelp()
+    ap.checkRequired()
     ap.parseFlagsWithValue()
     ap.parseBoolFlags()
-    ap.checkForRemaining()
+    ap.abortIfUnexpected()
 }
 
 
@@ -85,7 +85,7 @@ func (ap *ArgParser) saveAllFlags() {
 
 
 
-func (ap *ArgParser) verifyIfHasTheHelper() {
+func (ap *ArgParser) checkHelp() {
     indexShort := slices.Index(ap.args, "-h")
     indexLong  := slices.Index(ap.args, "--help")
 
@@ -113,7 +113,7 @@ func (ap *ArgParser) displayDescriptions() {
 
 
 
-func (ap *ArgParser) checkIfMissingRequired() {
+func (ap *ArgParser) checkRequired() {
     var missingFlags []string
 
     for _, f := range ap.flagSettins {
@@ -177,7 +177,7 @@ func (ap *ArgParser) parseFlagsWithValue() {
         flag := &ap.flagSettins[i]
 		if !flag.HasValue { continue }
 		
-		short, long := ap.checkIfIsUsed(flag)
+		short, long := ap.checkUsage(flag)
         if !short && !long { continue }
 		
         if short { flag.ValueStr = ap.processFlagAndValue(flag.Short) }
@@ -187,7 +187,7 @@ func (ap *ArgParser) parseFlagsWithValue() {
 
 
 
-func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
+func (ap *ArgParser) checkUsage(flag *Flag) (bool, bool) {
 	var shortTimes, longTimes uint8 
 
 	for _, arg := range ap.args {
@@ -245,7 +245,7 @@ func (ap *ArgParser) parseBoolFlags() {
         flag := &ap.flagSettins[i]
 		if flag.HasValue { continue }
 		
-        short, long := ap.checkIfIsUsed(flag)
+        short, long := ap.checkUsage(flag)
         if !short && !long { continue }
 
 		var index int
@@ -260,7 +260,7 @@ func (ap *ArgParser) parseBoolFlags() {
 
 
 
-func (ap *ArgParser) checkForRemaining() {
+func (ap *ArgParser) abortIfUnexpected() {
     if len(ap.args) > 0 {
         unknown := strings.Join(ap.args, ", ")
         utils.Abort(fmt.Sprintf("Unknown flags: %s", unknown))
