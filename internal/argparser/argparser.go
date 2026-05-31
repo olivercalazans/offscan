@@ -40,16 +40,16 @@ type Flag struct {
 
 
 type ArgParser struct {
-    flags     []Flag
-    flagList  []string
-    args      []string
+    flagSettins  []Flag
+    flagList     []string
+    args         []string
 }
 
 
 
 func NewArgParser(flags []Flag, args []string) *ArgParser {
     return &ArgParser{
-		flags : flags,
+		flagSettins : flags,
         args  : args,
 	}
 }
@@ -58,17 +58,18 @@ func NewArgParser(flags []Flag, args []string) *ArgParser {
 
 func (ap *ArgParser) ParseFlags() {
     ap.saveAllFlags()
-    ap.verifyIfHasTheHelper()
+    ap.checkHelp()
+    ap.checkRequired()
     ap.parseFlagsWithValue()
     ap.parseBoolFlags()
-    ap.checkForRemaining()
+    ap.abortIfUnexpected()
 }
 
 
 
 func (ap *ArgParser) saveAllFlags() {
-    for i := range ap.flags {
-        flag := &ap.flags[i]
+    for i := range ap.flagSettins {
+        flag := &ap.flagSettins[i]
         
         if flag.Short != "" {
             flag.Short  = fmt.Sprintf("-%s", flag.Short)
@@ -84,7 +85,7 @@ func (ap *ArgParser) saveAllFlags() {
 
 
 
-func (ap *ArgParser) verifyIfHasTheHelper() {
+func (ap *ArgParser) checkHelp() {
     indexShort := slices.Index(ap.args, "-h")
     indexLong  := slices.Index(ap.args, "--help")
 
@@ -96,13 +97,13 @@ func (ap *ArgParser) verifyIfHasTheHelper() {
 
 
 func (ap *ArgParser) displayDescriptions() {
-    sort.Slice(ap.flags, func(i, j int) bool {
-        return ap.flags[i].ID < ap.flags[j].ID
+    sort.Slice(ap.flagSettins, func(i, j int) bool {
+        return ap.flagSettins[i].ID < ap.flagSettins[j].ID
     })
 
     descLen := ap.getFlagMaxLen()
 
-    for _, f := range ap.flags {
+    for _, f := range ap.flagSettins {
         flags := getFormatedFlags(&f)
         fmt.Printf("%-*s : %s\n", descLen, flags, f.Desc)
     }
@@ -112,10 +113,41 @@ func (ap *ArgParser) displayDescriptions() {
 
 
 
+func (ap *ArgParser) checkRequired() {
+    var missingFlags []string
+
+    for _, f := range ap.flagSettins {
+        if !f.Req { continue }
+
+        if !ap.hasFlag(&f) {
+            missingFlags = append(missingFlags, getFormatedFlags(&f))
+        }
+    }
+
+    if len(missingFlags) > 0 {
+        err   := strings.Join(missingFlags, "\n")
+        utils.Abort(fmt.Sprintf("Missing required flags:\n%s", err))
+    }
+}
+
+
+
+func (ap *ArgParser) hasFlag(flag *Flag) bool {
+    for _, a := range ap.args {
+        if flag.Short == a || flag.Long == a {
+            return true
+        }
+    }
+
+    return false
+}
+
+
+
 func (ap *ArgParser) getFlagMaxLen() int {
     var maxLen int
 
-    for _, f := range ap.flags {
+    for _, f := range ap.flagSettins {
         str := getFormatedFlags(&f)
         len := len(str)
         
@@ -141,15 +173,12 @@ func getFormatedFlags(flag *Flag) string {
 func (ap *ArgParser) parseFlagsWithValue() {
     if len(ap.args) <= 0 { return }
 
-    for i := range ap.flags {
-        flag := &ap.flags[i]
+    for i := range ap.flagSettins {
+        flag := &ap.flagSettins[i]
 		if !flag.HasValue { continue }
 		
-		short, long := ap.checkIfIsUsed(flag)
-        if !short && !long {
-            abortIfRequired(flag)
-            continue
-        }
+		short, long := ap.checkUsage(flag)
+        if !short && !long { continue }
 		
         if short { flag.ValueStr = ap.processFlagAndValue(flag.Short) }
         if long  { flag.ValueStr = ap.processFlagAndValue(flag.Long)  }
@@ -158,7 +187,7 @@ func (ap *ArgParser) parseFlagsWithValue() {
 
 
 
-func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
+func (ap *ArgParser) checkUsage(flag *Flag) (bool, bool) {
 	var shortTimes, longTimes uint8 
 
 	for _, arg := range ap.args {
@@ -172,15 +201,6 @@ func (ap *ArgParser) checkIfIsUsed(flag *Flag) (bool, bool) {
 	}
 
 	return shortTimes > 0, longTimes > 0
-}
-
-
-
-func abortIfRequired(flag *Flag) {
-    if flag.Req {
-        str := getFormatedFlags(flag)
-        utils.Abort(fmt.Sprintf("Missing required flag: %s (%s)", str, flag.Desc))
-    }
 }
 
 
@@ -221,11 +241,11 @@ func (ap *ArgParser) validateValue(flag string, flagIndex int) string {
 func (ap *ArgParser) parseBoolFlags() {
     if len(ap.args) <= 0 { return }
 
-    for i := range ap.flags {
-        flag := &ap.flags[i]
+    for i := range ap.flagSettins {
+        flag := &ap.flagSettins[i]
 		if flag.HasValue { continue }
 		
-        short, long := ap.checkIfIsUsed(flag)
+        short, long := ap.checkUsage(flag)
         if !short && !long { continue }
 
 		var index int
@@ -240,7 +260,7 @@ func (ap *ArgParser) parseBoolFlags() {
 
 
 
-func (ap *ArgParser) checkForRemaining() {
+func (ap *ArgParser) abortIfUnexpected() {
     if len(ap.args) > 0 {
         unknown := strings.Join(ap.args, ", ")
         utils.Abort(fmt.Sprintf("Unknown flags: %s", unknown))
