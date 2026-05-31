@@ -19,7 +19,6 @@ package argparser
 
 import (
 	"fmt"
-	"maps"
 	"offscan/internal/utils"
 	"os"
 	"slices"
@@ -115,31 +114,25 @@ func (ap *ArgParser) displayDescriptions() {
 
 
 func (ap *ArgParser) checkIfMissingRequired() {
-    missingFlags := make(map[string]struct{})
+    var missingFlags []string
 
     for _, f := range ap.flagSettins {
         if !f.Req { continue }
 
-        if len(ap.args) <= 0 {
-            missingFlags[getFormatedFlags(&f)] = struct{}{}
-            continue
-        }
-
-        if !ap.isFlagFound(&f) {
-            missingFlags[getFormatedFlags(&f)] = struct{}{}
+        if !ap.hasFlag(&f) {
+            missingFlags = append(missingFlags, getFormatedFlags(&f))
         }
     }
 
     if len(missingFlags) > 0 {
-        flags := slices.Collect(maps.Keys(missingFlags))
-        err   := strings.Join(flags, "\n")
-        utils.Abort(fmt.Sprintf("Missing Required flags:\n%s", err))
+        err   := strings.Join(missingFlags, "\n")
+        utils.Abort(fmt.Sprintf("Missing required flags:\n%s", err))
     }
 }
 
 
 
-func (ap *ArgParser) isFlagFound(flag *Flag) bool {
+func (ap *ArgParser) hasFlag(flag *Flag) bool {
     for _, a := range ap.args {
         if flag.Short == a || flag.Long == a {
             return true
