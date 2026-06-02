@@ -48,7 +48,9 @@ func newParser() *bcFloodParser {
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Beacon Flooder\nIt broadcasts beacons to create fake Wi-Fi APs within range\n\nE.g.,: beacon <FLAGS>"},
+		{ID: 0, Desc: 
+			"Beacon Flooder\nIt broadcasts beacons to create fake Wi-Fi APs within range\n\nE.g.,: $ sudo ./offscan beacon <FLAGS>",
+		},
 		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
 		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true, Desc: "SSID/Network name"},		
 		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		

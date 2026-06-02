@@ -44,7 +44,9 @@ func newParser() *ifConfParser {
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Interface Configuration\nIt sets the network interface to monitor or managed mode\n\nE.g., mode <FLAGS>"},
+		{ID: 0, Desc: 
+			"Interface Configuration\nIt sets the network interface to monitor or managed mode\n\nE.g., $ sudo ./offscan mode <FLAGS>",
+		},
 		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Req: true, Desc: "Interface to set mode"},
 		{ID: mon,   Short: "",  Long: "mon",   HasValue: false, Desc: "Set interface on monitor mode"},
 		{ID: man,   Short: "",  Long: "man",   HasValue: false, Desc: "Set interface on managed mode"},

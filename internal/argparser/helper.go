@@ -63,7 +63,7 @@ func displayFlags(flagSettings []Flag) {
 		}
 
         flags := getFormatedFlags(&f)
-		req := "(Optional)"
+		req   := "(Optional)"
 		
 		if f.Req { req = "(Required)" }
 
