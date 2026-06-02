@@ -20,9 +20,7 @@ package argparser
 import (
 	"fmt"
 	"offscan/internal/utils"
-	"os"
 	"slices"
-	"sort"
 	"strings"
 )
 
@@ -58,7 +56,6 @@ func NewArgParser(flags []Flag, args []string) *ArgParser {
 
 func (ap *ArgParser) ParseFlags() {
     ap.saveAllFlags()
-    ap.checkHelp()
     ap.checkRequired()
     ap.parseFlagsWithValue()
     ap.parseBoolFlags()
@@ -81,34 +78,6 @@ func (ap *ArgParser) saveAllFlags() {
             ap.flagList = append(ap.flagList, flag.Long)
         }
     }
-}
-
-
-
-func (ap *ArgParser) checkHelp() {
-    indexShort := slices.Index(ap.args, "-h")
-    indexLong  := slices.Index(ap.args, "--help")
-
-    if (indexShort > -1 || indexLong > -1) && len(ap.args) == 1 {
-        ap.displayDescriptions()
-    }
-}
-
-
-
-func (ap *ArgParser) displayDescriptions() {
-    sort.Slice(ap.flagSettins, func(i, j int) bool {
-        return ap.flagSettins[i].ID < ap.flagSettins[j].ID
-    })
-
-    descLen := ap.getFlagMaxLen()
-
-    for _, f := range ap.flagSettins {
-        flags := getFormatedFlags(&f)
-        fmt.Printf("%-*s : %s\n", descLen, flags, f.Desc)
-    }
-
-    os.Exit(0)
 }
 
 
@@ -140,21 +109,6 @@ func (ap *ArgParser) hasFlag(flag *Flag) bool {
     }
 
     return false
-}
-
-
-
-func (ap *ArgParser) getFlagMaxLen() int {
-    var maxLen int
-
-    for _, f := range ap.flagSettins {
-        str := getFormatedFlags(&f)
-        len := len(str)
-        
-        if len > maxLen { maxLen = len }
-    }
-
-    return maxLen
 }
 
 

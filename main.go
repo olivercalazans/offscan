@@ -20,57 +20,17 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
-	"offscan/engines/ifconf"
+	"offscan/engines/ifmode"
 	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
 	"offscan/engines/wifimap"
+	"offscan/internal/argparser"
 	"offscan/internal/utils"
 )
-
-
-
-type CommandHandler struct {
-	Desc  string
-	Run   func(args []string)
-}
-
-
-
-var registry = map[string]CommandHandler{
-	"beacon": {
-		Desc: "Beacon Flood",
-		Run:  beacon.Run,
-	},
-	"deauth": {
-		Desc: "Deauthentication attack",
-		Run:  deauth.Run,
-	},
-	"ifconf": {
-		Desc: "Interface Configuration",
-		Run:  ifconf.Run,
-	},
-	"info": {
-		Desc: "Network Information",
-		Run:  netinfo.Run,
-	},
-	"hdisc": {
-		Desc: "Host Discovery",
-		Run:  hostdisc.Run,
-	},
-	"pscan": {
-		Desc: "Port Scanning",
-		Run:  portscan.Run,
-	},
-	"wmap": {
-		Desc: "Wifi Mapping",
-		Run:  wifimap.Run,
-	},
-}
 
 
 
@@ -81,37 +41,28 @@ func main() {
 		utils.Abort("No input found")
 	}
 
+	var registry = map[string]argparser.CommandHandler{
+	"beacon" : { Run: beacon.Run,   FlagSettings: beacon.FlagSettings   },
+	"deauth" : { Run: deauth.Run,   FlagSettings: deauth.FlagSettings   },
+	"mode"   : { Run: ifmode.Run,   FlagSettings: ifmode.FlagSettings   },
+	"info"   : { Run: netinfo.Run,  FlagSettings: netinfo.FlagSettings  },
+	"hdisc"  : { Run: hostdisc.Run, FlagSettings: hostdisc.FlagSettings },
+	"pscan"  : { Run: portscan.Run, FlagSettings: portscan.FlagSettings },
+	"wmap"   : { Run: wifimap.Run,  FlagSettings: wifimap.FlagSettings  },
+}
+
 	cmdName := args[0]
 
 	if cmdName == "--help" {
-		displayCommands()
+		argparser.DisplayAllHelp(registry)
 		return
 	}
 
 	engine, ok := registry[cmdName]
 	if !ok {
+		argparser.DisplayAllHelp(registry)
 		utils.Abort(fmt.Sprintf("No command '%s'", cmdName))
 	}
 
 	engine.Run(args[1:])
-}
-
-
-
-func displayCommands() {
-	fmt.Println("# Available commands:")
-	
-    keys := make([]string, 0, len(registry))
-    for k := range registry {
-        keys = append(keys, k)
-    }
-
-    sort.Strings(keys)
-
-    for _, k := range keys {
-        cmd := registry[k]
-        fmt.Printf("%-6s - %s\n", k, cmd.Desc)
-    }
-
-	fmt.Println("OBS.: Each command has its own flags.")
 }

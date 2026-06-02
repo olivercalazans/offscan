@@ -50,15 +50,21 @@ func newParser() *deauthParser {
 
 
 
-func (dp *deauthParser) parseDeauthArgs(args []string) {
-    flags := []argparser.Flag{
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{
+		{ID: 0, Desc: "Deauthentication Attack\nIt transmits deauthentication frames to both the target and the AP\n\nE.g., deauth <FLAGS>"},
 		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
 		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Req: true, Desc: "Target MAC"},		
 		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Req: true, Desc: "BSSID"},		
 		{ID: channel,   Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
-		{ID: delay,     Short: "d", Long: "delay",   HasValue: true, Desc: "Delay in ms"},		
+		{ID: delay,     Short: "d", Long: "delay",   HasValue: true, Desc: "Delay in ms"},
 	}
+}
 
+
+
+func (dp *deauthParser) parseDeauthArgs(args []string) {
+    flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 	
@@ -67,15 +73,15 @@ func (dp *deauthParser) parseDeauthArgs(args []string) {
 		case iface     : dp.iface     = conv.MustStrToIface(f.ValueStr)
 		case targetMac : dp.targetMac = conv.MustStrToMac(f.ValueStr)
 		case bssid     : dp.bssid     = conv.MustStrToMac(f.ValueStr)
-		case delay     : dp.delay     = getChannelValue(f.ValueStr)
-		case channel   : dp.channel   = conv.StrToInt(f.ValueStr)
+		case delay     : dp.delay     = parseDelay(f.ValueStr)
+		case channel   : dp.channel   = conv.MustStrToInt(f.ValueStr)
 		}
 	}
 }
 
 
 
-func getChannelValue(str string) int {
+func parseDelay(str string) int {
 	if str == "" { return 30 }
-	return conv.StrToInt(str)
+	return conv.MustStrToInt(str)
 }

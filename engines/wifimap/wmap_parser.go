@@ -37,16 +37,24 @@ func newParser() *wmapParser {
 
 
 
-func (wmp *wmapParser) parseWMapArgs(args []string) {
-    flags := []argparser.Flag{{
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{
+		{ID: 0, Desc: "WiFi Mapper\nIt captures beacons to gather Wi-Fi network information\n\nE.g., wmap <FLAGS>"},
+		{
 			ID	     : iface, 
 			Short	 : "i", 
 			Long	 : "iface", 
 			HasValue : true, 
 			Req      : true, 
 			Desc	 : "Interface to be used to sniff",
-	},}
+		},
+	}
+}
 
+
+
+func (wmp *wmapParser) parseWMapArgs(args []string) {
+    flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 

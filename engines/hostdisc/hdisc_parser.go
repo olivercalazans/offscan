@@ -48,15 +48,21 @@ func newParser() *hostDiscParser {
 
 
 
-func (hdp *hostDiscParser) parseHostDiscArgs(args []string) {
-    flags := []argparser.Flag{
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{
+		{ID: 0, Desc: "Host Discovery\nIt sends packets to discover active devices on the local network\n\nE.g., hdisc <FLAGS>"},
 		{ID: iface,   Short: "i", Long: "iface", HasValue: true, Desc: "Network interface to send packets (default: system default)"},
 		{ID: ipRange, Short: "r", Long: "range", HasValue: true, Desc: "IP range to scan"},		
 		{ID: arp,  Long: "arp",  HasValue: false, Desc: "Use only/and ARP probes"},		
 		{ID: icmp, Long: "icmp", HasValue: false, Desc: "Use only/and ICMP probes"},		
 		{ID: tcp,  Long: "tcp",  HasValue: false, Desc: "Use only/and TCP probes"},		
 	}
+}
 
+
+
+func (hdp *hostDiscParser) parseHostDiscArgs(args []string) {
+    flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 
