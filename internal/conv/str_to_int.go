@@ -24,7 +24,7 @@ import (
 )
 
 
-func StrToInt(str string) int {
+func MustStrToInt(str string) int {
 	value, err := strconv.Atoi(str)
 
 	if err != nil {

@@ -37,11 +37,17 @@ func newParser() *netInfoParser {
 
 
 
-func (nip *netInfoParser) parseNetInfoArgs(args []string) {
-    flags := []argparser.Flag{
-		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Define a network interface to get information (optional)"},
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{
+		{ID: 0, Desc: "Network and Interface Information\nIt displays network interface configurations and status information\n\nE.g., info <FLAGS>"},
+		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Define a network interface to get information"},
 	}
+}
 
+
+
+func (nip *netInfoParser) parseNetInfoArgs(args []string) {
+    flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 

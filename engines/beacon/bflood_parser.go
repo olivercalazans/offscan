@@ -46,13 +46,19 @@ func newParser() *bcFloodParser {
 
 
 
-func (bfp *bcFloodParser) parseBcFloodArgs(args []string) {
-    flags := []argparser.Flag{
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{
+		{ID: 0, Desc: "Beacon Flooder\nIt broadcasts beacons to create fake Wi-Fi APs within range\n\nE.g.,: beacon <FLAGS>"},
 		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
 		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true, Desc: "SSID/Network name"},		
 		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
 	}
+}
 
+
+
+func (bfp *bcFloodParser) parseBcFloodArgs(args []string) {
+    flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 
@@ -60,7 +66,7 @@ func (bfp *bcFloodParser) parseBcFloodArgs(args []string) {
 		switch flag.ID {
 		case iface   : bfp.iface   = conv.MustStrToIface(flag.ValueStr)
 		case ssid    : bfp.ssid    = flag.ValueStr
-		case channel : bfp.channel = conv.StrToInt(flag.ValueStr)
+		case channel : bfp.channel = conv.MustStrToInt(flag.ValueStr)
 		}
 	}
 }
