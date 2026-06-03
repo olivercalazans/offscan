@@ -25,15 +25,13 @@ import (
 
 
 type ipHeader struct {
-	header  *[20]byte
+	header  [20]byte
 }
 
 
 
-func newIpHeader(header *[20]byte) ipHeader {
-	ih := ipHeader{ header: header }
-	ih.fixedIpInfo()
-	return ih
+func newIpHeader() ipHeader {
+	return ipHeader{}
 }
 
 
@@ -70,9 +68,8 @@ func (iph *ipHeader) calculateChecksum() {
 
 func (iph *ipHeader) setSrcIp(srcIp net.IP) {
 	src := srcIp.To4()
-	if src == nil{
-		return
-	}
+	
+	if src == nil{ return }
 
 	copy(iph.header[12:16], src)
 }
@@ -81,9 +78,8 @@ func (iph *ipHeader) setSrcIp(srcIp net.IP) {
 
 func (iph *ipHeader) setDstIp(dstIp net.IP) {
 	dst := dstIp.To4()
-	if dst == nil {
-		return
-	}
+
+	if dst == nil { return }
 
 	copy(iph.header[16:20], dst)
 }

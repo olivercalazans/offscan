@@ -24,9 +24,9 @@ import (
 
 
 type IcmpPacket struct {
-	buffer   [28]byte
-	ipLayer  ipHeader
-	offset   uint8
+	buffer  [28]byte
+	ipHdr   ipHeader
+	offset  uint8
 }
 
 
@@ -38,35 +38,37 @@ func NewIcmpPkt() IcmpPacket {
 
 
 func (ip *IcmpPacket) Init() {
+	ip.ipHdr  = newIpHeader() 
 	ip.offset = 20
-	ip.ipLayer = newIpHeader((*[20]byte)(ip.buffer[0:20]))
 	ip.buildFixed()
 }
 
 
 
-func (i *IcmpPacket) buildFixed() {
-	i.ipLayer.fixedIpInfo()
-	i.ipLayer.setProto(1)
-	i.ipLayer.setLen(8)
+func (ip *IcmpPacket) buildFixed() {
+	ip.ipHdr.fixedIpInfo()
+	ip.ipHdr.setProto(1)
+	ip.ipHdr.setLen(8)
 
-	i.buffer[i.offset]     = 8
-	i.buffer[i.offset + 1] = 0
+	ip.buffer[ip.offset]     = 8
+	ip.buffer[ip.offset + 1] = 0
 	
-	binary.BigEndian.PutUint16(i.buffer[i.offset + 2 : i.offset + 4], 0)
-	binary.BigEndian.PutUint16(i.buffer[i.offset + 4 : i.offset + 6], 0x1234)
-	binary.BigEndian.PutUint16(i.buffer[i.offset + 6 : i.offset + 8], 1)
+	binary.BigEndian.PutUint16(ip.buffer[ip.offset + 2 : ip.offset + 4], 0)
+	binary.BigEndian.PutUint16(ip.buffer[ip.offset + 4 : ip.offset + 6], 0x1234)
+	binary.BigEndian.PutUint16(ip.buffer[ip.offset + 6 : ip.offset + 8], 1)
 
-	ck := icmpSum(i.buffer[i.offset : i.offset + 8])
-	binary.BigEndian.PutUint16(i.buffer[i.offset + 2 : i.offset + 4], ck)
+	ck := icmpSum(ip.buffer[ip.offset : ip.offset + 8])
+	binary.BigEndian.PutUint16(ip.buffer[ip.offset + 2 : ip.offset + 4], ck)
 }
 
 
 
 
-func (i *IcmpPacket) L3PingPkt(srcIP, dstIP net.IP) []byte {
-	i.ipLayer.setSrcIp(srcIP)
-	i.ipLayer.setDstIp(dstIP)
-	i.ipLayer.calculateChecksum()
-	return i.buffer[:28]
+func (ip *IcmpPacket) L3PingPkt(srcIP, dstIP net.IP) []byte {
+	ip.ipHdr.setSrcIp(srcIP)
+	ip.ipHdr.setDstIp(dstIP)
+	ip.ipHdr.calculateChecksum()
+	copy(ip.buffer[:20], ip.ipHdr.header[:])
+
+	return ip.buffer[:28]
 }
