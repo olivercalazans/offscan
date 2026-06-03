@@ -82,15 +82,15 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-	wm.sniffer = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
-	packetCh := wm.sniffer.Start()
+	wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+	sniffCh   := wm.sniffer.Start()
 
 	fmt.Printf("[+] Sniffing beacons\n")
 
 	wm.wg.Add(1)
 	go func() {
 		defer wm.wg.Done()
-		wm.processPkts(packetCh)
+		wm.processBeacons(sniffCh)
 	}()
 }
 
@@ -102,12 +102,12 @@ func getBPFFilter() string {
 
 
 
-func (wm *wifiMapper) processPkts(packetCh <-chan []byte) {
-	tempBuf := make(map[wifiData]struct{})
-	dissector := dissector.NewBeaconDissector()
+func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
+	tempBuf   := make(map[wifiData]struct{})
+	dissector := dissector.NewDot11Dissector()
 
 	for {
-		beacon, ok := <-packetCh
+		beacon, ok := <-sniffCh
 		if !ok {
 			break
 		}
