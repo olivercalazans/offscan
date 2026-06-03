@@ -82,7 +82,7 @@ func (tp *TcpPacket) flushChecksum() {
 
 
 func (tp *TcpPacket) calculateChecksum(srcIp, dstIp net.IP) {
-    cksum := TcpSum(tp.tcpLayer[:20], srcIp, dstIp, 6)
+    cksum := tcpSum(tp.tcpLayer[:20], srcIp, dstIp, 6)
     binary.BigEndian.PutUint16(tp.tcpLayer[16:18], cksum)
 }
 

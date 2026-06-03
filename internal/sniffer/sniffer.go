@@ -29,7 +29,7 @@ import (
 
 
 type Sniffer struct {
-	iface     *net.Interface
+	iface      net.Interface
 	filter     string
 	promisc    bool
 	stopChan   chan struct{}
@@ -42,7 +42,7 @@ type Sniffer struct {
 
 
 func NewSniffer(
-    iface   *net.Interface, 
+    iface    net.Interface, 
     filter   string, 
     promisc  bool,
 
@@ -100,12 +100,12 @@ func (s *Sniffer) initRawSocket() (int, error) {
 
     fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, protocolNative)
 	if err != nil {
-		return -1, fmt.Errorf("open raw socket error: %w", err)
+		return -1, fmt.Errorf("Open raw socket error: %w", err)
 	}
 
 	if err := unix.SetNonblock(fd, true); err != nil {
 		unix.Close(fd)
-		return -1, fmt.Errorf("set non-blocking error: %w", err)
+		return -1, fmt.Errorf("Set non-blocking error: %w", err)
 	}
 
 	return fd, nil
@@ -122,7 +122,7 @@ func (s *Sniffer) configureSocket() error {
 	}
 
     if err := unix.Bind(s.fd, sll); err != nil {
-		return fmt.Errorf("bind to interface %s failed: %w", s.iface.Name, err)
+		return fmt.Errorf("Bind to interface %s failed: %w", s.iface.Name, err)
 	}
 
 	if s.promisc {
@@ -133,7 +133,7 @@ func (s *Sniffer) configureSocket() error {
 
         err := unix.SetsockoptPacketMreq(s.fd, unix.SOL_PACKET, unix.PACKET_ADD_MEMBERSHIP, &mreq)
 		if err != nil {
-			return fmt.Errorf("failed to add promisc membership: %w", err)
+			return fmt.Errorf("Failed to add promisc membership: %w", err)
 		}
 		
         defer func() {
@@ -144,7 +144,7 @@ func (s *Sniffer) configureSocket() error {
     if s.filter != "" {
 		bytecode, err := s.compileFilter()
 		if err != nil {
-			return fmt.Errorf("failed to compile BPF filter '%s': %w", s.filter, err)
+			return fmt.Errorf("Failed to compile BPF filter '%s': %w", s.filter, err)
 		}
 
 		prog := unix.SockFprog{
@@ -153,7 +153,7 @@ func (s *Sniffer) configureSocket() error {
 		}
 
 		if err := unix.SetsockoptSockFprog(s.fd, unix.SOL_SOCKET, unix.SO_ATTACH_FILTER, &prog); err != nil {
-			return fmt.Errorf("failed to attach BPF filter: %w", err)
+			return fmt.Errorf("Failed to attach BPF filter: %w", err)
 		}
 	}
 

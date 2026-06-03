@@ -82,7 +82,7 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-	wm.sniffer = sniffer.NewSniffer(&wm.iface, getBPFFilter(), false)
+	wm.sniffer = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
 	packetCh := wm.sniffer.Start()
 
 	fmt.Printf("[+] Sniffing beacons\n")

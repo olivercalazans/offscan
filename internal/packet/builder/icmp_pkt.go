@@ -57,7 +57,7 @@ func (i *IcmpPacket) buildFixed() {
 	binary.BigEndian.PutUint16(i.buffer[i.offset + 4 : i.offset + 6], 0x1234)
 	binary.BigEndian.PutUint16(i.buffer[i.offset + 6 : i.offset + 8], 1)
 
-	ck := IcmpSum(i.buffer[i.offset : i.offset + 8])
+	ck := icmpSum(i.buffer[i.offset : i.offset + 8])
 	binary.BigEndian.PutUint16(i.buffer[i.offset + 2 : i.offset + 4], ck)
 }
 

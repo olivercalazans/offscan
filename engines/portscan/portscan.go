@@ -104,7 +104,7 @@ func (ps *portScanner) displayInfo() {
 
 
 func (ps *portScanner) startPacketProcessor() {
-    ps.sniffer = sniffer.NewSniffer(&ps.iface, ps.getBPFFilter(), false)
+    ps.sniffer = sniffer.NewSniffer(ps.iface, ps.getBPFFilter(), false)
     packetCh  := ps.sniffer.Start()
 
     ps.wg.Add(1)

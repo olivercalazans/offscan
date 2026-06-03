@@ -42,7 +42,7 @@ func calculateChecksum(sum uint32, data []byte) uint16 {
 
 
 
-func TcpSum(header []byte, srcIP, dstIP net.IP, protocol uint8) uint16 {
+func tcpSum(header []byte, srcIP, dstIP net.IP, protocol uint8) uint16 {
     var sum uint32 = 0
 
     src := srcIP.To4()
@@ -65,12 +65,12 @@ func TcpSum(header []byte, srcIP, dstIP net.IP, protocol uint8) uint16 {
 
 
 
-func IcmpSum(header []byte) uint16 {
+func icmpSum(header []byte) uint16 {
     return calculateChecksum(0, header)
 }
 
 
 
-func Ipv4Sum(header []byte) uint16 {
+func ipv4Sum(header []byte) uint16 {
     return calculateChecksum(0, header)
 }
