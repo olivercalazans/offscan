@@ -19,9 +19,9 @@ package hostdisc
 
 import (
 	"fmt"
-	"net"
 	"offscan/internal/generators"
 	"offscan/internal/packet/builder"
+	"offscan/internal/sockets"
 	"time"
 )
 
@@ -32,8 +32,10 @@ const delay = 40 * time.Millisecond
 
 
 func (hd *hostDiscovery) sendProbes() {
+    tools   := probeTools{} 
     randGen := generators.NewRandomValues()
-    hd.initPkts()
+
+    hd.initTools(&tools)
     
     var pktErr uint16 = 0
 
@@ -42,79 +44,81 @@ func (hd *hostDiscovery) sendProbes() {
         
         if !hasIP { break }
 
+        tools.dstIP = dstIP
+
         if hd.protocols.arp {
-            ok := hd.sendArpProbe(dstIP)
+            ok := hd.sendArpProbe(&tools)
             if !ok { pktErr++ }
         }
 
         if hd.protocols.icmp {
-            ok := hd.sendIcmpProbe(dstIP)
+            ok := hd.sendIcmpProbe(&tools)
             if !ok { pktErr++ }
         }
 
         if hd.protocols.tcp {
-            ok := hd.sendTcpProbe(dstIP, randGen.RandomPort())
+            ok := hd.sendTcpProbe(&tools, randGen.RandomPort())
             if !ok { pktErr++ }
         }
     }
 
-    hd.stopSocket()
+    hd.stopSocket(&tools.socket)
     fmt.Printf("[!] Packets not sent: %d\n", pktErr)
     time.Sleep(2 * time.Second)
 }
 
 
 
-func (hd *hostDiscovery) initPkts() {
-    hd.pkts = &packets{}
+func (hd *hostDiscovery) initTools(tools *probeTools) {
+    tools.socket = sockets.NewL3Socket(&hd.iface)
     
     if hd.protocols.arp {
-        hd.pkts.arp = builder.NewArpPkt()
-        hd.pkts.arp.AddStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
+        tools.arp = builder.NewArpPkt()
+        tools.arp.AddStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
     }
 
     if hd.protocols.icmp {
-        hd.pkts.icmp = builder.NewIcmpPkt()
+        tools.icmp = builder.NewIcmpPkt()
+        tools.icmp.Init()
     }
 
     if hd.protocols.tcp {
-        hd.pkts.tcp = builder.NewTcpPkt()
+        tools.tcp = builder.NewTcpPkt()
+        tools.tcp.Init()
     }
 }
 
 
 
-func (hd *hostDiscovery) sendArpProbe(dstIP net.IP) bool {
-    pkt := hd.pkts.arp.L3RequestPkt(dstIP)
-    hd.socket.SendTo(pkt, dstIP)
+func (hd *hostDiscovery) sendArpProbe(tools *probeTools) bool {
+    pkt := tools.arp.L3RequestPkt(tools.dstIP)
+    tools.socket.SendTo(pkt, tools.dstIP)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) sendIcmpProbe(dstIP net.IP) bool {
-    pkt := hd.pkts.icmp.L3PingPkt(hd.myIP, dstIP)    
-    hd.socket.SendTo(pkt, dstIP)
+func (hd *hostDiscovery) sendIcmpProbe(tools *probeTools) bool {
+    pkt := tools.icmp.L3PingPkt(hd.myIP, tools.dstIP)    
+    tools.socket.SendTo(pkt, tools.dstIP)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) sendTcpProbe(dstIP net.IP, srcPort uint16) bool {
-    pkt := hd.pkts.tcp.L3SynPkt(hd.myIP, srcPort, dstIP, 80)
-    hd.socket.SendTo(pkt, dstIP)
+func (hd *hostDiscovery) sendTcpProbe(tools *probeTools, srcPort  uint16) bool {
+    pkt := tools.tcp.L3SynPkt(hd.myIP, srcPort, tools.dstIP, 80)
+    tools.socket.SendTo(pkt, tools.dstIP)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) stopSocket() {
-    if hd.socket == nil { return }
-    
-    if err := hd.socket.Close(); err != nil {
+func (hd *hostDiscovery) stopSocket(socket *sockets.Layer3Socket) {
+    if err := socket.Close(); err != nil {
         fmt.Printf("[!] Error closing socket: %v\n", err)
     }
 }

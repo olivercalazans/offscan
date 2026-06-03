@@ -34,7 +34,7 @@ type Layer2Socket struct {
 
 
 
-func NewL2Socket(iface *net.Interface) *Layer2Socket {
+func NewL2Socket(iface *net.Interface) Layer2Socket {
     fd := createL2Socket()
     
     bindL2SocketToDevice(fd, iface)
@@ -46,7 +46,7 @@ func NewL2Socket(iface *net.Interface) *Layer2Socket {
         Halen    : 6,
     }
 
-    return &Layer2Socket{fd: fd, addr: addr}
+    return Layer2Socket{fd: fd, addr: addr}
 }
 
 

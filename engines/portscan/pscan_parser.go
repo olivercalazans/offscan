@@ -38,8 +38,8 @@ const (
 
 
 
-func newParser() *portScanParser {
-	return &portScanParser{}
+func newParser() portScanParser {
+	return portScanParser{}
 }
 
 

@@ -30,60 +30,60 @@ type ipHeader struct {
 
 
 
-func newIpHeader(header *[20]byte) *ipHeader {
-	ih := &ipHeader{ header: header }
+func newIpHeader(header *[20]byte) ipHeader {
+	ih := ipHeader{ header: header }
 	ih.fixedIpInfo()
 	return ih
 }
 
 
 
-func (ih *ipHeader) fixedIpInfo() {
-	ih.header[0] = (4 << 4) | 5                          // Version + IHL
-	ih.header[1] = 0                                     // DSCP + ECN
-	binary.BigEndian.PutUint16(ih.header[4:6], 0x1234)   // ID
-	binary.BigEndian.PutUint16(ih.header[6:8], 0x4000)   // Flags + Fragment offset (bit DF = 1, offset 0)
-	ih.header[8] = 64									 // TTL
-	binary.BigEndian.PutUint16(ih.header[10:12], 0)      // Checksum
+func (iph *ipHeader) fixedIpInfo() {
+	iph.header[0] = (4 << 4) | 5                          // Version + IHL
+	iph.header[1] = 0                                     // DSCP + ECN
+	binary.BigEndian.PutUint16(iph.header[4:6], 0x1234)   // ID
+	binary.BigEndian.PutUint16(iph.header[6:8], 0x4000)   // Flags + Fragment offset (bit DF = 1, offset 0)
+	iph.header[8] = 64									 // TTL
+	binary.BigEndian.PutUint16(iph.header[10:12], 0)      // Checksum
 }
 
 
 
-func (ih *ipHeader) setLen(layer4Len uint16) {
-	binary.BigEndian.PutUint16(ih.header[2:4], 20 + layer4Len)
+func (iph *ipHeader) setLen(layer4Len uint16) {
+	binary.BigEndian.PutUint16(iph.header[2:4], 20 + layer4Len)
 }
 
 
 
-func (ih *ipHeader) setProto(proto uint8) {
-	ih.header[9] = proto
+func (iph *ipHeader) setProto(proto uint8) {
+	iph.header[9] = proto
 }
 
 
 
-func (ih *ipHeader) calculateChecksum() {
-	ck := Ipv4Sum(ih.header[0:20])
-	binary.BigEndian.PutUint16(ih.header[10:12], ck)
+func (iph *ipHeader) calculateChecksum() {
+	ck := Ipv4Sum(iph.header[0:20])
+	binary.BigEndian.PutUint16(iph.header[10:12], ck)
 }
 
 
 
-func (ih *ipHeader) setSrcIp(srcIp net.IP) {
+func (iph *ipHeader) setSrcIp(srcIp net.IP) {
 	src := srcIp.To4()
 	if src == nil{
 		return
 	}
 
-	copy(ih.header[12:16], src)
+	copy(iph.header[12:16], src)
 }
 
 
 
-func (ih *ipHeader) setDstIp(dstIp net.IP) {
+func (iph *ipHeader) setDstIp(dstIp net.IP) {
 	dst := dstIp.To4()
 	if dst == nil {
 		return
 	}
 
-	copy(ih.header[16:20], dst)
+	copy(iph.header[16:20], dst)
 }

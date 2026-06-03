@@ -28,8 +28,8 @@ type ArpPacket struct {
 
 
 
-func NewArpPkt() *ArpPacket {
-	ap := &ArpPacket{}
+func NewArpPkt() ArpPacket {
+	ap := ArpPacket{}
 	ap.buildFixed()
 	return ap
 }

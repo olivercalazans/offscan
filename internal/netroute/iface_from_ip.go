@@ -24,7 +24,7 @@ import (
 )
 
 
-func MustRouteIfaceForDstIP(dstIP net.IP) *net.Interface {
+func MustRouteIfaceForDstIP(dstIP net.IP) net.Interface {
     dstIPv4 := dstIP.To4()
     if dstIPv4 == nil {
         utils.Abort(fmt.Sprintf("Destination IP is not IPv4: %s", dstIP))
@@ -67,11 +67,11 @@ func MustRouteIfaceForDstIP(dstIP net.IP) *net.Interface {
                 continue
             }
             if ipNet.IP.Equal(localIP) {
-                return &iface
+                return iface
             }
         }
     }
 
     utils.Abort(fmt.Sprintf("no interface found with IP %s", localIP))
-    return nil
+    return net.Interface{}
 }

@@ -24,11 +24,11 @@ import (
 
 
 type hostDiscParser struct {
-    iface  string
+    iface    string
     ipRange  string
-	arp    bool
-    icmp   bool
-    tcp    bool
+	arp      bool
+    icmp     bool
+    tcp      bool
 }
 
 
@@ -42,8 +42,8 @@ const (
 
 
 
-func newParser() *hostDiscParser {
-	return &hostDiscParser{}
+func newParser() hostDiscParser {
+	return hostDiscParser{}
 }
 
 

@@ -20,6 +20,7 @@ package hostdisc
 import (
 	"net"
 	"offscan/internal/packet/builder"
+	"offscan/internal/sockets"
 )
 
 
@@ -34,8 +35,10 @@ type hostInfo struct {
 }
 
 
-type packets struct {
-	arp   *builder.ArpPacket
-	icmp  *builder.IcmpPacket
-	tcp   *builder.TcpPacket
+type probeTools struct {
+    socket  sockets.Layer3Socket
+    arp     builder.ArpPacket
+    icmp    builder.IcmpPacket
+    tcp     builder.TcpPacket
+    dstIP   net.IP
 }

@@ -31,8 +31,8 @@ const iface uint8 = 1
 
 
 
-func newParser() *netInfoParser {
-	return &netInfoParser{}
+func newParser() netInfoParser {
+	return netInfoParser{}
 }
 
 

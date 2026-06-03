@@ -49,12 +49,12 @@ type wifiData struct {
 
 
 type wifiMapper struct {
-	wInfo   map[wifiData]struct{}
-	iface   *net.Interface
-	sniffer *sniffer.Sniffer
-	mut     sync.Mutex
-	cancel  chan struct{}
-	wg      sync.WaitGroup
+	wInfo     map[wifiData]struct{}
+	iface     net.Interface
+	sniffer  *sniffer.Sniffer
+	mut       sync.Mutex
+	cancel    chan struct{}
+	wg        sync.WaitGroup
 }
 
 
@@ -82,7 +82,7 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-	wm.sniffer = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+	wm.sniffer = sniffer.NewSniffer(&wm.iface, getBPFFilter(), false)
 	packetCh := wm.sniffer.Start()
 
 	fmt.Printf("[+] Sniffing beacons\n")
@@ -157,7 +157,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 	var errChannels []int
 
 	for _, chnl := range channels {
-		ok := ifconfig.TrySetChannel(wm.iface, chnl)
+		ok := ifconfig.TrySetChannel(&wm.iface, chnl)
 
 		if ok != nil {
 			errChannels = append(errChannels, chnl)

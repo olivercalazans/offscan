@@ -30,7 +30,7 @@ import (
 
 
 func (hd *hostDiscovery) startPacketProcessor() {
-    hd.sniffer   = sniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)
+    hd.sniffer   = sniffer.NewSniffer(&hd.iface, hd.getBpfFilter(), false)
     hd.snifferCh = hd.sniffer.Start()
 
     hd.wgPktProc.Add(1)

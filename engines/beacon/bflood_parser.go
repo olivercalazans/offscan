@@ -26,9 +26,9 @@ import (
 
 
 type bcFloodParser struct {
-	ssid      string
-	iface    *net.Interface
-	channel   int
+	ssid     string
+	iface    net.Interface
+	channel  int
 }
 
 

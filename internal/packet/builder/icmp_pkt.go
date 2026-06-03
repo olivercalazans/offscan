@@ -24,20 +24,23 @@ import (
 
 
 type IcmpPacket struct {
-	buffer    [28]byte
-	ipLayer  *ipHeader
-	offset    uint8
+	buffer   [28]byte
+	ipLayer  ipHeader
+	offset   uint8
 }
 
 
 
-func NewIcmpPkt() *IcmpPacket {
-	i := &IcmpPacket{ offset: 20 }
-	
-	i.ipLayer = newIpHeader((*[20]byte)(i.buffer[0:20]))
-	i.buildFixed()
-	
-	return i
+func NewIcmpPkt() IcmpPacket {
+	return IcmpPacket{}
+}
+
+
+
+func (ip *IcmpPacket) Init() {
+	ip.offset = 20
+	ip.ipLayer = newIpHeader((*[20]byte)(ip.buffer[0:20]))
+	ip.buildFixed()
 }
 
 

@@ -31,8 +31,8 @@ const iface uint8 = 1
 
 
 
-func newParser() *wmapParser {
-	return &wmapParser{}
+func newParser() wmapParser {
+	return wmapParser{}
 }
 
 

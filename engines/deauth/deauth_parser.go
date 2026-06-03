@@ -26,11 +26,11 @@ import (
 
 
 type deauthParser struct {
-    iface      *net.Interface 
-    targetMac   net.HardwareAddr
-    bssid       net.HardwareAddr
-    delay       int
-    channel     int
+    iface      net.Interface 
+    targetMac  net.HardwareAddr
+    bssid      net.HardwareAddr
+    delay      int
+    channel    int
 }
 
 

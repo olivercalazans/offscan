@@ -38,7 +38,7 @@ type Ipv4Iter struct {
 
 
 
-func NewIpv4Iter(cidr string, rangeStr string) *Ipv4Iter {
+func NewIpv4Iter(cidr string, rangeStr string) Ipv4Iter {
     networkU32, broadcastU32 := parseCIDR(cidr)
 
     usableStart   := networkU32 + 1
@@ -65,7 +65,7 @@ func NewIpv4Iter(cidr string, rangeStr string) *Ipv4Iter {
 
     total := uint64(endRange - startRange + 1)
     
-    return &Ipv4Iter{
+    return Ipv4Iter{
         current:  startRange,
         end:      endRange,
         total:    total,

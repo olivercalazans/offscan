@@ -61,7 +61,7 @@ func newNetInfo(argList []string) *networkInfo {
     if  parser.Iface == "" {
         ifaceList = sysinfo.MustAllIfaces()
     } else {
-        ifaceList = append(ifaceList, *conv.MustStrToIface(parser.Iface))
+        ifaceList = append(ifaceList, conv.MustStrToIface(parser.Iface))
     }
 
     return &networkInfo{
@@ -72,8 +72,8 @@ func newNetInfo(argList []string) *networkInfo {
 
 
 func (ni *networkInfo) execute() {
-    for idx, iface := range ni.ifaceList {
-		ni.current = &iface
+    for idx:= range ni.ifaceList {
+		ni.current = &ni.ifaceList[idx]
         
 		ni.setState()
         ni.setType()

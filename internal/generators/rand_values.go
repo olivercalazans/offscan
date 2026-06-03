@@ -27,20 +27,16 @@ import (
 
 
 type RandomValues struct {
-    rng     *rand.Rand
-    firstIP uint32
-    lastIP  uint32
+    rng      *rand.Rand
+    firstIP   uint32
+    lastIP    uint32
 }
 
 
 
-func NewRandomValues() *RandomValues {
-
+func NewRandomValues() RandomValues {
 	src := rand.NewSource(time.Now().UnixNano())
-
-	return &RandomValues{
-        rng: rand.New(src),
-    }
+	return RandomValues{ rng: rand.New(src) }
 }
 
 

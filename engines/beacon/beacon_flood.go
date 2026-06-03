@@ -41,9 +41,9 @@ type beaconFlood struct {
     channel   uint8
     ssid      string
     bcSent    int
-    builder  *builder.Beacon
-    socket   *sockets.Layer2Socket
-    randGen  *generators.RandomValues
+    socket    sockets.Layer2Socket
+    builder   builder.Beacon
+    randGen   generators.RandomValues
 }
 
 
@@ -52,14 +52,14 @@ func newBeaconFlooder(argList []string) *beaconFlood {
     parser := newParser()
     parser.parseBcFloodArgs(argList)
 
-    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    ifconfig.MustSetChannel(&parser.iface, parser.channel)
 
     return &beaconFlood{
         channel : uint8(parser.channel),
         ssid    : parser.ssid,
         bcSent  : 0,
         builder : builder.NewBeacon(),
-        socket  : sockets.NewL2Socket(parser.iface),
+        socket  : sockets.NewL2Socket(&parser.iface),
         randGen : generators.NewRandomValues(),
     }
 }
@@ -98,7 +98,7 @@ func (bf *beaconFlood) sendBeacons() {
 
 
 func (bf *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
-    bf.sendBeacon(bssid, ssid, seq, "open")
+    bf.sendBeacon(bssid, ssid, seq,   "open")
     bf.sendBeacon(bssid, ssid, seq+1, "wpa")
     bf.sendBeacon(bssid, ssid, seq+2, "wpa2")
     bf.sendBeacon(bssid, ssid, seq+3, "wpa3")
@@ -122,8 +122,6 @@ func (bf *beaconFlood) displayExecInfo(elapsed float64) {
 
 
 func (bf *beaconFlood) closeSocket() {
-    if bf.socket == nil { return }
-    
     if err := bf.socket.Close(); err != nil {
         fmt.Printf("[!] Error closing socket: %v\n", err)
     }

@@ -30,7 +30,6 @@ import (
 	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
 	"offscan/internal/sniffer"
-	"offscan/internal/sockets"
 	"offscan/internal/sysinfo"
 )
 
@@ -44,16 +43,14 @@ func Run(args []string) {
 
 type hostDiscovery struct {
     activeIPs   map[[4]byte]hostInfo
-    ips        *generators.Ipv4Iter
-    iface      *net.Interface
+    ips         generators.Ipv4Iter
+    iface       net.Interface
     mut         sync.Mutex
     myIP        net.IP
-    pkts       *packets
     protocols   protocols
     running     atomic.Bool
     sniffer    *sniffer.Sniffer
     snifferCh   <-chan []byte
-    socket     *sockets.Layer3Socket
     wgPktProc   sync.WaitGroup
 }
 
@@ -63,22 +60,21 @@ func newHostDisc(argList []string) *hostDiscovery {
     parser := newParser()
     parser.parseHostDiscArgs(argList)
 
-	var iface *net.Interface
+	var iface net.Interface
 	if parser.iface == "" {
 		iface = sysinfo.MustDefaultInterface()
 	} else {
 		iface = conv.MustStrToIface(parser.iface)
 	}
 
-	cidr := ifaceinfo.MustCIDR(iface)
+	cidr := ifaceinfo.MustCIDR(&iface)
 
     return &hostDiscovery{
         activeIPs : make(map[[4]byte]hostInfo),
         ips       : generators.NewIpv4Iter(cidr, parser.ipRange),
-        myIP      : ifaceinfo.MustIPv4(iface),
-        socket    : sockets.NewL3Socket(iface),
+        myIP      : ifaceinfo.MustIPv4(&iface),
         iface     : iface,
-        protocols : protoFlags(parser, iface),
+        protocols : protoFlags(&parser, &iface),
     }
 }
 

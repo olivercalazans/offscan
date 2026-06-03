@@ -36,8 +36,8 @@ const (
 
 
 
-func newParser() *ifConfParser {
-	return &ifConfParser{}
+func newParser() ifConfParser {
+	return ifConfParser{}
 }
 
 
