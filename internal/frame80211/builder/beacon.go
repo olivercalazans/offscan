@@ -19,6 +19,7 @@ package builder
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"offscan/internal/utils"
 	"time"
@@ -168,7 +169,7 @@ func getSecData(sec string) ([2]byte, [30]byte, int) {
         return [2]byte{0x11, 0x04}, wpa3, 26
 
     default:
-        utils.Abort("Unknown security flag: " + sec)
+        utils.Abort(fmt.Sprintf("Unknown security flag: %s", sec))
         return [2]byte{}, [30]byte{}, 0
     }
 }
