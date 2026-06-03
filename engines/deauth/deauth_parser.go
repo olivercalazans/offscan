@@ -26,11 +26,11 @@ import (
 
 
 type deauthParser struct {
-    iface      *net.Interface 
-    targetMac   net.HardwareAddr
-    bssid       net.HardwareAddr
-    delay       int
-    channel     int
+    iface      net.Interface 
+    targetMac  net.HardwareAddr
+    bssid      net.HardwareAddr
+    delay      int
+    channel    int
 }
 
 
@@ -52,7 +52,9 @@ func newParser() *deauthParser {
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Deauthentication Attack\nIt transmits deauthentication frames to both the target and the AP\n\nE.g., deauth <FLAGS>"},
+		{ID: 0, Desc: 
+			"Deauthentication Attack\nIt transmits deauthentication frames to both the target and the AP\n\nE.g., $ sudo ./offscan deauth <FLAGS>",
+		},
 		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
 		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Req: true, Desc: "Target MAC"},		
 		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Req: true, Desc: "BSSID"},		

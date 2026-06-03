@@ -25,82 +25,84 @@ import (
 
 
 type TcpPacket struct {
-    buffer    [40]byte
-    ipLayer  *ipHeader
-    tcpLayer *[20]byte
+    buffer  [40]byte
+    tcpHdr  [20]byte
+    ipHdr   ipHeader
 }
 
 
 
-func NewTcpPkt() *TcpPacket {
-    t := &TcpPacket{}
+func NewTcpPkt() TcpPacket {
+   return TcpPacket{}
+}
+
+
+
+func (tp *TcpPacket) Init() {
+    tp.ipHdr  = newIpHeader()
+    tp.buildFixed()
+}
+
+
+
+func (tp *TcpPacket) buildFixed() {
+    tp.ipHdr.fixedIpInfo()
+	tp.ipHdr.setProto(6)
+	tp.ipHdr.setLen(20)
+
+    binary.BigEndian.PutUint32(tp.tcpHdr[4:8], 1)
+    binary.BigEndian.PutUint32(tp.tcpHdr[8:12], 0)
     
-    t.ipLayer  = newIpHeader((*[20]byte)(t.buffer[0:20]))
-    t.tcpLayer = (*[20]byte)(t.buffer[20:40])
-	
-    t.buildFixed()
+    tp.tcpHdr[12] = 5 << 4
+    tp.tcpHdr[13] = 0x02
     
-    return t
+    binary.BigEndian.PutUint16(tp.tcpHdr[14:16], 64240)
+    binary.BigEndian.PutUint16(tp.tcpHdr[18:20], 0)
 }
 
 
 
-func (t *TcpPacket) buildFixed() {
-    t.ipLayer.fixedIpInfo()
-	t.ipLayer.setProto(6)
-	t.ipLayer.setLen(20)
-
-    binary.BigEndian.PutUint32(t.tcpLayer[4:8], 1)
-    binary.BigEndian.PutUint32(t.tcpLayer[8:12], 0)
-    
-    t.tcpLayer[12] = 5 << 4
-    t.tcpLayer[13] = 0x02
-    
-    binary.BigEndian.PutUint16(t.tcpLayer[14:16], 64240)
-    binary.BigEndian.PutUint16(t.tcpLayer[18:20], 0)
+func (tp *TcpPacket) setSrcPort(srcPort uint16) {
+    binary.BigEndian.PutUint16(tp.tcpHdr[0:2], srcPort)
 }
 
 
 
-func (t *TcpPacket) setSrcPort(srcPort uint16) {
-    binary.BigEndian.PutUint16(t.tcpLayer[0:2], srcPort)
+func (tp *TcpPacket) setDstPort(dstPort uint16) {
+    binary.BigEndian.PutUint16(tp.tcpHdr[2:4], dstPort)
 }
 
 
 
-func (t *TcpPacket) setDstPort(dstPort uint16) {
-    binary.BigEndian.PutUint16(t.tcpLayer[2:4], dstPort)
+func (tp *TcpPacket) flushChecksum() {
+    binary.BigEndian.PutUint16(tp.tcpHdr[16:18], 0)
 }
 
 
 
-func (t *TcpPacket) flushChecksum() {
-    binary.BigEndian.PutUint16(t.tcpLayer[16:18], 0)
+func (tp *TcpPacket) calculateChecksum(srcIp, dstIp net.IP) {
+    cksum := tcpSum(tp.tcpHdr[:20], srcIp, dstIp, 6)
+    binary.BigEndian.PutUint16(tp.tcpHdr[16:18], cksum)
 }
 
 
 
-func (t *TcpPacket) calculateChecksum(srcIp, dstIp net.IP) {
-    cksum := TcpSum(t.tcpLayer[:20], srcIp, dstIp, 6)
-    binary.BigEndian.PutUint16(t.tcpLayer[16:18], cksum)
-}
-
-
-
-func (t *TcpPacket) L3SynPkt(
+func (tp *TcpPacket) L3SynPkt(
 	srcIP   net.IP, 
 	srcPort uint16, 
 	dstIP   net.IP, 
 	dstPort uint16,
 ) []byte {
-    t.ipLayer.setSrcIp(srcIP)
-    t.ipLayer.setDstIp(dstIP)
-    t.ipLayer.calculateChecksum()
+    tp.ipHdr.setSrcIp(srcIP)
+    tp.ipHdr.setDstIp(dstIP)
+    tp.ipHdr.calculateChecksum()
+    copy(tp.buffer[:20], tp.ipHdr.header[:])
 
-    t.setSrcPort(srcPort)
-    t.setDstPort(dstPort)
-    t.flushChecksum()
-    t.calculateChecksum(srcIP, dstIP)
+    tp.setSrcPort(srcPort)
+    tp.setDstPort(dstPort)
+    tp.flushChecksum()
+    tp.calculateChecksum(srcIP, dstIP)
+    copy(tp.buffer[20:], tp.tcpHdr[:])
     
-    return t.buffer[:40]
+    return tp.buffer[:]
 }

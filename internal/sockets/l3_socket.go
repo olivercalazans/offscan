@@ -33,13 +33,13 @@ type Layer3Socket struct {
 
 
 
-func NewL3Socket(iface *net.Interface) *Layer3Socket {
+func NewL3Socket(iface *net.Interface) Layer3Socket {
     fd := createL3Socket()
     
     enableIPHdrIncl(fd)
     bindL3SocketToDevice(fd, iface)
 
-    return &Layer3Socket{fd: fd}
+    return Layer3Socket{fd: fd}
 }
 
 

@@ -31,15 +31,17 @@ const iface uint8 = 1
 
 
 
-func newParser() *netInfoParser {
-	return &netInfoParser{}
+func newParser() netInfoParser {
+	return netInfoParser{}
 }
 
 
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Network and Interface Information\nIt displays network interface configurations and status information\n\nE.g., info <FLAGS>"},
+		{ID: 0, Desc: 
+			"Network and Interface Information\nIt displays network interface configurations and status information\n\nE.g., $ sudo ./offscan info <FLAGS>",
+		},
 		{ID: iface, Short: "i", Long: "iface", HasValue: true,  Desc: "Define a network interface to get information"},
 	}
 }

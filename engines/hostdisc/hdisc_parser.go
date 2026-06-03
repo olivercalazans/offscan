@@ -24,11 +24,11 @@ import (
 
 
 type hostDiscParser struct {
-    iface  string
+    iface    string
     ipRange  string
-	arp    bool
-    icmp   bool
-    tcp    bool
+	arp      bool
+    icmp     bool
+    tcp      bool
 }
 
 
@@ -42,15 +42,17 @@ const (
 
 
 
-func newParser() *hostDiscParser {
-	return &hostDiscParser{}
+func newParser() hostDiscParser {
+	return hostDiscParser{}
 }
 
 
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Host Discovery\nIt sends packets to discover active devices on the local network\n\nE.g., hdisc <FLAGS>"},
+		{ID: 0, Desc: 
+			"Host Discovery\nIt sends packets to discover active devices on the local network\n\nE.g., $ sudo ./offscan hdisc <FLAGS>",
+		},
 		{ID: iface,   Short: "i", Long: "iface", HasValue: true, Desc: "Network interface to send packets (default: system default)"},
 		{ID: ipRange, Short: "r", Long: "range", HasValue: true, Desc: "IP range to scan"},		
 		{ID: arp,  Long: "arp",  HasValue: false, Desc: "Use only/and ARP probes"},		

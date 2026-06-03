@@ -37,10 +37,10 @@ func Run(args []string) {
 
 
 type deauthentication struct {
-    builder    *builder.Deauth
+    builder     builder.Deauth
     frmsSent    int
     seqNum      uint16
-    socket     *sockets.Layer2Socket
+    socket      sockets.Layer2Socket
     apMac       net.HardwareAddr
     targetMac   net.HardwareAddr
     delay       time.Duration
@@ -52,14 +52,14 @@ func newDeauth(argList []string) *deauthentication {
     parser := newParser()
     parser.parseDeauthArgs(argList)
     
-    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    ifconfig.MustSetChannel(&parser.iface, parser.channel)
     displayInfo(parser)
 
     return &deauthentication{
         builder   : builder.NewDeauthFrame(parser.bssid),
         frmsSent  : 0,
         seqNum    : 1,
-        socket    : sockets.NewL2Socket(parser.iface),
+        socket    : sockets.NewL2Socket(&parser.iface),
         targetMac : parser.targetMac,
         apMac     : parser.bssid,
         delay     : time.Duration(parser.delay) * time.Millisecond,
@@ -134,8 +134,6 @@ func (d *deauthentication) displayExecInfo(elapsed float64) {
 
 
 func (d *deauthentication) closeSocket() {
-    if d.socket == nil { return }
-    
     if err := d.socket.Close(); err != nil {
         fmt.Printf("[!] Error closing socket: %v\n", err)
     }

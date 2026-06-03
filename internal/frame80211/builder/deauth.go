@@ -32,27 +32,26 @@ type Deauth struct {
 
 
 
-func NewDeauthFrame(bssid Mac) *Deauth {
-	deauth := Deauth{}
-	buildFixed(deauth.buffer[:], bssid)
-	
-	return &deauth
+func NewDeauthFrame(bssid Mac) Deauth {
+	d := Deauth{}
+	d.buildFixed(bssid)
+	return d
 }
 
 
 
-func buildFixed(buffer []byte, bssid Mac) {        
-	minimalRariotapHeader(buffer[:12])
+func (d *Deauth) buildFixed(bssid Mac) {        
+	minimalRariotapHeader(d.buffer[:12])
 
-    buffer[12] = 0xC0
-    buffer[13] = 0x00
-    buffer[14] = 0x3a
-    buffer[15] = 0x01
+    d.buffer[12] = 0xC0
+    d.buffer[13] = 0x00
+    d.buffer[14] = 0x3a
+    d.buffer[15] = 0x01
 
-    copy(buffer[28:34], bssid)
+    copy(d.buffer[28:34], bssid)
 
-    buffer[36] = 0x07
-    buffer[37] = 0x00
+    d.buffer[36] = 0x07
+    d.buffer[37] = 0x00
 }
 
 

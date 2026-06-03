@@ -50,7 +50,7 @@ func (s *Sniffer) compileFilter() ([]unix.SockFilter, error) {
 
     var bpfProg C.struct_bpf_program
 
-	linkType, err := sysinfo.GetIfaceLinkType(s.iface)
+	linkType, err := sysinfo.GetIfaceLinkType(&s.iface)
 
 	if err != nil {
 		utils.Abort(fmt.Sprintf("%v", err))

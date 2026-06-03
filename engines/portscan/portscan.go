@@ -49,7 +49,7 @@ const delay = 30 * time.Millisecond
 
 
 type portScanner struct {
-    iface      *net.Interface
+    iface       net.Interface
     myIP        net.IP
     targetIP    net.IP
     ports       string
@@ -58,7 +58,6 @@ type portScanner struct {
     mut         sync.Mutex
     wg          sync.WaitGroup
     sniffer    *sniffer.Sniffer
-    socket     *sockets.Layer3Socket
 }
 
 
@@ -69,7 +68,7 @@ func newPortScanner(argList []string) *portScanner {
 
 	dstIP := conv.MustStrToIPv4(parser.TargetIP)
 	iface := netroute.MustRouteIfaceForDstIP(dstIP)
-	myIP  := ifaceinfo.MustIPv4(iface)
+	myIP  := ifaceinfo.MustIPv4(&iface)
 
     return &portScanner{
         iface     : iface,
@@ -164,10 +163,12 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
-    builder   := builder.NewTcpPkt()
-    ps.socket  = sockets.NewL3Socket(ps.iface)
-    randGen   := generators.NewRandomValues()
-    portIter  := generators.NewPortIter(ps.ports, ps.random)
+    builder := builder.NewTcpPkt()
+    builder.Init()
+
+    socket   := sockets.NewL3Socket(&ps.iface)
+    randGen  := generators.NewRandomValues()
+    portIter := generators.NewPortIter(ps.ports, ps.random)
 
     for {
         port, hasPort := portIter.Next()
@@ -177,20 +178,18 @@ func (ps *portScanner) sendTcpProbes() {
 		srcPort := randGen.RandomPort()
         pkt     := builder.L3SynPkt(ps.myIP, srcPort, ps.targetIP, port)
         
-        ps.socket.SendTo(pkt, ps.targetIP)
+        socket.SendTo(pkt, ps.targetIP)
         time.Sleep(delay)
     }
 
-    ps.closeSocket()
+    ps.closeSocket(&socket)
     time.Sleep(3 * time.Second)
 }
 
 
 
-func (ps *portScanner) closeSocket() {
-    if ps.socket == nil { return }
-    
-    if err := ps.socket.Close(); err != nil {
+func (ps *portScanner) closeSocket(socket *sockets.Layer3Socket) {
+    if err := socket.Close(); err != nil {
         fmt.Printf("[!] Error closing socket: %v\n", err)
     }
 }
