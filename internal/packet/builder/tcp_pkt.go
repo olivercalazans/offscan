@@ -102,7 +102,7 @@ func (tp *TcpPacket) L3SynPkt(
     tp.setDstPort(dstPort)
     tp.flushChecksum()
     tp.calculateChecksum(srcIP, dstIP)
-    copy(tp.buffer[:], tp.tcpHdr[:])
+    copy(tp.buffer[20:], tp.tcpHdr[:])
     
-    return tp.buffer[:40]
+    return tp.buffer[:]
 }
