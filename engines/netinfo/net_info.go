@@ -213,7 +213,7 @@ func (ni *networkInfo) setBroadcast() {
 
 
 func (ni *networkInfo) displayInfo(index int) {
-    fmt.Printf("#%d Interface: %s - State: %s\n", index, ni.current.Name, ni.state)
+    fmt.Printf("# %d Interface: %s - State: %s\n", index, ni.current.Name, ni.state)
     fmt.Println("  - Type.......:", ni.ifType)
     fmt.Println("  - MAC........:", ni.mac)
     fmt.Println("  - IP.........:", ni.ip)

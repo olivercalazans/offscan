@@ -43,7 +43,7 @@ func (iph *ipHeader) fixedIpInfo() {
 	iph.header[1] = 0                                     // DSCP + ECN
 	binary.BigEndian.PutUint16(iph.header[4:6], 0x1234)   // ID
 	binary.BigEndian.PutUint16(iph.header[6:8], 0x4000)   // Flags + Fragment offset (bit DF = 1, offset 0)
-	iph.header[8] = 64									 // TTL
+	iph.header[8] = 64									  // TTL
 	binary.BigEndian.PutUint16(iph.header[10:12], 0)      // Checksum
 }
 
