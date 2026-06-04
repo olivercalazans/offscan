@@ -23,60 +23,26 @@ import (
 )
 
 
-type Dot11Dissector struct {
-	frame       []byte
-	dot11Start  int
-	isBeacon    bool
-}
 
+func (dd *Dot11Dissector) checkIfIsBeacon() bool {
+	if len(dd.frame) < 24 { return false }
 
-
-func NewBeaconDissector() *Dot11Dissector {
-	return &Dot11Dissector{}
-}
-
-
-
-func (dd *Dot11Dissector) UpdatePkt(rawPkt []byte) {
-	dd.frame      = rawPkt
-	dd.dot11Start = 0
-	dd.isBeacon   = false
-
-	if len(rawPkt) < 4 || rawPkt[0] != 0x00 { return }
-
-	rtLen := int(binary.LittleEndian.Uint16(rawPkt[2:4]))
-
-	if rtLen > 0 && rtLen < len(rawPkt) {
-		dd.dot11Start = rtLen
-	}
-
-	dd.checkIfIsBeacon()
-}
-
-
-
-func (dd *Dot11Dissector) checkIfIsBeacon() {
-	if len(dd.frame)-dd.dot11Start < 24 {
-		return
-	}
-
-	dot11        := dd.frame[dd.dot11Start:]
-	frameControl := dot11[0] 
+	frameControl := dd.frame[0] 
 	fType        := (frameControl >> 2) & 0x03
 	fSubtype     := (frameControl >> 4) & 0x0F
 
 	if fType != 0 || fSubtype != 8 {
-		return
+		return false
 	}
 
-	dd.isBeacon = true
-	dd.frame    = dot11
+	dd.IsBeacon = true
+	return true
 }
 
 
 
 func (dd *Dot11Dissector) GetSSID() string {
-	if !dd.isBeacon {
+	if !dd.IsBeacon {
 		return "unknown"
 	}
 
@@ -109,7 +75,7 @@ func (dd *Dot11Dissector) GetSSID() string {
 func (dd *Dot11Dissector) GetBSSID() [6]byte {
 	var bssid [6]byte
 
-	if !dd.isBeacon || len(dd.frame) < 24 {
+	if !dd.IsBeacon || len(dd.frame) < 24 {
 		return bssid
 	}
 	
@@ -121,7 +87,7 @@ func (dd *Dot11Dissector) GetBSSID() [6]byte {
 
 
 func (dd *Dot11Dissector) GetChannel() uint8 {
-	if !dd.isBeacon {
+	if !dd.IsBeacon {
 		return 0
 	}
 
@@ -150,7 +116,7 @@ func (dd *Dot11Dissector) GetChannel() uint8 {
 
 
 func (dd *Dot11Dissector) GetSecurity() string {
-	if !dd.isBeacon {
+	if !dd.IsBeacon {
 		return "unknown"
 	}
 
@@ -234,7 +200,7 @@ func parseRSNManual(data []byte) string {
 
 
 func (dd *Dot11Dissector) GetStandard() string {
-	if !dd.isBeacon {
+	if !dd.IsBeacon {
 		return "unknown"
 	}
 
