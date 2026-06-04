@@ -18,18 +18,19 @@
 package l2disc
 
 import (
+	"fmt"
 	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
+	"offscan/internal/utils"
 )
 
 
 type l2DiscParser struct {
-    Iface  net.Interface
+    Iface      net.Interface
+	sniffTime  int
 }
 
-
-const iface uint8 = 1	
 
 
 func newParser() l2DiscParser {
@@ -38,12 +39,22 @@ func newParser() l2DiscParser {
 
 
 
+const (
+	iface      uint8 = 1
+	sniffTime  uint8 = 2
+)
+
+
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
 		{ID: 0, Desc: 
 			"Layer 2 Host Discovery\nIt sniffs the 802.11 frames to discover active devices and which Access Point it is associated with\n\nE.g., $ sudo ./offscan l2disc <FLAGS>",
 		},
-		{ID: iface, Short: "i", Long: "iface", HasValue: true, Desc: "Define a network interface to sniff frames"},
+		{
+			ID: iface, Short: "i", Long: "iface", HasValue: true, Req: true,
+			Desc: "Define a network interface to sniff frames",
+		},
+		{ID: sniffTime, Short: "t", Long: "time",  HasValue: true, Desc: "Time in seconds to sniff each channel (Default 1)"},
 	}
 }
 
@@ -56,7 +67,21 @@ func (l2dp *l2DiscParser) parseL2DiscArgs(args []string) {
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case iface : l2dp.Iface = conv.MustStrToIface(flag.ValueStr)
+		case iface     : l2dp.Iface     = conv.MustStrToIface(flag.ValueStr)
+		case sniffTime : l2dp.sniffTime = parseSniffTime(flag.ValueStr)
 		}
 	}
+}
+
+
+
+func parseSniffTime(str string) int {
+	if str == "" { return 1 }
+
+	value := conv.MustStrToInt(str)
+	if value <= 0 {
+		utils.Abort(fmt.Sprintf("Sniffing time can't be negative: %d", value))
+	}
+
+	return value
 }

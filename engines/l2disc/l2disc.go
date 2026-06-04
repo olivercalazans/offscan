@@ -39,6 +39,7 @@ func Run(args []string) {
 
 type layer2HostDiscovery struct{
 	iface      net.Interface
+	sniffTime  time.Duration
 	nets       map[beaconInfo]struct{}
 	stations   map[dataFrameInfo]struct{}
 	sniffer   *sniffer.Sniffer
@@ -53,9 +54,10 @@ func newL2Disc(args []string) *layer2HostDiscovery {
 	parser.parseL2DiscArgs(args)
 
 	return &layer2HostDiscovery{
-		iface    : parser.Iface,
-		nets     : make(map[beaconInfo]struct{}),
-	    stations : make(map[dataFrameInfo]struct{}),
+		iface     : parser.Iface,
+		sniffTime : time.Duration(parser.sniffTime),
+		nets      : make(map[beaconInfo]struct{}),
+	    stations  : make(map[dataFrameInfo]struct{}),
 	}
 }
 
@@ -160,7 +162,7 @@ func (l2hd *layer2HostDiscovery) sniffChannels(channels []int, freq string) {
 			continue
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(l2hd.sniffTime * time.Second)
 	}
 
 	if len(errChannels) > 0 {
