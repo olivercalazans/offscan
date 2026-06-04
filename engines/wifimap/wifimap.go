@@ -39,22 +39,23 @@ func Run(args []string) {
 
 
 type wifiData struct {
-	SSID  string
-	BSSID [6]byte
-	Chnl  uint8
-	Sec   string
-	Std   string
+	ssid  string
+	bssid [6]byte
+	chnl  uint8
+	sec   string
+	std   string
 }
 
 
 
 type wifiMapper struct {
-	wInfo     map[wifiData]struct{}
 	iface     net.Interface
+
+	wInfo     map[wifiData]struct{}
 	sniffer  *sniffer.Sniffer
 	mut       sync.Mutex
-	cancel    chan struct{}
 	wg        sync.WaitGroup
+	cancel    chan struct{}
 }
 
 
@@ -83,7 +84,7 @@ func (wm *wifiMapper) execute() {
 
 func (wm *wifiMapper) startBeaconProcessor() {
 	wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
-	sniffCh   := wm.sniffer.Start()
+	sniffCh    := wm.sniffer.Start()
 
 	fmt.Printf("[+] Sniffing beacons\n")
 
@@ -108,11 +109,9 @@ func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 
 	for {
 		beacon, ok := <-sniffCh
-		if !ok {
-			break
-		}
+		if !ok { break }
 		dissector.UpdatePkt(beacon)
-		wm.dissectAndUpdate(dissector, tempBuf)
+		wm.updateInfo(dissector, tempBuf)
 	}
 
 	wm.mut.Lock()
@@ -122,16 +121,16 @@ func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 
 
 
-func (wm *wifiMapper) dissectAndUpdate(
-	dissector *dissector.Dot11Dissector,
-	tempBuf map[wifiData]struct{},
+func (wm *wifiMapper) updateInfo(
+	dissector  *dissector.Dot11Dissector,
+	tempBuf     map[wifiData]struct{},
 ) {
 	info := wifiData{
-		SSID:  dissector.GetSSID(),
-		BSSID: dissector.GetBSSID(),
-		Chnl:  dissector.GetChannel(),
-		Sec:   dissector.GetSecurity(),
-		Std:   dissector.GetStandard(),
+		ssid  : dissector.GetSSID(),
+		bssid : dissector.GetBSSID(),
+		chnl  : dissector.GetChannel(),
+		sec   : dissector.GetSecurity(),
+		std   : dissector.GetStandard(),
 	}
 
 	tempBuf[info] = struct{}{}
@@ -157,7 +156,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 	var errChannels []int
 
 	for _, chnl := range channels {
-		ok := ifconfig.TrySetChannel(&wm.iface, chnl)
+		ok := ifconfig.TrySetChannel(wm.iface, chnl)
 
 		if ok != nil {
 			errChannels = append(errChannels, chnl)
@@ -176,7 +175,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 
 func (wm *wifiMapper) stopBeaconProcessor() {
 	wm.sniffer.Stop()
-	fmt.Printf("[-] Sniffer stopped\n")
+	fmt.Println("[-] Sniffer stopped")
 	wm.wg.Wait()
 }
 
@@ -197,8 +196,8 @@ func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData, int) {
 	for netData := range wm.wInfo {
 		keys = append(keys, netData)
 
-        if len(netData.SSID) > maxLen {
-			maxLen = len(netData.SSID)
+        if len(netData.ssid) > maxLen {
+			maxLen = len(netData.ssid)
 		}
 	}
 
@@ -209,14 +208,14 @@ func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData, int) {
 
 func (wm *wifiMapper) sortWifiData(keys []wifiData) {
 	slices.SortFunc(keys, func(a, b wifiData) int {
-		if a.SSID != b.SSID {
-			if a.SSID < b.SSID {
+		if a.ssid != b.ssid {
+			if a.ssid < b.ssid {
 				return -1
 			}
 			return 1
 		}
 
-		return int(a.Chnl) - int(b.Chnl)
+		return int(a.chnl) - int(b.chnl)
 	})
 }
 
@@ -251,11 +250,11 @@ func (wm *wifiMapper) displayHeader(maxLen int) {
 
 
 func (wm *wifiMapper) displayWifiInfo(netData wifiData, maxLen int) {
-	bssidStr := conv.Byte6ToStr(netData.BSSID)
+	bssidStr := conv.Byte6ToStr(netData.bssid)
 
 	line := fmt.Sprintf(
 		"%-*s  %-17s  %-3d  %-8s  %-s\n",
-		maxLen, netData.SSID, bssidStr, netData.Chnl, netData.Std, netData.Sec,
+		maxLen, netData.ssid, bssidStr, netData.chnl, netData.std, netData.sec,
 	)
 
 	fmt.Print(line)

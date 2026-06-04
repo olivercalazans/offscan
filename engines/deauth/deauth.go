@@ -52,7 +52,7 @@ func newDeauth(argList []string) *deauthentication {
     parser := newParser()
     parser.parseDeauthArgs(argList)
     
-    ifconfig.MustSetChannel(&parser.iface, parser.channel)
+    ifconfig.MustSetChannel(parser.iface, parser.channel)
     displayInfo(parser)
 
     return &deauthentication{

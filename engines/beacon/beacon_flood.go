@@ -52,7 +52,7 @@ func newBeaconFlooder(argList []string) *beaconFlood {
     parser := newParser()
     parser.parseBcFloodArgs(argList)
 
-    ifconfig.MustSetChannel(&parser.iface, parser.channel)
+    ifconfig.MustSetChannel(parser.iface, parser.channel)
 
     return &beaconFlood{
         channel : uint8(parser.channel),

@@ -49,7 +49,7 @@ type iw_freq struct {
 
 
 
-func TrySetChannel(iface *net.Interface, channel int) error {
+func TrySetChannel(iface net.Interface, channel int) error {
 	ValidateChannel(channel)
 
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
@@ -81,7 +81,7 @@ func TrySetChannel(iface *net.Interface, channel int) error {
 
 
 
-func MustSetChannel(iface *net.Interface, channel int) {
+func MustSetChannel(iface net.Interface, channel int) {
 	if err := TrySetChannel(iface, channel); err != nil {
 		utils.Abort(fmt.Sprintf("Unable to set channel %d on interface %s: %s", channel, iface.Name, err))
 	}

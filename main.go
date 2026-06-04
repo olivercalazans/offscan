@@ -25,6 +25,7 @@ import (
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
 	"offscan/engines/ifmode"
+	"offscan/engines/l2disc"
 	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
 	"offscan/engines/wifimap"
@@ -44,9 +45,10 @@ func main() {
 	var registry = map[string]argparser.CommandHandler{
 	"beacon" : { Run: beacon.Run,   FlagSettings: beacon.FlagSettings   },
 	"deauth" : { Run: deauth.Run,   FlagSettings: deauth.FlagSettings   },
-	"mode"   : { Run: ifmode.Run,   FlagSettings: ifmode.FlagSettings   },
-	"info"   : { Run: netinfo.Run,  FlagSettings: netinfo.FlagSettings  },
 	"hdisc"  : { Run: hostdisc.Run, FlagSettings: hostdisc.FlagSettings },
+	"info"   : { Run: netinfo.Run,  FlagSettings: netinfo.FlagSettings  },
+	"l2disc" : { Run: l2disc.Run,   FlagSettings: l2disc.FlagSettings   },
+	"mode"   : { Run: ifmode.Run,   FlagSettings: ifmode.FlagSettings   },
 	"pscan"  : { Run: portscan.Run, FlagSettings: portscan.FlagSettings },
 	"wmap"   : { Run: wifimap.Run,  FlagSettings: wifimap.FlagSettings  },
 }
