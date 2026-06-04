@@ -23,12 +23,14 @@ import (
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/utils"
+	"strconv"
 )
 
 
 type l2DiscParser struct {
     Iface      net.Interface
-	sniffTime  int
+	sniffTime  float64
+	retrys     int
 }
 
 
@@ -42,6 +44,7 @@ func newParser() l2DiscParser {
 const (
 	iface      uint8 = 1
 	sniffTime  uint8 = 2
+	retrys     uint8 = 3
 )
 
 
@@ -54,7 +57,14 @@ func FlagSettings() []argparser.Flag {
 			ID: iface, Short: "i", Long: "iface", HasValue: true, Req: true,
 			Desc: "Define a network interface to sniff frames",
 		},
-		{ID: sniffTime, Short: "t", Long: "time",  HasValue: true, Desc: "Time in seconds to sniff each channel (Default 1)"},
+		{
+			ID: sniffTime, Short: "t", Long: "time", HasValue: true, 
+			Desc: "Time in seconds to sniff each channel (Default 1)",
+		},
+		{
+			ID: retrys, Short: "r", Long: "retry", HasValue: true,
+			Desc: "Retrys",
+		},
 	}
 }
 
@@ -68,19 +78,39 @@ func (l2dp *l2DiscParser) parseL2DiscArgs(args []string) {
 	for _, flag := range flags {
 		switch flag.ID {
 		case iface     : l2dp.Iface     = conv.MustStrToIface(flag.ValueStr)
-		case sniffTime : l2dp.sniffTime = parseSniffTime(flag.ValueStr)
+		case sniffTime : l2dp.sniffTime = parseFloat(flag.ValueStr)
+		case retrys    : l2dp.retrys    = parseInt(flag.ValueStr)
 		}
 	}
 }
 
 
 
-func parseSniffTime(str string) int {
+func parseFloat(str string) float64 {
+	if str == "" { return 1 }
+	
+	value, err := strconv.ParseFloat(str, 64)
+
+	if err != nil {
+		utils.Abort(fmt.Sprintf("Invalid value for time duration: %v", err))
+	}
+
+	if value <= 0 {
+		utils.Abort(fmt.Sprintf("Sniffing time can't be negative: %v", err))
+	}
+
+	return value
+}
+
+
+
+func parseInt(str string) int {
 	if str == "" { return 1 }
 
 	value := conv.MustStrToInt(str)
+
 	if value <= 0 {
-		utils.Abort(fmt.Sprintf("Sniffing time can't be negative: %d", value))
+		utils.Abort(fmt.Sprintf("Retrys can't be negative: %d", value))
 	}
 
 	return value

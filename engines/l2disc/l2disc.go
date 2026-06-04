@@ -20,6 +20,7 @@ package l2disc
 import (
 	"fmt"
 	"maps"
+	"math"
 	"net"
 	"offscan/internal/conv"
 	"offscan/internal/frame80211/dissector"
@@ -38,13 +39,14 @@ func Run(args []string) {
 
 
 type layer2HostDiscovery struct{
-	iface      net.Interface
-	sniffTime  time.Duration
-	nets       map[beaconInfo]struct{}
-	stations   map[dataFrameInfo]struct{}
-	sniffer   *sniffer.Sniffer
-	mut        sync.Mutex
-	wg         sync.WaitGroup
+	iface       net.Interface
+	sniffTime   time.Duration
+	retrys      int
+	nets        map[beaconInfo]struct{}
+	stations    map[dataFrameInfo]struct{}
+	sniffer    *sniffer.Sniffer
+	mut         sync.Mutex
+	wg          sync.WaitGroup
 }
 
 
@@ -55,7 +57,8 @@ func newL2Disc(args []string) *layer2HostDiscovery {
 
 	return &layer2HostDiscovery{
 		iface     : parser.Iface,
-		sniffTime : time.Duration(parser.sniffTime),
+		sniffTime : calculateDuration(parser.sniffTime),
+		retrys    : parser.retrys,
 		nets      : make(map[beaconInfo]struct{}),
 	    stations  : make(map[dataFrameInfo]struct{}),
 	}
@@ -63,12 +66,27 @@ func newL2Disc(args []string) *layer2HostDiscovery {
 
 
 
+func calculateDuration(sniffTime float64) time.Duration {
+	nano := math.Round(sniffTime * float64(time.Second))
+	return time.Duration(nano)
+}
+
+
+
 func (l2hd *layer2HostDiscovery) execute() {
+	l2hd.displayExecInfo()
 	l2hd.startFrameProcessor()
-	l2hd.sniff2GChannels()
-	l2hd.sniff5GChannels()
+	l2hd.sniffChannels()
 	l2hd.stopFrameProcessor()
 	l2hd.displayResults()
+}
+
+
+
+func (l2hd *layer2HostDiscovery) displayExecInfo() {
+	fmt.Printf("[*] IFACE: %s\n", l2hd.iface.Name)
+	fmt.Printf("[*] TIME.: %.2fs\n", l2hd.sniffTime.Seconds())
+	fmt.Printf("[*] RETRY: %d\n", l2hd.retrys)
 }
 
 
@@ -137,21 +155,31 @@ func (l2hd *layer2HostDiscovery) updateInfo(tools *dissecAndBufs) {
 
 
 
+func (l2hd *layer2HostDiscovery) sniffChannels() {
+	for i := range l2hd.retrys {
+		fmt.Printf("[#] %d° try\n", i + 1)
+		l2hd.sniff2GChannels()
+		l2hd.sniff5GChannels()
+	}
+}
+
+
+
 func (l2hd *layer2HostDiscovery) sniff2GChannels() {
 	channels := ifconfig.Channels2()
-	l2hd.sniffChannels(channels, "2.4")
+	l2hd.sniff(channels, "2.4")
 }
 
 
 
 func (l2hd *layer2HostDiscovery) sniff5GChannels() {
 	channels := ifconfig.Channels5()
-	l2hd.sniffChannels(channels, "5")
+	l2hd.sniff(channels, "5")
 }
 
 
 
-func (l2hd *layer2HostDiscovery) sniffChannels(channels []int, freq string) {
+func (l2hd *layer2HostDiscovery) sniff(channels []int, freq string) {
 	var errChannels []int
 
 	for _, chnl := range channels {
@@ -162,7 +190,7 @@ func (l2hd *layer2HostDiscovery) sniffChannels(channels []int, freq string) {
 			continue
 		}
 
-		time.Sleep(l2hd.sniffTime * time.Second)
+		time.Sleep(l2hd.sniffTime)
 	}
 
 	if len(errChannels) > 0 {
