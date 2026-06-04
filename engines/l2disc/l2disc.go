@@ -87,7 +87,7 @@ func (l2hd *layer2HostDiscovery) startFrameProcessor() {
 
 
 func getBPFFilter() string {
-	return "wlan type mgt subtype beacon or wlan type data"
+	return "(wlan type mgt and wlan subtype beacon) or wlan type data"
 }
 
 
@@ -160,7 +160,7 @@ func (l2hd *layer2HostDiscovery) sniffChannels(channels []int, freq string) {
 			continue
 		}
 
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 	}
 
 	if len(errChannels) > 0 {
@@ -207,14 +207,17 @@ func (l2hd *layer2HostDiscovery) extractKeysAndMaxLen() ([]beaconInfo, int) {
 
 func (l2hd *layer2HostDiscovery) displayStation(net *beaconInfo, maxLen int) {
 	for sta := range l2hd.stations {
-		if sta.bssid == net.bssid {			
-			fmt.Printf(
-				"%-*s  %-3d  %s  %s\n", 
-				maxLen, net.ssid, net.chnl,
-				conv.Byte6ToStr(net.bssid), 
-				conv.Byte6ToStr(sta.staMac),
-			)
-			delete(l2hd.stations, sta)
-		}
+		if sta.bssid != net.bssid {	continue }
+
+		
+		fmt.Printf(
+			"%-*s  %-3d  %s  %s\n", 
+			maxLen, net.ssid, net.chnl,
+			conv.Byte6ToStr(net.bssid), 
+			conv.Byte6ToStr(sta.staMac),
+		)
+		
+		delete(l2hd.stations, sta)
+		return
 	}
 }

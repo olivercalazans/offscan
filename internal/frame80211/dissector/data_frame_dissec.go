@@ -44,9 +44,9 @@ func (dd *Dot11Dissector) GetAddrs() ([6]byte, [6]byte, bool) {
     addr1 = dd.getAddr1()
     addr2 = dd.getAddr2()
 
-    if toDS { return addr1, addr2, true }
+    if toDS { return addr1, addr2, isValid(addr2)}
 
-	return addr2, addr1, true
+	return addr2, addr1, isValid(addr1)
 }
 
 
@@ -75,4 +75,22 @@ func (dd *Dot11Dissector) getAddr2() [6]byte {
 	var addr [6]byte
 	copy(addr[:], dd.frame[10:16])
 	return addr
+}
+
+
+
+func isValid(mac [6]byte) bool {
+	// Multicast IPv4
+    if mac[0] == 0x01 && mac[1] == 0x00 { return false }
+
+    // Multicast IPv6
+	if mac[0] == 0x33 && mac[1] == 0x33 { return false }
+	
+    // Multicast (STP)
+    if mac[0] == 0x01 && mac[1] == 0x80 && mac[2] == 0xc2 { return false }
+	
+    // Broadcast
+    if mac[0] == 0xff && mac[1] == 0xff && mac[2] == 0xff { return false }
+
+	return true
 }
