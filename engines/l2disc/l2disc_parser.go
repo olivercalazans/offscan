@@ -61,10 +61,6 @@ func FlagSettings() []argparser.Flag {
 			ID: sniffTime, Short: "t", Long: "time", HasValue: true, 
 			Desc: "Time in seconds to sniff each channel (Default 1)",
 		},
-		{
-			ID: retrys, Short: "r", Long: "retry", HasValue: true,
-			Desc: "Retrys",
-		},
 	}
 }
 
@@ -79,7 +75,6 @@ func (l2dp *l2DiscParser) parseL2DiscArgs(args []string) {
 		switch flag.ID {
 		case iface     : l2dp.Iface     = conv.MustStrToIface(flag.ValueStr)
 		case sniffTime : l2dp.sniffTime = parseFloat(flag.ValueStr)
-		case retrys    : l2dp.retrys    = parseInt(flag.ValueStr)
 		}
 	}
 }
@@ -97,20 +92,6 @@ func parseFloat(str string) float64 {
 
 	if value <= 0 {
 		utils.Abort(fmt.Sprintf("Sniffing time can't be negative: %v", err))
-	}
-
-	return value
-}
-
-
-
-func parseInt(str string) int {
-	if str == "" { return 1 }
-
-	value := conv.MustStrToInt(str)
-
-	if value <= 0 {
-		utils.Abort(fmt.Sprintf("Retrys can't be negative: %d", value))
 	}
 
 	return value

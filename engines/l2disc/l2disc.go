@@ -18,15 +18,18 @@
 package l2disc
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"math"
 	"net"
-	"offscan/internal/conv"
-	"offscan/internal/frame80211/dissector"
 	"offscan/internal/ifconfig"
 	"offscan/internal/sniffer"
+	"os"
+	"os/signal"
+	"slices"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -41,12 +44,12 @@ func Run(args []string) {
 type layer2HostDiscovery struct{
 	iface       net.Interface
 	sniffTime   time.Duration
-	retrys      int
-	nets        map[beaconInfo]struct{}
-	stations    map[dataFrameInfo]struct{}
 	sniffer    *sniffer.Sniffer
-	mut         sync.Mutex
 	wg          sync.WaitGroup
+	eventCh     chan dot11Info
+	ctx         context.Context
+	cancel      context.CancelFunc
+	errChnls    map[int]struct{}
 }
 
 
@@ -58,9 +61,7 @@ func newL2Disc(args []string) *layer2HostDiscovery {
 	return &layer2HostDiscovery{
 		iface     : parser.Iface,
 		sniffTime : calculateDuration(parser.sniffTime),
-		retrys    : parser.retrys,
-		nets      : make(map[beaconInfo]struct{}),
-	    stations  : make(map[dataFrameInfo]struct{}),
+		errChnls  : make(map[int]struct{}),
 	}
 }
 
@@ -75,33 +76,51 @@ func calculateDuration(sniffTime float64) time.Duration {
 
 func (l2hd *layer2HostDiscovery) execute() {
 	l2hd.displayExecInfo()
+	l2hd.createCtx()
 	l2hd.startFrameProcessor()
-	l2hd.sniffChannels()
+	l2hd.sniffEndlessly()
 	l2hd.stopFrameProcessor()
-	l2hd.displayResults()
 }
 
 
 
 func (l2hd *layer2HostDiscovery) displayExecInfo() {
 	fmt.Printf("[*] IFACE: %s\n", l2hd.iface.Name)
-	fmt.Printf("[*] TIME.: %.2fs\n", l2hd.sniffTime.Seconds())
-	fmt.Printf("[*] RETRY: %d\n", l2hd.retrys)
+	fmt.Printf("[*] DELAY: %.2fs\n", l2hd.sniffTime.Seconds())
+}
+
+
+
+func (l2hd *layer2HostDiscovery) createCtx() {
+    l2hd.ctx, l2hd.cancel = context.WithCancel(context.Background())
+
+	go func() {
+        sigCh := make(chan os.Signal, 1)
+        signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+        <-sigCh
+        fmt.Println("\n[!] Interrupt received. Stopping...")
+        l2hd.cancel()
+    }()
 }
 
 
 
 func (l2hd *layer2HostDiscovery) startFrameProcessor() {
+	l2hd.eventCh = make(chan dot11Info, 1024)
+    go l2hd.displayLoop()
+
 	l2hd.sniffer  = sniffer.NewSniffer(l2hd.iface, getBPFFilter(), true)
 	sniffCh      := l2hd.sniffer.Start()
 
-	fmt.Printf("[+] Sniffing 802.11 frames\n")
+	fmt.Printf("[+] Sniffing 802.11 frames. Press CTRL + C to stop\n")
 
 	l2hd.wg.Add(1)
 	go func() {
 		defer l2hd.wg.Done()
 		l2hd.processFrame(sniffCh)
 	}()
+
+	displayHeader()
 }
 
 
@@ -112,142 +131,69 @@ func getBPFFilter() string {
 
 
 
-func (l2hd *layer2HostDiscovery) processFrame(sniffCh <-chan []byte) {
-	tools := dissecAndBufs{
-		staBuf    : make(map[dataFrameInfo]struct{}),
-		netsBuf   : make(map[beaconInfo]struct{}),
-		dissector : dissector.NewDot11Dissector(),
-	}
+func (l2hd *layer2HostDiscovery) sniffEndlessly() {
+    for {
+        select {
+        case <-l2hd.ctx.Done():
+            return
 
-	for {
-		frame, ok := <-sniffCh
-		if !ok { break }
-		tools.dissector.UpdatePkt(frame)
-		l2hd.updateInfo(&tools)
-	}
+		default:
+        }
 
-	l2hd.mut.Lock()
-	maps.Copy(l2hd.stations, tools.staBuf)
-	maps.Copy(l2hd.nets, tools.netsBuf)
-	l2hd.mut.Unlock()
-}
+        l2hd.sniff2GChannels()
+        l2hd.sniff5GChannels()
 
-
-
-func (l2hd *layer2HostDiscovery) updateInfo(tools *dissecAndBufs) {
-	if tools.dissector.IsBeacon {
-		ap := beaconInfo{
-			ssid  : tools.dissector.GetSSID(),
-			bssid : tools.dissector.GetBSSID(),
-			chnl  : tools.dissector.GetChannel(),
-		}
-
-		tools.netsBuf[ap] = struct{}{}
-	}
-
-	if tools.dissector.IsDataFrm {
-		bssid, staMac, ok := tools.dissector.GetAddrs()
-		if !ok { return }
-		sta := dataFrameInfo{ bssid: bssid, staMac: staMac }
-		tools.staBuf[sta] = struct{}{}
-	}
-}
-
-
-
-func (l2hd *layer2HostDiscovery) sniffChannels() {
-	for i := range l2hd.retrys {
-		fmt.Printf("[#] %d° try\n", i + 1)
-		l2hd.sniff2GChannels()
-		l2hd.sniff5GChannels()
-	}
+		if l2hd.ctx.Err() != nil { return }
+    }
 }
 
 
 
 func (l2hd *layer2HostDiscovery) sniff2GChannels() {
 	channels := ifconfig.Channels2()
-	l2hd.sniff(channels, "2.4")
+	l2hd.sniff(channels)
 }
 
 
 
 func (l2hd *layer2HostDiscovery) sniff5GChannels() {
 	channels := ifconfig.Channels5()
-	l2hd.sniff(channels, "5")
+	l2hd.sniff(channels)
 }
 
 
 
-func (l2hd *layer2HostDiscovery) sniff(channels []int, freq string) {
-	var errChannels []int
-
-	for _, chnl := range channels {
+func (l2hd *layer2HostDiscovery) sniff(channels []int) {
+    for _, chnl := range channels {
+        if l2hd.ctx.Err() != nil { return }
+        
 		ok := ifconfig.TrySetChannel(l2hd.iface, chnl)
+        if ok != nil {
+            l2hd.errChnls[chnl] = struct{}{}
+            continue
+        }
 
-		if ok != nil {
-			errChannels = append(errChannels, chnl)
-			continue
-		}
-
-		time.Sleep(l2hd.sniffTime)
-	}
-
-	if len(errChannels) > 0 {
-		fmt.Printf("[!] Unable to sniff these channels (%sG):\n%v\n", freq, errChannels)
-	}
+		select {
+        case <-time.After(l2hd.sniffTime):
+        case <-l2hd.ctx.Done(): return }
+    }
 }
 
 
 
 func (l2hd *layer2HostDiscovery) stopFrameProcessor() {
 	l2hd.sniffer.Stop()
-	fmt.Println("[-] Sniffer stopped")
+	close(l2hd.eventCh)
+	
+	fmt.Println("[-] Process stopped")
+	l2hd.displayErrChannels()
 	l2hd.wg.Wait()
 }
 
 
 
-func (l2hd *layer2HostDiscovery) displayResults() {
-	nets, maxLen := l2hd.extractKeysAndMaxLen()
-
-	for _, net := range nets {
-		l2hd.displayStation(&net, maxLen)
-	}
-}
-
-
-
-func (l2hd *layer2HostDiscovery) extractKeysAndMaxLen() ([]beaconInfo, int) {
-	maxLen := 4
-	keys   := make([]beaconInfo, 0, len(l2hd.nets))
-	
-	for netData := range l2hd.nets {
-		keys = append(keys, netData)
-
-        if len(netData.ssid) > maxLen {
-			maxLen = len(netData.ssid)
-		}
-	}
-
-    return keys, maxLen
-}
-
-
-
-func (l2hd *layer2HostDiscovery) displayStation(net *beaconInfo, maxLen int) {
-	for sta := range l2hd.stations {
-		if sta.bssid != net.bssid {	continue }
-
-		
-		fmt.Printf(
-			"%-*s  %-3d  %s  %s\n", 
-			maxLen, net.ssid, net.chnl,
-			conv.Byte6ToStr(net.bssid), 
-			conv.Byte6ToStr(sta.staMac),
-		)
-		
-		delete(l2hd.stations, sta)
-		return
-	}
+func (l2hd *layer2HostDiscovery) displayErrChannels() {
+	if len(l2hd.errChnls) == 0 { return }
+	chnls := slices.Collect(maps.Keys(l2hd.errChnls))
+	fmt.Printf("[!] Unable to sniff these channels: %v\n", chnls)
 }
