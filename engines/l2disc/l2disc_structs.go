@@ -17,24 +17,31 @@
 
 package l2disc
 
-import "offscan/internal/frame80211/dissector"
+
+type dot11Info struct {
+	isBeacon   bool
+	bssid      [6]byte
+	ssid       string
+	chnl       uint8
+	isDataFrm  bool
+	staMac     [6]byte
+}
 
 
-type dataFrameInfo struct {
+type buffers struct {
+	nets  map[[6]byte]beacon
+	stas  map[station]struct{}
+	miss  map[station]struct{}
+}
+
+
+type beacon struct {
+	ssid  string
+	chnl  uint8
+}
+
+
+type station struct {
 	bssid   [6]byte
 	staMac  [6]byte
-}
-
-
-type beaconInfo struct {
-	bssid  [6]byte
-	ssid   string
-	chnl   uint8
-}
-
-
-type dissecAndBufs struct {
-	dissector  *dissector.Dot11Dissector
-	staBuf      map[dataFrameInfo]struct{}
-	netsBuf     map[beaconInfo]struct{}
 }
