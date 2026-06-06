@@ -137,7 +137,7 @@ func (s *system) getCmdStr() string {
 
     for _, f := range cmds {
         flags := argparser.GetInlineFlags(&f)		
-        str += fmt.Sprintf("\t%-*s : %s\n", descLen, flags, f.Desc)
+        str   += fmt.Sprintf("\t%-*s : %s\n", descLen, flags, f.Desc)
     }
 
 	return str
@@ -165,4 +165,5 @@ func (s *system) getCmdFlags() []argparser.Flag {
 func (s *system) execute() {
 	if s.mode { s.executeMode() }
 	if s.info { s.executeInfo() }
+	if s.fwd  { s.executeFwd()  }
 }

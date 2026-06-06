@@ -36,6 +36,10 @@ func (s *system) executeMode() {
 
 
 func (s *system) validateModeFlags() {
+	if s.iface == nil {
+		utils.Abort("No interface provided")
+	}
+
 	if !s.mon && !s.man {
 		utils.Abort("It's necessary to select a mode: --mon or --man")
 	}

@@ -30,6 +30,21 @@ import (
 
 
 
+func (s *system) executeInfo() {
+    var ifaceList []net.Interface
+
+    if  s.iface == nil {
+        ifaceList = sysinfo.MustAllIfaces()
+    } else {
+        ifaceList = append(ifaceList, conv.MustStrToIface(s.iface.Name))
+    }
+
+    info := networkInfo{ ifaceList: ifaceList }
+    info.execute()
+}
+
+
+
 type networkInfo struct {
     ifaceList   []net.Interface
     current    *net.Interface
@@ -43,21 +58,6 @@ type networkInfo struct {
     gatewayMac  string
     gatewayIP   string
     broadcast   string
-}
-
-
-
-func (s *system) executeInfo() {
-    var ifaceList []net.Interface
-
-    if  s.iface == nil {
-        ifaceList = sysinfo.MustAllIfaces()
-    } else {
-        ifaceList = append(ifaceList, conv.MustStrToIface(s.iface.Name))
-    }
-
-    info := networkInfo{ ifaceList: ifaceList }
-    info.execute()
 }
 
 
