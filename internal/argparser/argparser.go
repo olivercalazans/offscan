@@ -89,7 +89,7 @@ func (ap *ArgParser) checkRequired() {
         if !f.Req { continue }
 
         if !ap.hasFlag(&f) {
-            missingFlags = append(missingFlags, getFormatedFlags(&f))
+            missingFlags = append(missingFlags, GetInlineFlags(&f))
         }
     }
 
@@ -113,7 +113,7 @@ func (ap *ArgParser) hasFlag(flag *Flag) bool {
 
 
 
-func getFormatedFlags(flag *Flag) string {
+func GetInlineFlags(flag *Flag) string {
     var flags []string
         
     if flag.Short != "" { flags = append(flags, flag.Short) }
@@ -150,7 +150,7 @@ func (ap *ArgParser) checkUsage(flag *Flag) (bool, bool) {
 	}
 
 	if shortTimes + longTimes > 1 {
-        str := getFormatedFlags(flag)
+        str := GetInlineFlags(flag)
 		utils.Abort(fmt.Sprintf("Flag used more than once: %s", str))
 	}
 

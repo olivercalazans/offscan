@@ -24,10 +24,9 @@ import (
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
-	"offscan/engines/ifmode"
 	"offscan/engines/l2disc"
-	"offscan/engines/netinfo"
 	"offscan/engines/portscan"
+	"offscan/engines/system"
 	"offscan/engines/wifimap"
 	"offscan/internal/argparser"
 	"offscan/internal/utils"
@@ -46,9 +45,8 @@ func main() {
 	"beacon" : { Run: beacon.Run,   FlagSettings: beacon.FlagSettings   },
 	"deauth" : { Run: deauth.Run,   FlagSettings: deauth.FlagSettings   },
 	"hdisc"  : { Run: hostdisc.Run, FlagSettings: hostdisc.FlagSettings },
-	"info"   : { Run: netinfo.Run,  FlagSettings: netinfo.FlagSettings  },
 	"l2disc" : { Run: l2disc.Run,   FlagSettings: l2disc.FlagSettings   },
-	"mode"   : { Run: ifmode.Run,   FlagSettings: ifmode.FlagSettings   },
+	"sys"    : { Run: system.Run,   FlagSettings: system.FlagSettings   },
 	"pscan"  : { Run: portscan.Run, FlagSettings: portscan.FlagSettings },
 	"wmap"   : { Run: wifimap.Run,  FlagSettings: wifimap.FlagSettings  },
 }

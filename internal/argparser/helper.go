@@ -54,7 +54,7 @@ func displayFlags(flagSettings []Flag) {
     })
 
 	formatFlags(flagSettings)
-    descLen := getFlagMaxLen(flagSettings)
+    descLen := GetFlagMaxLen(flagSettings)
 
     for _, f := range flagSettings {
 		if f.ID == 0 {
@@ -62,7 +62,7 @@ func displayFlags(flagSettings []Flag) {
 			continue
 		}
 
-        flags := getFormatedFlags(&f)
+        flags := GetInlineFlags(&f)
 		req   := "(Optional)"
 		
 		if f.Req { req = "(Required)" }
@@ -86,11 +86,11 @@ func formatFlags(flagSettings []Flag) {
 
 
 
-func getFlagMaxLen(flagSettings []Flag) int {
+func GetFlagMaxLen(flagSettings []Flag) int {
     var maxLen int
 
     for _, f := range flagSettings {
-        str := getFormatedFlags(&f)
+        str := GetInlineFlags(&f)
         len := len(str)
         
         if len > maxLen { maxLen = len }

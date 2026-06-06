@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package system
 
 import (
 	"fmt"
@@ -27,12 +27,6 @@ import (
 	"offscan/internal/ifaceinfo"
 	"offscan/internal/sysinfo"
 )
-
-
-
-func Run(args []string) {
-    newNetInfo(args).execute()
-}
 
 
 
@@ -53,20 +47,17 @@ type networkInfo struct {
 
 
 
-func newNetInfo(argList []string) *networkInfo {
-    parser := newParser()
-	parser.parseNetInfoArgs(argList)
+func (s *system) executeInfo() {
     var ifaceList []net.Interface
 
-    if  parser.Iface == "" {
+    if  s.iface == nil {
         ifaceList = sysinfo.MustAllIfaces()
     } else {
-        ifaceList = append(ifaceList, conv.MustStrToIface(parser.Iface))
+        ifaceList = append(ifaceList, conv.MustStrToIface(s.iface.Name))
     }
 
-    return &networkInfo{
-        ifaceList: ifaceList,
-    }
+    info := networkInfo{ ifaceList: ifaceList }
+    info.execute()
 }
 
 
