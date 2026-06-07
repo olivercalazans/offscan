@@ -62,7 +62,7 @@ func (hd *hostDiscovery) sendProbes() {
         }
     }
 
-    hd.stopSocket(&tools.l3sock)
+    hd.stopSockets(&tools)
     fmt.Printf("[!] Packets not sent: %d\n", pktErr)
     time.Sleep(2 * time.Second)
 }
@@ -118,8 +118,16 @@ func (hd *hostDiscovery) sendTcpProbe(tools *probeTools, srcPort  uint16) bool {
 
 
 
-func (hd *hostDiscovery) stopSocket(socket *sockets.Layer3Socket) {
-    if err := socket.Close(); err != nil {
-        fmt.Printf("[!] Error closing socket: %v\n", err)
+func (hd *hostDiscovery) stopSockets(tools *probeTools) {
+    if hd.protocols.arp {
+        if err := tools.l2sock.Close(); err != nil {
+            fmt.Printf("[!] Error closing layer 2 socket: %v\n", err)
+        }
+    }
+
+    if hd.protocols.icmp || hd.protocols.tcp {
+        if err := tools.l3sock.Close(); err != nil {
+            fmt.Printf("[!] Error closing layer 3 socket: %v\n", err)
+        }
     }
 }
