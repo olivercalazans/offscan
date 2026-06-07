@@ -15,31 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package hostdisc
+package conv
 
 import (
+	"fmt"
 	"net"
-	"offscan/internal/packet/builder"
-	"offscan/internal/sockets"
+	"offscan/internal/utils"
 )
 
 
-type protocols struct {
-    arp, icmp, tcp bool
-}
+func MustTo4(ip net.IP) net.IP {
+	ipv4 := ip.To4()
 
+	if ipv4 == nil {
+		utils.Abort(fmt.Sprintf("Invalid addres for IPv4: %s", ip.String()))
+	}
 
-type hostInfo struct {
-    Mac  net.HardwareAddr
-    Name string
-}
-
-
-type probeTools struct {
-    l2sock  sockets.Layer2Socket
-    l3sock  sockets.Layer3Socket
-    arp     builder.ArpPacket
-    icmp    builder.IcmpPacket
-    tcp     builder.TcpPacket
-    dstIP   net.IP
+	return ipv4
 }

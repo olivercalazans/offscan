@@ -20,6 +20,7 @@ package builder
 import (
 	"encoding/binary"
 	"net"
+	"offscan/internal/conv"
 )
 
 
@@ -66,20 +67,14 @@ func (iph *ipHeader) calculateChecksum() {
 
 
 
-func (iph *ipHeader) setSrcIp(srcIp net.IP) {
-	src := srcIp.To4()
-	
-	if src == nil{ return }
-
-	copy(iph.header[12:16], src)
+func (iph *ipHeader) setSrcIp(srcIP net.IP) {
+	ipv4 := conv.MustTo4(srcIP)
+	copy(iph.header[12:16], ipv4)
 }
 
 
 
-func (iph *ipHeader) setDstIp(dstIp net.IP) {
-	dst := dstIp.To4()
-
-	if dst == nil { return }
-
-	copy(iph.header[16:20], dst)
+func (iph *ipHeader) setDstIp(dstIP net.IP) {
+	ipv4 := conv.MustTo4(dstIP)
+	copy(iph.header[16:20], ipv4)
 }
