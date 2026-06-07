@@ -62,7 +62,7 @@ func (hd *hostDiscovery) sendProbes() {
         }
     }
 
-    hd.stopSocket(&tools.socket)
+    hd.stopSockets(&tools)
     fmt.Printf("[!] Packets not sent: %d\n", pktErr)
     time.Sleep(2 * time.Second)
 }
@@ -70,11 +70,12 @@ func (hd *hostDiscovery) sendProbes() {
 
 
 func (hd *hostDiscovery) initTools(tools *probeTools) {
-    tools.socket = sockets.NewL3Socket(&hd.iface)
+    tools.l2sock = sockets.NewL2Socket(&hd.iface)
+    tools.l3sock = sockets.NewL3Socket(&hd.iface)
     
     if hd.protocols.arp {
         tools.arp = builder.NewArpPkt()
-        tools.arp.AddStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
+        tools.arp.AddReqStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
     }
 
     if hd.protocols.icmp {
@@ -91,8 +92,8 @@ func (hd *hostDiscovery) initTools(tools *probeTools) {
 
 
 func (hd *hostDiscovery) sendArpProbe(tools *probeTools) bool {
-    pkt := tools.arp.L3RequestPkt(tools.dstIP)
-    tools.socket.SendTo(pkt, tools.dstIP)
+    pkt := tools.arp.L3ReqPkt(tools.dstIP)
+    tools.l2sock.Send(pkt)
     time.Sleep(delay)
     return true
 }
@@ -101,7 +102,7 @@ func (hd *hostDiscovery) sendArpProbe(tools *probeTools) bool {
 
 func (hd *hostDiscovery) sendIcmpProbe(tools *probeTools) bool {
     pkt := tools.icmp.L3PingPkt(hd.myIP, tools.dstIP)    
-    tools.socket.SendTo(pkt, tools.dstIP)
+    tools.l3sock.SendTo(pkt, tools.dstIP)
     time.Sleep(delay)
     return true
 }
@@ -110,15 +111,23 @@ func (hd *hostDiscovery) sendIcmpProbe(tools *probeTools) bool {
 
 func (hd *hostDiscovery) sendTcpProbe(tools *probeTools, srcPort  uint16) bool {
     pkt := tools.tcp.L3SynPkt(hd.myIP, srcPort, tools.dstIP, 80)
-    tools.socket.SendTo(pkt, tools.dstIP)
+    tools.l3sock.SendTo(pkt, tools.dstIP)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) stopSocket(socket *sockets.Layer3Socket) {
-    if err := socket.Close(); err != nil {
-        fmt.Printf("[!] Error closing socket: %v\n", err)
+func (hd *hostDiscovery) stopSockets(tools *probeTools) {
+    if hd.protocols.arp {
+        if err := tools.l2sock.Close(); err != nil {
+            fmt.Printf("[!] Error closing layer 2 socket: %v\n", err)
+        }
+    }
+
+    if hd.protocols.icmp || hd.protocols.tcp {
+        if err := tools.l3sock.Close(); err != nil {
+            fmt.Printf("[!] Error closing layer 3 socket: %v\n", err)
+        }
     }
 }

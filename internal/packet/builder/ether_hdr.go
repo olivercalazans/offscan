@@ -15,31 +15,38 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package hostdisc
+package builder
 
 import (
+	"encoding/binary"
 	"net"
-	"offscan/internal/packet/builder"
-	"offscan/internal/sockets"
 )
 
 
-type protocols struct {
-    arp, icmp, tcp bool
+type etherHeader struct {
+	header  [14]byte
 }
 
 
-type hostInfo struct {
-    Mac  net.HardwareAddr
-    Name string
+
+func newEtherHeader() etherHeader {
+	return etherHeader{}
 }
 
 
-type probeTools struct {
-    l2sock  sockets.Layer2Socket
-    l3sock  sockets.Layer3Socket
-    arp     builder.ArpPacket
-    icmp    builder.IcmpPacket
-    tcp     builder.TcpPacket
-    dstIP   net.IP
+
+func (eh *etherHeader) setArpType() {
+	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
+}
+
+
+
+func (eh *etherHeader) setDstAddr(dstMAC net.HardwareAddr) {
+	copy(eh.header[0:6], dstMAC)
+}
+
+
+
+func (eh *etherHeader) setSrcAddr(srcMAC net.HardwareAddr) {
+	copy(eh.header[6:12], srcMAC)
 }
