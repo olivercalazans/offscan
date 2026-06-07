@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netinfo
+package system
 
 import (
 	"fmt"
@@ -30,8 +30,17 @@ import (
 
 
 
-func Run(args []string) {
-    newNetInfo(args).execute()
+func (s *system) executeInfo() {
+    var ifaceList []net.Interface
+
+    if  s.iface == nil {
+        ifaceList = sysinfo.MustAllIfaces()
+    } else {
+        ifaceList = append(ifaceList, conv.MustStrToIface(s.iface.Name))
+    }
+
+    info := networkInfo{ ifaceList: ifaceList }
+    info.execute()
 }
 
 
@@ -49,24 +58,6 @@ type networkInfo struct {
     gatewayMac  string
     gatewayIP   string
     broadcast   string
-}
-
-
-
-func newNetInfo(argList []string) *networkInfo {
-    parser := newParser()
-	parser.parseNetInfoArgs(argList)
-    var ifaceList []net.Interface
-
-    if  parser.Iface == "" {
-        ifaceList = sysinfo.MustAllIfaces()
-    } else {
-        ifaceList = append(ifaceList, conv.MustStrToIface(parser.Iface))
-    }
-
-    return &networkInfo{
-        ifaceList: ifaceList,
-    }
 }
 
 
