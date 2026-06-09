@@ -15,38 +15,49 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package builder
+package arppoison
 
 import (
-	"encoding/binary"
 	"net"
+	"offscan/internal/ifaceinfo"
+	"offscan/internal/netroute"
 )
 
 
-type etherHeader struct {
-	header  [14]byte
+
+type arpPoison struct {
+	iface      net.Interface
+	targetIP   net.IP
+	targetMAC  net.HardwareAddr
+	apIP       net.IP
+	apMAC	   net.HardwareAddr
 }
 
 
 
-func newEtherHeader() etherHeader {
-	return etherHeader{}
+func Run(args []string) {
+    newArpPoison(args).execute()
 }
 
 
 
-func (eh *etherHeader) setArpType() {
-	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
+func newArpPoison(args []string) *arpPoison {
+	parser := newParser()
+	parser.parseArpPoisonArgs(args)
+
+	iface := netroute.MustRouteIfaceForDstIP(parser.targetIP)
+
+	return &arpPoison{
+		iface     : iface,
+		targetIP  : parser.targetIP,
+		targetMAC : parser.targetMAC,
+		apIP      : ifaceinfo.MustGatewayIP(&iface),
+		apMAC     : ifaceinfo.MustGatewayMAC(&iface),
+	}
 }
 
 
 
-func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
-	copy(eh.header[0:6], dstMAC)
-}
+func (ap *arpPoison) execute() {
 
-
-
-func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
-	copy(eh.header[6:12], srcMAC)
 }

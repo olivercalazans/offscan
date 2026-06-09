@@ -75,7 +75,7 @@ func (hd *hostDiscovery) initTools(tools *probeTools) {
     
     if hd.protocols.arp {
         tools.arp = builder.NewArpPkt()
-        tools.arp.AddReqStaticAddrs(hd.iface.HardwareAddr, hd.myIP)
+        tools.arp.SetRequestStatic(hd.iface.HardwareAddr, hd.myIP)
     }
 
     if hd.protocols.icmp {
@@ -92,7 +92,7 @@ func (hd *hostDiscovery) initTools(tools *probeTools) {
 
 
 func (hd *hostDiscovery) sendArpProbe(tools *probeTools) bool {
-    pkt := tools.arp.L3ReqPkt(tools.dstIP)
+    pkt := tools.arp.RequestPkt(tools.dstIP)
     tools.l2sock.Send(pkt)
     time.Sleep(delay)
     return true

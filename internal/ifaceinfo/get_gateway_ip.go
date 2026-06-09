@@ -20,6 +20,8 @@ package ifaceinfo
 import (
 	"fmt"
 	"net"
+	"offscan/internal/conv"
+	"offscan/internal/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -70,7 +72,7 @@ func hexToIP(hex string) (net.IP, error) {
     }
 
 	b := make([]byte, 4)
-    for i := 0; i < 4; i++ {
+    for i := range 4 {
         val, err := strconv.ParseUint(hex[i*2:i*2+2], 16, 8)
 
 		if err != nil {
@@ -80,4 +82,16 @@ func hexToIP(hex string) (net.IP, error) {
     }
 
 	return net.IPv4(b[0], b[1], b[2], b[3]), nil
+}
+
+
+
+func MustGatewayIP(iface *net.Interface) net.IP {
+    ip, err := GatewayIP(iface)
+
+    if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to get Gateway IP. %v", err))
+    }
+
+    return conv.MustTo4(ip)
 }

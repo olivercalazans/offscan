@@ -32,5 +32,5 @@ func MustStrToIPv4(s string) net.IP {
         utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
     }
     
-	return ip
+	return MustTo4(ip)
 }

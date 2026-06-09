@@ -20,6 +20,7 @@ package ifaceinfo
 import (
 	"fmt"
 	"net"
+	"offscan/internal/utils"
 	"os"
 	"strings"
 )
@@ -59,4 +60,16 @@ func GatewayMAC(iface *net.Interface) (net.HardwareAddr, error) {
     }
 
 	return nil, fmt.Errorf("Gateway MAC not found")
+}
+
+
+
+func MustGatewayMAC(iface *net.Interface) net.HardwareAddr {
+    mac, err := GatewayMAC(iface)
+
+    if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to get gateway MAC. %v", err))
+    }
+
+    return mac
 }

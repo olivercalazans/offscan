@@ -18,6 +18,7 @@
 package builder
 
 import (
+	"encoding/binary"
 	"net"
 	"offscan/internal/conv"
 )
@@ -41,33 +42,69 @@ func NewArpPkt() ArpPacket {
 
 func (ap *ArpPacket) buildFixed() {
 	ap.etherHdr.setArpType()
-
-	ap.arpHdr[0] = 0x00   // HTYPE = 1 (Ethernet) - big endian
-	ap.arpHdr[1] = 0x01
-	ap.arpHdr[2] = 0x08   // PTYPE = 0x0800 (IPv4) - big endian
-	ap.arpHdr[3] = 0x00
-	ap.arpHdr[4] = 0x06   // HLEN = 6
-	ap.arpHdr[5] = 0x04   // PLEN = 4
-	ap.arpHdr[6] = 0x00   // OPER = 1 (request) - big endian
-	ap.arpHdr[7] = 0x01
-	// THA (6 bytes, 18:24) - zero 
+	ap.setHardwareType()
+	ap.setProtocolType()
+	ap.setHardwareAddrLen()
+	ap.setProtocolAddrLen()
 }
 
 
 
-func (ap *ArpPacket) AddReqStaticAddrs(
+func (ap *ArpPacket) setHardwareType() {
+	binary.BigEndian.PutUint16(ap.arpHdr[0:2], 0x0001) // HTYPE = 1 (Ethernet)
+}
+
+
+
+func (ap *ArpPacket) setProtocolType() {
+	binary.BigEndian.PutUint16(ap.arpHdr[2:4], 0x0800) // PTYPE = 0x0800 (IPv4)
+}
+
+
+
+func (ap *ArpPacket) setHardwareAddrLen() {
+	ap.arpHdr[4] = 0x06
+}
+
+
+
+func (ap *ArpPacket) setProtocolAddrLen() {
+	ap.arpHdr[5] = 0x04
+}
+
+
+
+func (ap *ArpPacket) setOpcode(opcode uint16) {
+	binary.BigEndian.PutUint16(ap.arpHdr[6:8], opcode)
+}
+
+
+
+func (ap *ArpPacket) setRequestIP(ip net.IP) {
+	ipv4 := conv.MustTo4(ip)
+	copy(ap.arpHdr[24:28], ipv4)
+}
+
+
+
+func (ap *ArpPacket) SetRequestStatic(
 	srcMac  net.HardwareAddr,
 	srcIP   net.IP,
 ) {
-	ap.etherHdr.setDstAddr(net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
-	ap.etherHdr.setSrcAddr(srcMac)
+	ap.etherHdr.SetDstAddr(net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
+	ap.etherHdr.SetSrcAddr(srcMac)
 	ap.copyEtherHdr()
 
-	// 0:8 - fixed
+	ap.setOpcode(0x0001)
 	ipv4 := conv.MustTo4(srcIP)
 	copy(ap.arpHdr[8:14], srcMac)
 	copy(ap.arpHdr[14:18], ipv4)
-	// 18:24 - fixed
+}
+
+
+
+func (ap *ArpPacket) SetReplyStatic() {
+	ap.setOpcode(0x0002)
 }
 
 
@@ -84,10 +121,21 @@ func (ap *ArpPacket) copyArpHdr() {
 
 
 
-func (ap *ArpPacket) L3ReqPkt(dstIP net.IP) []byte {
-	ipv4 := conv.MustTo4(dstIP)
-	copy(ap.arpHdr[24:28], ipv4)
+func (ap *ArpPacket) RequestPkt(dstIP net.IP) []byte {
+	ap.setRequestIP(dstIP)
 	ap.copyArpHdr()
 	
+	return ap.buffer[:]
+}
+
+
+
+func (ap *ArpPacket) ReplyPkt(
+	dstMAC, srcMAC net.HardwareAddr,
+
+) []byte {
+	ap.copyEtherHdr()
+	ap.copyArpHdr()
+
 	return ap.buffer[:]
 }
