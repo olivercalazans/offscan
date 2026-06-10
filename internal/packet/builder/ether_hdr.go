@@ -29,12 +29,6 @@ type etherHeader struct {
 
 
 
-func newEtherHeader() etherHeader {
-	return etherHeader{}
-}
-
-
-
 func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
 	copy(eh.header[0:6], dstMAC)
 }
@@ -47,6 +41,6 @@ func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
 
 
 
-func (eh *etherHeader) setArpType() {
-	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
+func (eh *etherHeader) SetType(pType uint16) {
+	binary.BigEndian.PutUint16(eh.header[12:14], pType)
 }

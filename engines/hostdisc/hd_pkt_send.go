@@ -19,6 +19,7 @@ package hostdisc
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/generators"
 	"offscan/internal/packet/builder"
 	"offscan/internal/sockets"
@@ -30,13 +31,19 @@ import (
 const delay = 40 * time.Millisecond
 
 
+type hostDiscProbes struct {
+    l2sock   sockets.Layer2Socket
+    l3sock   sockets.Layer3Socket
+    arp     *builder.ArpPacket
+    icmp    *builder.IcmpPacket
+    tcp     *builder.TcpPacket
+    dstIP    net.IP
+}
+
+
 
 func (hd *hostDiscovery) sendProbes() {
-    tools   := probeTools{} 
-    randGen := generators.NewRandomValues()
-
-    hd.initTools(&tools)
-    
+    hd.initProbeTools()
     var pktErr uint16 = 0
 
 	for {
@@ -44,88 +51,93 @@ func (hd *hostDiscovery) sendProbes() {
         
         if !hasIP { break }
 
-        tools.dstIP = dstIP
+        hd.tools.dstIP = dstIP
 
         if hd.protocols.arp {
-            ok := hd.sendArpProbe(&tools)
+            ok := hd.sendArpProbe()
             if !ok { pktErr++ }
         }
 
         if hd.protocols.icmp {
-            ok := hd.sendIcmpProbe(&tools)
+            ok := hd.sendIcmpProbe()
             if !ok { pktErr++ }
         }
 
         if hd.protocols.tcp {
-            ok := hd.sendTcpProbe(&tools, randGen.RandomPort())
+            ok := hd.sendTcpProbe()
             if !ok { pktErr++ }
         }
     }
 
-    hd.stopSockets(&tools)
-    fmt.Printf("[!] Packets not sent: %d\n", pktErr)
+    hd.stopTools()
+    if pktErr > 0 { fmt.Printf("[!] Packets not sent = %d\n", pktErr) }
     time.Sleep(2 * time.Second)
 }
 
 
 
-func (hd *hostDiscovery) initTools(tools *probeTools) {
-    tools.l2sock = sockets.NewL2Socket(&hd.iface)
-    tools.l3sock = sockets.NewL3Socket(&hd.iface)
+func (hd *hostDiscovery) initProbeTools() {
+    hd.tools = &probeTools{}
+
+    hd.tools.l2sock = sockets.NewL2Socket(&hd.iface)
+    hd.tools.l3sock = sockets.NewL3Socket(&hd.iface)
     
     if hd.protocols.arp {
-        tools.arp = builder.NewArpPkt()
-        tools.arp.SetRequestStatic(hd.iface.HardwareAddr, hd.myIP)
+        hd.tools.arp = builder.NewArpPkt()
+        hd.tools.SetArpReqStatic(hd.iface.HardwareAddr, hd.myIP)
     }
 
     if hd.protocols.icmp {
-        tools.icmp = builder.NewIcmpPkt()
+        hd.tools.icmp = builder.NewIcmpPkt()
     }
 
     if hd.protocols.tcp {
-        tools.tcp = builder.NewTcpPkt()
+        hd.tools.tcp  = builder.NewTcpPkt()
+        hd.tools.rand = generators.NewRandomValues()
     }
 }
 
 
 
-func (hd *hostDiscovery) sendArpProbe(tools *probeTools) bool {
-    pkt := tools.arp.RequestPkt(tools.dstIP)
-    tools.l2sock.Send(pkt)
+func (hd *hostDiscovery) sendArpProbe() bool {
+    pkt := hd.tools.arp.Pkt()
+    hd.tools.l2sock.Send(pkt)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) sendIcmpProbe(tools *probeTools) bool {
-    pkt := tools.icmp.L3PingPkt(hd.myIP, tools.dstIP)    
-    tools.l3sock.SendTo(pkt, tools.dstIP)
+func (hd *hostDiscovery) sendIcmpProbe() bool {
+    pkt := hd.tools.icmp.L3PingPkt(hd.myIP, hd.tools.dstIP)    
+    hd.tools.l3sock.SendTo(pkt, hd.tools.dstIP)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) sendTcpProbe(tools *probeTools, srcPort  uint16) bool {
-    pkt := tools.tcp.L3SynPkt(hd.myIP, srcPort, tools.dstIP, 80)
-    tools.l3sock.SendTo(pkt, tools.dstIP)
+func (hd *hostDiscovery) sendTcpProbe() bool {
+    pkt := hd.tools.tcp.L3SynPkt(hd.myIP, hd.tools.rand.RandomPort(), hd.tools.dstIP, 80)
+    hd.tools.l3sock.SendTo(pkt, hd.tools.dstIP)
     time.Sleep(delay)
     return true
 }
 
 
 
-func (hd *hostDiscovery) stopSockets(tools *probeTools) {
+func (hd *hostDiscovery) stopTools() {
     if hd.protocols.arp {
-        if err := tools.l2sock.Close(); err != nil {
+        if err := hd.tools.l2sock.Close(); err != nil {
             fmt.Printf("[!] Error closing layer 2 socket: %v\n", err)
         }
     }
 
     if hd.protocols.icmp || hd.protocols.tcp {
-        if err := tools.l3sock.Close(); err != nil {
+        if err := hd.tools.l3sock.Close(); err != nil {
             fmt.Printf("[!] Error closing layer 3 socket: %v\n", err)
         }
     }
+
+    hd.tools = nil
 }

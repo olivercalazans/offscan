@@ -19,8 +19,6 @@ package hostdisc
 
 import (
 	"net"
-	"offscan/internal/packet/builder"
-	"offscan/internal/sockets"
 )
 
 
@@ -32,14 +30,4 @@ type protocols struct {
 type hostInfo struct {
     Mac  net.HardwareAddr
     Name string
-}
-
-
-type probeTools struct {
-    l2sock   sockets.Layer2Socket
-    l3sock   sockets.Layer3Socket
-    arp     *builder.ArpPacket
-    icmp    *builder.IcmpPacket
-    tcp     *builder.TcpPacket
-    dstIP    net.IP
 }
