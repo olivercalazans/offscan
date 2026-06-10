@@ -25,17 +25,25 @@ import (
 
 
 type ArpPacket struct {
-	buffer    [42]byte
-	arpHdr    [28]byte
-	etherHdr  etherHeader
+	buffer     [42]byte
+	arpHdr    *[28]byte
+	etherHdr   etherHeader
 }
 
 
 
-func NewArpPkt() ArpPacket {
-	ap := ArpPacket{ etherHdr: newEtherHeader() }
+func NewArpPkt() *ArpPacket {
+	ap := &ArpPacket{ etherHdr: newEtherHeader() }
+	ap.refBuffer()
 	ap.buildFixed()
 	return ap
+}
+
+
+
+func (ap *ArpPacket) refBuffer() {
+	ap.etherHdr.header = (*[14]byte)(ap.buffer[0:14])
+	ap.arpHdr          = (*[28]byte)(ap.buffer[14:42])
 }
 
 
@@ -93,7 +101,6 @@ func (ap *ArpPacket) SetRequestStatic(
 ) {
 	ap.etherHdr.SetDstAddr(net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff})
 	ap.etherHdr.SetSrcAddr(srcMac)
-	ap.copyEtherHdr()
 
 	ap.setOpcode(0x0001)
 	ipv4 := conv.MustTo4(srcIP)
@@ -109,22 +116,8 @@ func (ap *ArpPacket) SetReplyStatic() {
 
 
 
-func (ap *ArpPacket) copyEtherHdr() {
-	copy(ap.buffer[:14], ap.etherHdr.header[:])
-}
-
-
-
-func (ap *ArpPacket) copyArpHdr() {
-	copy(ap.buffer[14:], ap.arpHdr[:])
-}
-
-
-
 func (ap *ArpPacket) RequestPkt(dstIP net.IP) []byte {
-	ap.setRequestIP(dstIP)
-	ap.copyArpHdr()
-	
+	ap.setRequestIP(dstIP)	
 	return ap.buffer[:]
 }
 
@@ -134,8 +127,5 @@ func (ap *ArpPacket) ReplyPkt(
 	dstMAC, srcMAC net.HardwareAddr,
 
 ) []byte {
-	ap.copyEtherHdr()
-	ap.copyArpHdr()
-
 	return ap.buffer[:]
 }

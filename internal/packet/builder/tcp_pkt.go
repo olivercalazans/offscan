@@ -25,22 +25,26 @@ import (
 
 
 type TcpPacket struct {
-    buffer  [40]byte
-    tcpHdr  [20]byte
-    ipHdr   ipHeader
+    buffer   [40]byte
+    tcpHdr  *[20]byte
+    ipHdr    ipHeader
 }
 
 
 
-func NewTcpPkt() TcpPacket {
-   return TcpPacket{}
+func NewTcpPkt() *TcpPacket {
+   tp := &TcpPacket{ ipHdr: newIpHeader() }
+   tp.refBuffer()
+   tp.buildFixed()
+
+   return tp
 }
 
 
 
-func (tp *TcpPacket) Init() {
-    tp.ipHdr  = newIpHeader()
-    tp.buildFixed()
+func (tp *TcpPacket) refBuffer() {
+    tp.ipHdr.header = (*[20]byte)(tp.buffer[:20])
+    tp.tcpHdr       = (*[20]byte)(tp.buffer[20:])
 }
 
 
@@ -50,14 +54,12 @@ func (tp *TcpPacket) buildFixed() {
 	tp.ipHdr.setProto(6)
 	tp.ipHdr.setLen(20)
 
-    binary.BigEndian.PutUint32(tp.tcpHdr[4:8], 1)
-    binary.BigEndian.PutUint32(tp.tcpHdr[8:12], 0)
-    
-    tp.tcpHdr[12] = 5 << 4
-    tp.tcpHdr[13] = 0x02
-    
-    binary.BigEndian.PutUint16(tp.tcpHdr[14:16], 64240)
-    binary.BigEndian.PutUint16(tp.tcpHdr[18:20], 0)
+    tp.setSeqNum()
+    tp.setAckNum()
+    tp.setDataOffset()    
+    tp.setCtrlFlags()
+    tp.setWindowSize()
+    tp.setUrgentPointer()
 }
 
 
@@ -74,13 +76,44 @@ func (tp *TcpPacket) setDstPort(dstPort uint16) {
 
 
 
-func (tp *TcpPacket) flushChecksum() {
-    binary.BigEndian.PutUint16(tp.tcpHdr[16:18], 0)
+func (tp *TcpPacket) setSeqNum() {
+    binary.BigEndian.PutUint32(tp.tcpHdr[4:8], 1)
+}
+
+
+
+func (tp *TcpPacket) setAckNum() {
+    binary.BigEndian.PutUint32(tp.tcpHdr[8:12], 0)
+}
+
+
+
+func (tp *TcpPacket) setDataOffset() {
+    tp.tcpHdr[12] = 5 << 4
+}
+
+
+
+func (tp *TcpPacket) setCtrlFlags() {
+    tp.tcpHdr[13] = 0x02
+}
+
+
+
+func (tp *TcpPacket) setWindowSize() {
+    binary.BigEndian.PutUint16(tp.tcpHdr[14:16], 64240)
+}
+
+
+
+func (tp *TcpPacket) setUrgentPointer() {
+    binary.BigEndian.PutUint16(tp.tcpHdr[18:20], 0)
 }
 
 
 
 func (tp *TcpPacket) calculateChecksum(srcIp, dstIp net.IP) {
+    binary.BigEndian.PutUint16(tp.tcpHdr[16:18], 0)
     cksum := tcpSum(tp.tcpHdr[:20], srcIp, dstIp, 6)
     binary.BigEndian.PutUint16(tp.tcpHdr[16:18], cksum)
 }
@@ -96,13 +129,10 @@ func (tp *TcpPacket) L3SynPkt(
     tp.ipHdr.setSrcIp(srcIP)
     tp.ipHdr.setDstIp(dstIP)
     tp.ipHdr.calculateChecksum()
-    copy(tp.buffer[:20], tp.ipHdr.header[:])
 
     tp.setSrcPort(srcPort)
     tp.setDstPort(dstPort)
-    tp.flushChecksum()
     tp.calculateChecksum(srcIP, dstIP)
-    copy(tp.buffer[20:], tp.tcpHdr[:])
     
     return tp.buffer[:]
 }

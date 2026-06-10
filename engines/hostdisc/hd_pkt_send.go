@@ -80,12 +80,10 @@ func (hd *hostDiscovery) initTools(tools *probeTools) {
 
     if hd.protocols.icmp {
         tools.icmp = builder.NewIcmpPkt()
-        tools.icmp.Init()
     }
 
     if hd.protocols.tcp {
         tools.tcp = builder.NewTcpPkt()
-        tools.tcp.Init()
     }
 }
 

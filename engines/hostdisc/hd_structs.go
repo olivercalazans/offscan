@@ -36,10 +36,10 @@ type hostInfo struct {
 
 
 type probeTools struct {
-    l2sock  sockets.Layer2Socket
-    l3sock  sockets.Layer3Socket
-    arp     builder.ArpPacket
-    icmp    builder.IcmpPacket
-    tcp     builder.TcpPacket
-    dstIP   net.IP
+    l2sock   sockets.Layer2Socket
+    l3sock   sockets.Layer3Socket
+    arp     *builder.ArpPacket
+    icmp    *builder.IcmpPacket
+    tcp     *builder.TcpPacket
+    dstIP    net.IP
 }

@@ -163,9 +163,7 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
-    builder := builder.NewTcpPkt()
-    builder.Init()
-
+    builder  := builder.NewTcpPkt()
     socket   := sockets.NewL3Socket(&ps.iface)
     randGen  := generators.NewRandomValues()
     portIter := generators.NewPortIter(ps.ports, ps.random)

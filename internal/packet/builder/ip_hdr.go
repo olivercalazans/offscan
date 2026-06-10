@@ -26,7 +26,7 @@ import (
 
 
 type ipHeader struct {
-	header  [20]byte
+	header  *[20]byte
 }
 
 
@@ -38,18 +38,48 @@ func newIpHeader() ipHeader {
 
 
 func (iph *ipHeader) fixedIpInfo() {
-	iph.header[0] = (4 << 4) | 5                          // Version + IHL
-	iph.header[1] = 0                                     // DSCP + ECN
-	binary.BigEndian.PutUint16(iph.header[4:6], 0x1234)   // ID
-	binary.BigEndian.PutUint16(iph.header[6:8], 0x4000)   // Flags + Fragment offset (bit DF = 1, offset 0)
-	iph.header[8] = 64									  // TTL
-	binary.BigEndian.PutUint16(iph.header[10:12], 0)      // Checksum
+	iph.setVersionAndIHL()
+	iph.setDSCPAndECN()
+	iph.setID()
+	iph.setFlagsAndFragOffset()
+	iph.setTTL()
+}
+
+
+
+func (iph *ipHeader) setVersionAndIHL() {
+	iph.header[0] = (4 << 4) | 5
+}
+
+
+
+func (iph *ipHeader) setDSCPAndECN() {
+	iph.header[1] = 0
 }
 
 
 
 func (iph *ipHeader) setLen(layer4Len uint16) {
 	binary.BigEndian.PutUint16(iph.header[2:4], 20 + layer4Len)
+}
+
+
+
+func (iph *ipHeader) setID() {
+	binary.BigEndian.PutUint16(iph.header[4:6], 0x1234)
+}
+
+
+
+func (iph *ipHeader) setFlagsAndFragOffset() {
+	// Flags + Fragment offset (bit DF = 1, offset 0)
+	binary.BigEndian.PutUint16(iph.header[6:8], 0x4000)
+}
+
+
+
+func (iph *ipHeader) setTTL() {
+	iph.header[8] = 64
 }
 
 
@@ -61,6 +91,7 @@ func (iph *ipHeader) setProto(proto uint8) {
 
 
 func (iph *ipHeader) calculateChecksum() {
+	binary.BigEndian.PutUint16(iph.header[10:12], 0)
 	ck := ipv4Sum(iph.header[0:20])
 	binary.BigEndian.PutUint16(iph.header[10:12], ck)
 }
