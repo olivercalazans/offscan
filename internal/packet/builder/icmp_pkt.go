@@ -19,20 +19,23 @@ package builder
 
 import (
 	"encoding/binary"
-	"net"
 )
 
 
 type IcmpPacket struct {
 	buffer    [28]byte
 	icmpHdr  *[8]byte
-	ipHdr     ipHeader
+	IPHdr     ipHeader
 }
 
 
 
+const lenIcmpHdr int = 8
+
+
+
 func NewIcmpPkt() *IcmpPacket {
-	ip := &IcmpPacket{ ipHdr: newIpHeader() }
+	ip := &IcmpPacket{ IPHdr: newIpHeader() }
 	ip.refBuffer()
 	ip.buildFixed()
 
@@ -42,16 +45,16 @@ func NewIcmpPkt() *IcmpPacket {
 
 
 func (ip *IcmpPacket) refBuffer() {
-	ip.ipHdr.header = (*[20]byte)(ip.buffer[0:20])
+	ip.IPHdr.header = (*[20]byte)(ip.buffer[0:20])
 	ip.icmpHdr      = (*[8]byte)(ip.buffer[20:28])
 }
 
 
 
 func (ip *IcmpPacket) buildFixed() {
-	ip.ipHdr.fixedIpInfo()
-	ip.ipHdr.setProto(1)
-	ip.ipHdr.setLen(8)
+	ip.IPHdr.buildFixed()
+	ip.IPHdr.setProto(1)
+	ip.IPHdr.setLen(uint16(lenIcmpHdr))
 
 	ip.setType()
 	ip.setCode()
@@ -75,8 +78,30 @@ func (ip *IcmpPacket) setCode() {
 
 func (ip *IcmpPacket) calculateChecksum() {
 	binary.BigEndian.PutUint16(ip.buffer[2:4], 0)
-	ck := icmpSum(ip.buffer[0:8])
+	ck := ip.calcCksum()
 	binary.BigEndian.PutUint16(ip.buffer[2:4], ck)
+}
+
+
+
+func (ip *IcmpPacket) calcCksum() uint16 {
+    var sum uint32 = 0
+    i := 0
+
+	for i+1 < lenIcmpHdr {
+        sum += (uint32(ip.icmpHdr[i]) << 8) | uint32(ip.icmpHdr[i+1])
+        i += 2
+    }
+
+	if i < lenIcmpHdr {
+        sum += uint32(ip.icmpHdr[i]) << 8
+    }
+
+	for (sum >> 16) != 0 {
+        sum = (sum & 0xFFFF) + (sum >> 16)
+    }
+
+	return ^uint16(sum)
 }
 
 
@@ -93,10 +118,7 @@ func (ip *IcmpPacket) setSeqNum() {
 
 
 
-func (ip *IcmpPacket) L3PingPkt(srcIP, dstIP net.IP) []byte {
-	ip.ipHdr.setSrcIp(srcIP)
-	ip.ipHdr.setDstIp(dstIP)
-	ip.ipHdr.calculateChecksum()
-
+func (ip *IcmpPacket) Pkt() []byte {
+	ip.IPHdr.calculateChecksum()
 	return ip.buffer[:]
 }

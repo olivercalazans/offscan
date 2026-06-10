@@ -52,7 +52,7 @@ type hostDiscovery struct {
     sniffer     *sniffer.Sniffer
     snifferCh    <-chan []byte
     wgPktProc    sync.WaitGroup
-    tools  *probeTools
+    tools       *probeTools
 }
 
 

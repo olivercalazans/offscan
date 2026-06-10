@@ -43,7 +43,7 @@ type beaconFlood struct {
     bcSent    int
     socket    sockets.Layer2Socket
     builder   builder.Beacon
-    randGen   generators.RandomValues
+    randGen  *generators.RandomValues
 }
 
 

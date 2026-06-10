@@ -24,6 +24,12 @@ import (
 )
 
 
+const (
+	ArpReqCode uint16 = 0x0001
+	ArpRepCode uint16 = 0x0002
+)
+
+
 type ArpPacket struct {
 	buffer     [42]byte
 	arpHdr    *[28]byte
@@ -34,6 +40,7 @@ type ArpPacket struct {
 
 func NewArpPkt() *ArpPacket {
 	ap := &ArpPacket{ EtherHdr: etherHeader{} }
+	ap.buildFixed()
 	ap.refBuffer()
 	return ap
 }
@@ -47,25 +54,33 @@ func (ap *ArpPacket) refBuffer() {
 
 
 
-func (ap *ArpPacket) SetHardwareType() {
+func (ap *ArpPacket) buildFixed() {
+	ap.setHardwareType()
+	ap.setProtocolType()
+	ap.setHardwareAddrLen()
+	ap.setProtocolAddrLen()
+}
+
+
+func (ap *ArpPacket) setHardwareType() {
 	binary.BigEndian.PutUint16(ap.arpHdr[0:2], 0x0001) // HTYPE = 1 (Ethernet)
 }
 
 
 
-func (ap *ArpPacket) SetProtocolType() {
+func (ap *ArpPacket) setProtocolType() {
 	binary.BigEndian.PutUint16(ap.arpHdr[2:4], 0x0800) // PTYPE = 0x0800 (IPv4)
 }
 
 
 
-func (ap *ArpPacket) SetHardwareAddrLen() {
+func (ap *ArpPacket) setHardwareAddrLen() {
 	ap.arpHdr[4] = 0x06
 }
 
 
 
-func (ap *ArpPacket) SetProtocolAddrLen() {
+func (ap *ArpPacket) setProtocolAddrLen() {
 	ap.arpHdr[5] = 0x04
 }
 

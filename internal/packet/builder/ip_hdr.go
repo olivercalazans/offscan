@@ -31,13 +31,18 @@ type ipHeader struct {
 
 
 
+const lenIPHdr int = 20
+
+
+
 func newIpHeader() ipHeader {
-	return ipHeader{}
+	iph := ipHeader{}
+	return iph
 }
 
 
 
-func (iph *ipHeader) fixedIpInfo() {
+func (iph *ipHeader) buildFixed() {
 	iph.setVersionAndIHL()
 	iph.setDSCPAndECN()
 	iph.setID()
@@ -60,7 +65,7 @@ func (iph *ipHeader) setDSCPAndECN() {
 
 
 func (iph *ipHeader) setLen(layer4Len uint16) {
-	binary.BigEndian.PutUint16(iph.header[2:4], 20 + layer4Len)
+	binary.BigEndian.PutUint16(iph.header[2:4], uint16(lenIPHdr) + layer4Len)
 }
 
 
@@ -92,20 +97,42 @@ func (iph *ipHeader) setProto(proto uint8) {
 
 func (iph *ipHeader) calculateChecksum() {
 	binary.BigEndian.PutUint16(iph.header[10:12], 0)
-	ck := ipv4Sum(iph.header[0:20])
+	ck := iph.calcCksum()
 	binary.BigEndian.PutUint16(iph.header[10:12], ck)
 }
 
 
 
-func (iph *ipHeader) setSrcIp(srcIP net.IP) {
+func (iph *ipHeader) calcCksum() uint16 {
+    var sum uint32 = 0
+    i := 0
+
+	for i+1 < lenIPHdr {
+        sum += (uint32(iph.header[i]) << 8) | uint32(iph.header[i+1])
+        i += 2
+    }
+
+	if i < lenIPHdr {
+        sum += uint32(iph.header[i]) << 8
+    }
+
+	for (sum >> 16) != 0 {
+        sum = (sum & 0xFFFF) + (sum >> 16)
+    }
+
+	return ^uint16(sum)
+}
+
+
+
+func (iph *ipHeader) SetSrcIP(srcIP net.IP) {
 	ipv4 := conv.MustTo4(srcIP)
 	copy(iph.header[12:16], ipv4)
 }
 
 
 
-func (iph *ipHeader) setDstIp(dstIP net.IP) {
+func (iph *ipHeader) SetDstIP(dstIP net.IP) {
 	ipv4 := conv.MustTo4(dstIP)
 	copy(iph.header[16:20], ipv4)
 }

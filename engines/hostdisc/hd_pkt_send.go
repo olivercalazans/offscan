@@ -109,18 +109,28 @@ func (hd *hostDiscovery) sendArpProbe() bool {
 
 
 func (hd *hostDiscovery) sendIcmpProbe() bool {
-    pkt := hd.tools.icmp.L3PingPkt(hd.myIP, hd.tools.dstIP)    
+    hd.tools.icmp.IPHdr.SetSrcIP(hd.myIP)
+    hd.tools.icmp.IPHdr.SetDstIP(hd.tools.dstIP)    
+    
+    pkt := hd.tools.icmp.Pkt()    
     hd.tools.l3sock.SendTo(pkt, hd.tools.dstIP)
     time.Sleep(delay)
+    
     return true
 }
 
 
 
 func (hd *hostDiscovery) sendTcpProbe() bool {
-    pkt := hd.tools.tcp.L3SynPkt(hd.myIP, hd.tools.rand.RandomPort(), hd.tools.dstIP, 80)
+    hd.tools.tcp.IPHdr.SetSrcIP(hd.myIP)
+    hd.tools.tcp.IPHdr.SetDstIP(hd.tools.dstIP)
+    hd.tools.tcp.SetSrcPort(hd.tools.rand.RandomPort())
+    hd.tools.tcp.SetDstPort(80)
+    
+    pkt := hd.tools.tcp.Pkt()
     hd.tools.l3sock.SendTo(pkt, hd.tools.dstIP)
     time.Sleep(delay)
+    
     return true
 }
 

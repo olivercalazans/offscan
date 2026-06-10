@@ -41,18 +41,13 @@ func (pt *probeTools) SetArpReqStatic(
 	srcMac  net.HardwareAddr,
 	srcIP   net.IP,
 ) {
-	pt.arp.EtherHdr.SetType(0x806)
-	pt.arp.SetHardwareType()
-	pt.arp.SetProtocolType()
-	pt.arp.SetHardwareAddrLen()
-	pt.arp.SetProtocolAddrLen()
-
 	broadcast := net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	pt.arp.EtherHdr.SetType(0x806)
 	pt.arp.EtherHdr.SetDstAddr(broadcast)
 	pt.arp.EtherHdr.SetSrcAddr(srcMac)
 
 	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	pt.arp.SetOpcode(0x0001)
+	pt.arp.SetOpcode(builder.ArpReqCode)
 	pt.arp.SetSenderMAC(srcMac)
 	pt.arp.SetSenderIP(srcIP)
 	pt.arp.SetTargetMAC(nullMac)

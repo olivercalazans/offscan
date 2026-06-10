@@ -19,21 +19,22 @@ package builder
 
 import (
 	"encoding/binary"
-	"net"
 )
 
+
+const lenTcpHdr uint32 = 20
 
 
 type TcpPacket struct {
     buffer   [40]byte
     tcpHdr  *[20]byte
-    ipHdr    ipHeader
+    IPHdr    ipHeader
 }
 
 
 
 func NewTcpPkt() *TcpPacket {
-   tp := &TcpPacket{ ipHdr: newIpHeader() }
+   tp := &TcpPacket{ IPHdr: newIpHeader() }
    tp.refBuffer()
    tp.buildFixed()
 
@@ -43,16 +44,16 @@ func NewTcpPkt() *TcpPacket {
 
 
 func (tp *TcpPacket) refBuffer() {
-    tp.ipHdr.header = (*[20]byte)(tp.buffer[:20])
+    tp.IPHdr.header = (*[20]byte)(tp.buffer[:20])
     tp.tcpHdr       = (*[20]byte)(tp.buffer[20:])
 }
 
 
 
 func (tp *TcpPacket) buildFixed() {
-    tp.ipHdr.fixedIpInfo()
-	tp.ipHdr.setProto(6)
-	tp.ipHdr.setLen(20)
+    tp.IPHdr.buildFixed()
+	tp.IPHdr.setProto(6)
+	tp.IPHdr.setLen(uint16(lenTcpHdr))
 
     tp.setSeqNum()
     tp.setAckNum()
@@ -64,13 +65,13 @@ func (tp *TcpPacket) buildFixed() {
 
 
 
-func (tp *TcpPacket) setSrcPort(srcPort uint16) {
+func (tp *TcpPacket) SetSrcPort(srcPort uint16) {
     binary.BigEndian.PutUint16(tp.tcpHdr[0:2], srcPort)
 }
 
 
 
-func (tp *TcpPacket) setDstPort(dstPort uint16) {
+func (tp *TcpPacket) SetDstPort(dstPort uint16) {
     binary.BigEndian.PutUint16(tp.tcpHdr[2:4], dstPort)
 }
 
@@ -112,27 +113,59 @@ func (tp *TcpPacket) setUrgentPointer() {
 
 
 
-func (tp *TcpPacket) calculateChecksum(srcIp, dstIp net.IP) {
+func (tp *TcpPacket) calculateChecksum() {
     binary.BigEndian.PutUint16(tp.tcpHdr[16:18], 0)
-    cksum := tcpSum(tp.tcpHdr[:20], srcIp, dstIp, 6)
+    cksum := tp.calcCksum()
     binary.BigEndian.PutUint16(tp.tcpHdr[16:18], cksum)
 }
 
 
 
-func (tp *TcpPacket) L3SynPkt(
-	srcIP   net.IP, 
-	srcPort uint16, 
-	dstIP   net.IP, 
-	dstPort uint16,
-) []byte {
-    tp.ipHdr.setSrcIp(srcIP)
-    tp.ipHdr.setDstIp(dstIP)
-    tp.ipHdr.calculateChecksum()
-
-    tp.setSrcPort(srcPort)
-    tp.setDstPort(dstPort)
-    tp.calculateChecksum(srcIP, dstIP)
+func (tp *TcpPacket) Pkt() []byte {
+    tp.IPHdr.calculateChecksum()
+    tp.calculateChecksum()
     
     return tp.buffer[:]
+}
+
+
+
+func (tp *TcpPacket) calcCksum() uint16 {
+    sum := tp.tcpSum()
+    len := int(lenTcpHdr)
+    i   := 0
+
+	for i + 1 < len {
+        sum += (uint32(tp.tcpHdr[i]) << 8) | uint32(tp.tcpHdr[i+1])
+        i += 2
+    }
+
+	if i < len {
+        sum += uint32(tp.tcpHdr[i]) << 8
+    }
+
+	for (sum >> 16) != 0 {
+        sum = (sum & 0xFFFF) + (sum >> 16)
+    }
+
+	return ^uint16(sum)
+}
+
+
+
+func (tp *TcpPacket) tcpSum() uint32 {
+    var sum uint32 = 0
+
+    // Source IP (12:16)
+    sum += (uint32(tp.IPHdr.header[12]) << 8) | uint32(tp.IPHdr.header[13])
+    sum += (uint32(tp.IPHdr.header[14]) << 8) | uint32(tp.IPHdr.header[15])
+
+    // Destination IP (16:20)
+	sum += (uint32(tp.IPHdr.header[16]) << 8) | uint32(tp.IPHdr.header[17])
+    sum += (uint32(tp.IPHdr.header[18]) << 8) | uint32(tp.IPHdr.header[19])
+
+    sum += uint32(6)
+    sum += lenTcpHdr
+
+    return sum
 }

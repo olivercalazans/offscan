@@ -173,8 +173,12 @@ func (ps *portScanner) sendTcpProbes() {
         
         if !hasPort { break }
         
-		srcPort := randGen.RandomPort()
-        pkt     := builder.L3SynPkt(ps.myIP, srcPort, ps.targetIP, port)
+        builder.IPHdr.SetSrcIP(ps.myIP)
+        builder.IPHdr.SetDstIP(ps.targetIP)
+        builder.SetSrcPort(randGen.RandomPort())
+        builder.SetDstPort(port)
+        
+        pkt := builder.Pkt()
         
         socket.SendTo(pkt, ps.targetIP)
         time.Sleep(delay)
