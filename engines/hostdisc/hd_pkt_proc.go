@@ -28,6 +28,12 @@ import (
 )
 
 
+type hostInfo struct {
+    Mac  net.HardwareAddr
+    Name string
+}
+
+
 
 func (hd *hostDiscovery) startPacketProcessor() {
     hd.sniffer   = sniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)

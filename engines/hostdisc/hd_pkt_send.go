@@ -100,9 +100,12 @@ func (hd *hostDiscovery) initProbeTools() {
 
 
 func (hd *hostDiscovery) sendArpProbe() bool {
+    hd.tools.arp.SetTargetIP(hd.tools.dstIP)
     pkt := hd.tools.arp.Pkt()
+    
     hd.tools.l2sock.Send(pkt)
     time.Sleep(delay)
+    
     return true
 }
 

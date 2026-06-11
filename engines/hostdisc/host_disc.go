@@ -56,6 +56,10 @@ type hostDiscovery struct {
 }
 
 
+type protocols struct {
+    arp, icmp, tcp bool
+}
+
 
 func newHostDisc(argList []string) *hostDiscovery {
     parser := newParser()
