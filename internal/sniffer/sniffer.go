@@ -227,5 +227,8 @@ func (s *Sniffer) Stop() {
 	s.wg.Wait()
 
 	fmt.Printf("[$] Packets received = %d\n", s.stats.Packets)
-    fmt.Printf("[!] Packets dropped = %d\n", s.stats.Drops)
+
+	if s.stats.Drops > 0 {
+		fmt.Printf("[!] Packets dropped = %d\n", s.stats.Drops)
+	}
 }

@@ -40,8 +40,8 @@ type ArpPacket struct {
 
 func NewArpPkt() *ArpPacket {
 	ap := &ArpPacket{ EtherHdr: etherHeader{} }
-	ap.buildFixed()
 	ap.refBuffer()
+	ap.buildFixed()
 	return ap
 }
 
