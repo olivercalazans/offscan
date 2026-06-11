@@ -81,7 +81,7 @@ func (d *Deauth) SetBSSID(bssid net.HardwareAddr) {
 
 
 func (d *Deauth) SetSeqCtrl(seq uint16) {
-    seqCtrl := uint16((seq & 0x0FFF) << 4)
+    seqCtrl := (seq & 0x0FFF) << 4
     binary.LittleEndian.PutUint16(d.buffer[34:36], seqCtrl)
 }
 

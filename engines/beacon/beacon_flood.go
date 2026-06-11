@@ -88,15 +88,6 @@ func (bf *beaconFlood) execute() {
 
 
 
-func (bf *beaconFlood) sendBeacons() {
-    bssid := bf.randGen.RandomMac()
-    ssid  := bf.randGen.RandomCaseInversion(bf.ssid)
-    seq   := bf.randGen.RandomSeq()
-    bf.sendQuartet(bssid, ssid, seq)
-}
-
-
-
 func (bf *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
     bf.sendBeacon(bssid, ssid, seq,   "open")
     bf.sendBeacon(bssid, ssid, seq+1, "wpa")
@@ -106,8 +97,20 @@ func (bf *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint
 
 
 
+func (bf *beaconFlood) sendBeacons() {
+    bssid := bf.randGen.RandomMac()
+    bf.builder.SetSrcAddr(bssid)
+    bf.builder.SetBSSID(bssid)
+    bf.builder.SetSeqCtrl(bf.randGen.RandomSeq())
+    
+    ssid := bf.randGen.RandomCaseInversion(bf.ssid)
+    bf.sendQuartet(bssid, ssid,)
+}
+
+
+
 func (bf *beaconFlood) sendBeacon(bssid net.HardwareAddr, ssid string, seq uint16, sec string) {
-    beacon := bf.builder.Beacon(bssid, ssid, seq, bf.channel, sec)
+    beacon := bf.builder.Beacon()
     bf.socket.Send(beacon)
     bf.bcSent++
 }

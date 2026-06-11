@@ -28,111 +28,191 @@ import (
 
 
 type Beacon struct {
-    buffer [150]byte
-    length int
+    buffer  [150]byte
+    offset  int
 }
 
 
 
 func NewBeacon() Beacon {
     b := Beacon{}
-    b.buildBeaconFixed()
+    b.buildFixed()
     return b
 }
 
 
 
-func (b *Beacon) buildBeaconFixed() {
+func (b *Beacon) buildFixed() {
     minimalRariotapHeader(b.buffer[:12])
+    b.setFramCtrl()
+    b.setDuration()
+    b.setDstAddr()
+    b.setInterval()
+}
 
+
+
+func (b *Beacon) setFramCtrl() {
     b.buffer[12] = 0x80
     b.buffer[13] = 0x00
+}
+
+
+
+func (b *Beacon) setDuration() {
     b.buffer[14] = 0x00
     b.buffer[15] = 0x00
+}
 
+
+
+func (b *Beacon) setDstAddr() {
     broadcast := [6]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
     copy(b.buffer[16:22], broadcast[:])
-    binary.LittleEndian.PutUint16(b.buffer[44:46], 100)
-
 }
 
 
 
-func (b *Beacon) Beacon(bssid net.HardwareAddr, ssid string, seq uint16, channel uint8, sec string) []byte {
-    b.beaconHeader(bssid, seq)
-    b.beaconBody(ssid, channel, sec)
-    return b.buffer[:b.length]
+func (b *Beacon) SetSrcAddr(mac net.HardwareAddr) {
+    copy(b.buffer[22:28], mac[:])
 }
 
 
 
-func (b *Beacon) beaconHeader(bssid net.HardwareAddr, seq uint16) {
-    copy(b.buffer[22:28], bssid[:])
+func (b *Beacon) SetBSSID(bssid net.HardwareAddr) {
     copy(b.buffer[28:34], bssid[:])
+}
 
+
+
+func (b *Beacon) SetSeqCtrl(seq uint16) {
     seqCtrl := (seq & 0x0FFF) << 4
     binary.LittleEndian.PutUint16(b.buffer[34:36], seqCtrl)
 }
 
 
 
-func (b *Beacon) beaconBody(ssid string, channel uint8, sec string) {
+func (b *Beacon) setTimestamp() {
     ts := uint64(time.Now().UnixMicro())
     binary.LittleEndian.PutUint64(b.buffer[36:44], ts)
+}
 
-    secFlags, secBytes, lenDataSec := getSecData(sec)
-    secData := secBytes[:lenDataSec]
 
+
+func (b *Beacon) setInterval() {
+    binary.LittleEndian.PutUint16(b.buffer[44:46], 100)
+}
+
+
+
+func (b *Beacon) setCapInfo(secFlags [2]byte) {
     copy(b.buffer[46:48], secFlags[:])
+}
 
-    ssidLen   := len(ssid)
+
+
+func (b *Beacon) setSSID(ssid string) {
+    ssidLen  := len(ssid)
+    b.offset  = 48
+
+    b.buffer[b.offset] = 0x00
+    b.offset += 1
+
+    b.buffer[b.offset] = byte(ssidLen)
+    b.offset += 1
     
-    if ssidLen > 32 {
-        ssidLen = 32
-    }
-    idx := 48
+    copy(b.buffer[b.offset : b.offset + ssidLen], ssid)
+    b.offset += ssidLen
+}
 
-    b.buffer[idx]   = 0x00
-    b.buffer[idx+1] = byte(ssidLen)
-    idx += 2
-    copy(b.buffer[idx:idx+ssidLen], ssid)
-    idx += ssidLen
 
-    b.buffer[idx]   = 0x01
-    b.buffer[idx+1] = 0x08
+
+func (b *Beacon) setRates() {
+    b.buffer[b.offset] = 0x01
+    b.offset += 1
+
+    b.buffer[b.offset] = 0x08
+    b.offset += 1
 
     rates := [8]byte{
         0x82, 0x84, 0x8B, 0x96, // 1, 2, 5.5, 11 Mbps
         0x0C, 0x12, 0x18, 0x24, // 6, 9, 12, 24 Mbps
     }
-    copy(b.buffer[idx+2:idx+10], rates[:])
-    idx += 10
+    
+    copy(b.buffer[b.offset : b.offset + 8], rates[:])
+    b.offset += 8
+}
 
-    b.buffer[idx]   = 0x03
-    b.buffer[idx+1] = 0x01
-    b.buffer[idx+2] = channel
-    idx += 3
 
-    b.buffer[idx]   = 0x05
-    b.buffer[idx+1] = 0x04
+
+func (b *Beacon) SetChnl(chnl uint8) {
+    b.buffer[b.offset] = 0x03
+    b.offset += 1
+
+    b.buffer[b.offset] = 0x01
+    b.offset += 1
+
+    b.buffer[b.offset] = chnl
+    b.offset += 1
+}
+
+
+
+func (b *Beacon) setTIM() {
+    b.buffer[b.offset] = 0x05
+    b.offset += 1
+    
+    b.buffer[b.offset] = 0x04
+    b.offset += 1
 
     tim := [4]byte{0x00, 0x01, 0x00, 0x00}
-    copy(b.buffer[idx+2:idx+6], tim[:])
-    idx += 6
+    copy(b.buffer[b.offset : b.offset + 4], tim[:])
+    b.offset += 4
+}
 
-    if len(secData) > 0 {
-        copy(b.buffer[idx:idx+len(secData)], secData)
-        idx += len(secData)
-    }
 
-    b.buffer[idx]   = 0x32
-    b.buffer[idx+1] = 0x04
+
+func (b *Beacon) setSec(sec string) {
+    secFlags, secBytes, lenDataSec := getSecData(sec)
+    b.setCapInfo(secFlags)
+
+    if lenDataSec <= 0 { return }
+
+    secData := secBytes[:lenDataSec]
+    copy(b.buffer[b.offset : b.offset + lenDataSec], secData)
+    b.offset += lenDataSec
+}
+
+
+
+func (b *Beacon) setExtSuppRates() {
+    b.buffer[b.offset] = 0x32
+    b.offset += 1
+
+    b.buffer[b.offset] = 0x04
+    b.offset += 1
 
     extRates := [4]byte{0x30, 0x48, 0x60, 0x6C}
-    copy(b.buffer[idx+2:idx+6], extRates[:])
-    idx += 6
+    copy(b.buffer[b.offset : b.offset + 4], extRates[:])
+    b.offset += 4
+}
 
-    b.length = idx
+
+
+func (b *Beacon) SetBodyInfo(ssid string, chnl uint8, sec string) {
+    b.setSSID(ssid)
+    b.setRates()
+    b.SetChnl(chnl)
+    b.setTIM()
+    b.setSec(sec)
+    b.setExtSuppRates()
+}
+
+
+
+func (b *Beacon) Beacon() []byte {
+    b.setTimestamp() 
+    return b.buffer[:b.offset]
 }
 
 
