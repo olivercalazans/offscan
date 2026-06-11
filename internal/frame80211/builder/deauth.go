@@ -22,9 +22,6 @@ import (
 	"net"
 )
 
-type Mac = net.HardwareAddr
-
-
 
 type Deauth struct {
 	buffer [38]byte
@@ -32,23 +29,18 @@ type Deauth struct {
 
 
 
-func NewDeauthFrame(bssid Mac) Deauth {
+func NewDeauthFrame() Deauth {
 	d := Deauth{}
-	d.buildFixed(bssid)
+	d.buildFixed()
 	return d
 }
 
 
 
-func (d *Deauth) buildFixed(bssid Mac) {        
+func (d *Deauth) buildFixed() {
 	minimalRariotapHeader(d.buffer[:12])
-
-    d.buffer[12] = 0xC0
-    d.buffer[13] = 0x00
-    d.buffer[14] = 0x3a
-    d.buffer[15] = 0x01
-
-    copy(d.buffer[28:34], bssid)
+    d.setFrameCtrl()
+    d.setDuration()
 
     d.buffer[36] = 0x07
     d.buffer[37] = 0x00
@@ -56,12 +48,45 @@ func (d *Deauth) buildFixed(bssid Mac) {
 
 
 
-func (d *Deauth) Frame(srcMac, dstMac Mac, seq uint16) [] byte {
-    copy(d.buffer[16:22], dstMac)
-    copy(d.buffer[22:28], srcMac)
+func (d *Deauth) setFrameCtrl() {
+    d.buffer[12] = 0xC0
+    d.buffer[13] = 0x00
+}
 
+
+
+func (d *Deauth) setDuration() {
+    d.buffer[14] = 0x3a
+    d.buffer[15] = 0x01
+}
+
+
+
+func (d *Deauth) SetDstAddr(addr net.HardwareAddr) {
+    copy(d.buffer[16:22], addr)
+}
+
+
+
+func (d *Deauth) SetSrcAddr(addr net.HardwareAddr) {
+    copy(d.buffer[22:28], addr)
+}
+
+
+
+func (d *Deauth) SetBSSID(bssid net.HardwareAddr) {
+    copy(d.buffer[28:34], bssid)
+}
+
+
+
+func (d *Deauth) SetSeqCtrl(seq uint16) {
     seqCtrl := uint16((seq & 0x0FFF) << 4)
     binary.LittleEndian.PutUint16(d.buffer[34:36], seqCtrl)
-    
+}
+
+
+
+func (d *Deauth) Frame() [] byte {
     return d.buffer[:]
 }

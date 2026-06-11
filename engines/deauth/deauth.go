@@ -55,8 +55,11 @@ func newDeauth(argList []string) *deauthentication {
     ifconfig.MustSetChannel(parser.iface, parser.channel)
     displayInfo(parser)
 
+    builder := builder.NewDeauthFrame()
+    builder.SetBSSID(parser.bssid)
+
     return &deauthentication{
-        builder   : builder.NewDeauthFrame(parser.bssid),
+        builder   : builder,
         frmsSent  : 0,
         seqNum    : 1,
         socket    : sockets.NewL2Socket(&parser.iface),
@@ -108,7 +111,11 @@ func (d *deauthentication) execute() {
 
 
 func (d *deauthentication) sendFrame(srcMac, dstMac net.HardwareAddr) {
-    frame := d.builder.Frame(dstMac, srcMac, d.seqNum)
+    d.builder.SetSrcAddr(srcMac)
+    d.builder.SetDstAddr(dstMac)
+    d.builder.SetSeqCtrl(d.seqNum)
+    
+    frame := d.builder.Frame()
     d.socket.Send(frame)
     
 	d.updateSeqNum()
