@@ -28,8 +28,9 @@ import (
 
 
 type Beacon struct {
-    buffer  [150]byte
-    offset  int
+    buffer     [150]byte
+    offset     int
+    secOffset  int
 }
 
 
@@ -145,7 +146,7 @@ func (b *Beacon) setRates() {
 
 
 
-func (b *Beacon) SetChnl(chnl uint8) {
+func (b *Beacon) setChnl(chnl uint8) {
     b.buffer[b.offset] = 0x03
     b.offset += 1
 
@@ -172,7 +173,9 @@ func (b *Beacon) setTIM() {
 
 
 
-func (b *Beacon) setSec(sec string) {
+func (b *Beacon) SetSec(sec string) {
+    b.offset = b.secOffset
+
     secFlags, secBytes, lenDataSec := getSecData(sec)
     b.setCapInfo(secFlags)
 
@@ -181,6 +184,8 @@ func (b *Beacon) setSec(sec string) {
     secData := secBytes[:lenDataSec]
     copy(b.buffer[b.offset : b.offset + lenDataSec], secData)
     b.offset += lenDataSec
+
+    b.setExtSuppRates()
 }
 
 
@@ -199,13 +204,12 @@ func (b *Beacon) setExtSuppRates() {
 
 
 
-func (b *Beacon) SetBodyInfo(ssid string, chnl uint8, sec string) {
+func (b *Beacon) SetBodyInfo(ssid string, chnl uint8) {
     b.setSSID(ssid)
     b.setRates()
-    b.SetChnl(chnl)
+    b.setChnl(chnl)
     b.setTIM()
-    b.setSec(sec)
-    b.setExtSuppRates()
+    b.secOffset = b.offset
 }
 
 
