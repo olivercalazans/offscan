@@ -15,39 +15,48 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package hostdisc
+package arppoison
 
 import (
-	"net"
-	"offscan/internal/generators"
 	"offscan/internal/packet/builder"
 	"offscan/internal/sockets"
 )
 
 
-type probeTools struct {
-    l2sock   sockets.Layer2Socket
-    l3sock   sockets.Layer3Socket
-    arp     *builder.ArpPacket
-    icmp    *builder.IcmpPacket
-    tcp     *builder.TcpPacket
-    rand    *generators.RandomValues
-    dstIP    net.IP
+
+func (ap *arpPoison) startPoisoner() {
+	ap.wg.Add(1)
+	go func() {
+		defer ap.wg.Done()
+		ap.initPoisoningTools()
+		ap.sendPoisoningPkts()
+	}()
 }
 
 
 
-func (pt *probeTools) SetArpReqStatic(
-	srcMac  net.HardwareAddr,
-	srcIP   net.IP,
-) {
-	broadcast := net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	pt.arp.EtherHdr.SetDstAddr(broadcast)
-	pt.arp.EtherHdr.SetSrcAddr(srcMac)
+func (ap *arpPoison) initPoisoningTools() {
+	ap.socket  = sockets.NewL2Socket(&ap.iface)
+	ap.builder = builder.NewArpPkt()
+	ap.builder.SetOpcode(builder.ArpReqCode)
+}
 
-	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	pt.arp.SetOpcode(builder.ArpReqCode)
-	pt.arp.SetSenderMAC(srcMac)
-	pt.arp.SetSenderIP(srcIP)
-	pt.arp.SetTargetMAC(nullMac)
+
+
+func (ap *arpPoison) sendPoisoningPkts() {
+	for {
+		select{
+		case <-ap.ctx.Done():
+			return
+
+		default:
+			ap.sendPkt()
+		}
+	}
+}
+
+
+
+func (ap *arpPoison) sendPkt() {
+
 }

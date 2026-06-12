@@ -15,32 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package builder
+package sysinfo
 
 import (
-	"encoding/binary"
-	"net"
+	"fmt"
+	"offscan/internal/utils"
+	"os"
 )
 
 
-type etherHeader struct {
-	header  *[14]byte
+const path string = "/proc/sys/net/ipv4/ip_forward"
+
+
+
+func MustEnableIPForwarding() {
+    err := os.WriteFile(path, []byte("1"), 0644)
+
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to enable IP forwarding %s: %v", path, err))
+    }
 }
 
 
 
-func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
-	copy(eh.header[0:6], dstMAC)
-}
+func MustDisableIPForwarding() {
+    err := os.WriteFile(path, []byte("0"), 0644)
 
-
-
-func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
-	copy(eh.header[6:12], srcMAC)
-}
-
-
-
-func (eh *etherHeader) setArpType() {
-	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to disable IP forwarding %s: %v", path, err))
+    }
 }

@@ -55,6 +55,7 @@ func (ap *ArpPacket) refBuffer() {
 
 
 func (ap *ArpPacket) buildFixed() {
+	ap.EtherHdr.setArpType()
 	ap.setHardwareType()
 	ap.setProtocolType()
 	ap.setHardwareAddrLen()

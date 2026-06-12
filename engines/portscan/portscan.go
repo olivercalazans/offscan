@@ -35,7 +35,6 @@ import (
 	"offscan/internal/utils"
 
 	"offscan/internal/sockets"
-	"offscan/internal/sysinfo"
 )
 
 
@@ -199,7 +198,7 @@ func (ps *portScanner) closeSocket(socket *sockets.Layer3Socket) {
 
 
 func (ps *portScanner) displayResult() {
-    deviceName := sysinfo.GetHostName(ps.targetIP.String())    
+    deviceName := netroute.GetHostName(ps.targetIP.String())    
 	fmt.Printf("\nOpen ports from %s (%s)\n", deviceName, ps.targetIP.String())
     ps.formatPorts()
 }

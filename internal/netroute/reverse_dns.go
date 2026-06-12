@@ -15,32 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package builder
+package netroute
 
-import (
-	"encoding/binary"
-	"net"
-)
-
-
-type etherHeader struct {
-	header  *[14]byte
-}
+import "net"
 
 
 
-func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
-	copy(eh.header[0:6], dstMAC)
-}
+func GetHostName(ip string) string {
+    names, err := net.LookupAddr(ip)
 
+	if err != nil || len(names) < 1 {
+        return "Unknown"
+    }
 
-
-func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
-	copy(eh.header[6:12], srcMAC)
-}
-
-
-
-func (eh *etherHeader) setArpType() {
-	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
+    return names[0]
 }

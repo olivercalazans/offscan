@@ -150,7 +150,7 @@ func (hd *hostDiscovery) resolveNames() {
 
 	for ipBytes, info := range hd.activeIPs {
         ip       := net.IP(ipBytes[:])
-        name     := sysinfo.GetHostName(ip.String())
+        name     := netroute.GetHostName(ip.String())
         info.Name = name
         
 		hd.activeIPs[ipBytes] = info

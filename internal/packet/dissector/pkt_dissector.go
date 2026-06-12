@@ -27,6 +27,7 @@ import (
 type PacketDissector struct {
     pkt     []byte
     isARP   bool
+    lenPkt  int
 }
 
 
@@ -40,7 +41,9 @@ func NewPacketDissector() *PacketDissector {
 
 
 func (pd *PacketDissector) UpdatePkt(rawPkt []byte) bool {
-	if len(rawPkt) < 28 { return false }
+    pd.lenPkt = len(rawPkt)
+
+	if pd.lenPkt < 28 { return false }
 
     pd.pkt = rawPkt
     pd.isArpReply()
@@ -51,7 +54,7 @@ func (pd *PacketDissector) UpdatePkt(rawPkt []byte) bool {
 
 
 func (pd *PacketDissector) isIPv4() bool {
-    if len(pd.pkt) < 14 {
+    if pd.lenPkt < 14 {
         return false
     }
 
@@ -62,7 +65,7 @@ func (pd *PacketDissector) isIPv4() bool {
 
 
 func (pd *PacketDissector) ihl() (uint8, bool) {
-    if len(pd.pkt) < 15 {
+    if pd.lenPkt < 15 {
         return 0, false
     }
 
@@ -90,7 +93,7 @@ func (pd *PacketDissector) ipHeaderLen() (int, bool) {
 
 
 func (pd *PacketDissector) isArpReply() {
-	if len(pd.pkt) < 42 {
+	if pd.lenPkt < 42 {
 		pd.isARP = false
 		return
 	}
@@ -113,7 +116,7 @@ func (pd *PacketDissector) isArpReply() {
 
 
 func (pd *PacketDissector) isTCP() bool {
-    if len(pd.pkt) < 24 {
+    if pd.lenPkt < 24 {
         return false
     }
     
@@ -127,7 +130,7 @@ func (pd *PacketDissector) GetSrcMac() (net.HardwareAddr, bool) {
         return net.HardwareAddr(pd.pkt[22:28]), true
     }
 
-    if len(pd.pkt) < 12 || !pd.isIPv4() {
+    if pd.lenPkt < 12 || !pd.isIPv4() {
         return nil, false
     }
     
@@ -141,7 +144,7 @@ func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
         return net.IP(pd.pkt[28:32]), true
     }
 
-    if len(pd.pkt) < 30 || !pd.isIPv4() {
+    if pd.lenPkt < 30 || !pd.isIPv4() {
         return nil, false
     }
     
@@ -156,8 +159,28 @@ func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
 
 
 
+func (pd *PacketDissector) GetDstIP() (net.IP, bool) {
+    if pd.isARP {
+        return net.IP{}, false
+    }
+
+    if pd.lenPkt < 30 || !pd.isIPv4() {
+        return nil, false
+    }
+    
+	ip := net.IP(pd.pkt[30:34]).To4()
+    
+	if ip == nil {
+        return nil, false
+    }
+    
+	return ip, true
+}
+
+
+
 func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
-    if len(pd.pkt) < 54 || !pd.isIPv4() || !pd.isTCP() {
+    if pd.lenPkt < 54 || !pd.isIPv4() || !pd.isTCP() {
         return 0, false
     }
 
@@ -166,7 +189,7 @@ func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
         return 0, false
     }
 
-	if len(pd.pkt) < offset+2 {
+	if pd.lenPkt < offset+2 {
         return 0, false
     }
 
