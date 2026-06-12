@@ -72,9 +72,7 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: 
-			"Interface and system configuration \n\nE.g., $ sudo ./offscan sys <FLAGS>",
-		},
+		{ID: 0, Desc: "Interface and system configuration\nE.g., $ sudo ./offscan sys <FLAGS>"},
 		{ID: iface,   Short: "i", Long: "iface",   HasValue: true,  Desc: "Interface"},
 		{ID: info,    Short: "I", Long: "info",    HasValue: false, Desc: "Display all or selected interface information"},		
 		{ID: mode,    Short: "M", Long: "mode",    HasValue: false, Desc: "Set monitor or managed mode on interface"},		

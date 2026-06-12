@@ -39,9 +39,7 @@ func newParser() wmapParser {
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: 
-			"WiFi Mapper\nIt captures beacons to gather Wi-Fi network information\n\nE.g., $ sudo ./offscan wmap <FLAGS>",
-		},
+		{ID: 0, Desc: "WiFi Mapper\nE.g., $ sudo ./offscan wmap <FLAGS>"},
 		{
 			ID	     : iface, 
 			Short	 : "i", 

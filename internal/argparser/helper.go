@@ -58,7 +58,7 @@ func displayFlags(flagSettings []Flag) {
 
     for _, f := range flagSettings {
 		if f.ID == 0 {
-			fmt.Printf("\n## %s\n\nFlags:\n", f.Desc)
+			fmt.Printf("\n## %s\nFlags:\n", f.Desc)
 			continue
 		}
 
@@ -67,7 +67,7 @@ func displayFlags(flagSettings []Flag) {
 		
 		if f.Req { req = "(Required)" }
 
-        fmt.Printf("\t%-*s : %s %s\n", descLen, flags, req, f.Desc)
+        fmt.Printf("  %-*s : %s %s\n", descLen, flags, req, f.Desc)
     }
 
 	fmt.Println("")
