@@ -20,7 +20,7 @@ package hostdisc
 import (
 	"net"
 	"offscan/internal/generators"
-	"offscan/internal/packet/builder"
+	"offscan/internal/packet"
 	"offscan/internal/sockets"
 )
 
@@ -28,9 +28,9 @@ import (
 type probeTools struct {
     l2sock   sockets.Layer2Socket
     l3sock   sockets.Layer3Socket
-    arp     *builder.ArpPacket
-    icmp    *builder.IcmpPacket
-    tcp     *builder.TcpPacket
+    arp     *packet.ArpPacket
+    icmp    *packet.IcmpPacket
+    tcp     *packet.TcpPacket
     rand    *generators.RandomValues
     dstIP    net.IP
 }
@@ -46,7 +46,7 @@ func (pt *probeTools) SetArpReqStatic(
 	pt.arp.EtherHdr.SetSrcAddr(srcMac)
 
 	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	pt.arp.SetOpcode(builder.ArpReqCode)
+	pt.arp.SetRequestOpcode()
 	pt.arp.SetSenderMAC(srcMac)
 	pt.arp.SetSenderIP(srcIP)
 	pt.arp.SetTargetMAC(nullMac)

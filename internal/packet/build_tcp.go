@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package builder
+package packet
 
 import (
 	"encoding/binary"

@@ -15,20 +15,32 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package builder
+package packet
+
+import (
+	"encoding/binary"
+	"net"
+)
 
 
-func minimalRariotapHeader(buffer []byte) {
-	buffer[0]  = 0x00  // Header revision
-	buffer[1]  = 0x00  // Header pad
-	buffer[2]  = 0x0c  // Header length
-	buffer[3]  = 0x00  //
-	buffer[4]  = 0x04  // Bitmap
-	buffer[5]  = 0x80  //
-	buffer[6]  = 0x00  //
-	buffer[7]  = 0x00  //
-	buffer[8]  = 0x02  // Rate
-	buffer[9]  = 0x00  // Rate pad
-	buffer[10] = 0x18  // TX flags
-	buffer[11] = 0x00  //
+type etherHeader struct {
+	header  *[14]byte
+}
+
+
+
+func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
+	copy(eh.header[0:6], dstMAC)
+}
+
+
+
+func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
+	copy(eh.header[6:12], srcMAC)
+}
+
+
+
+func (eh *etherHeader) setArpType() {
+	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
 }

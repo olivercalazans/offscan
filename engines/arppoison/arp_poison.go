@@ -22,32 +22,37 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/netroute"
-	"offscan/internal/packet/builder"
-	"offscan/internal/packet/dissector"
+	"offscan/internal/packet"
 	"offscan/internal/sniffer"
 	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 )
 
 
 
 type arpPoison struct {
-	iface       net.Interface
-	targetIP    net.IP
-	targetMAC   net.HardwareAddr
-	apIP        net.IP
-	apMAC	    net.HardwareAddr
-	builder    *builder.ArpPacket
-	socket      sockets.Layer2Socket
-	sniffer    *sniffer.Sniffer
-	ctx         context.Context
-	cancel      context.CancelFunc
-	dissec     *dissector.PacketDissector
-	wg          sync.WaitGroup
+	iface     net.Interface
+	addrs     addresses
+	builder  *packet.ArpPacket
+	socket    sockets.Layer2Socket
+	sniffer  *sniffer.Sniffer
+	ctx       context.Context
+	cancel    context.CancelFunc
+	dissec   *packet.PacketDissector
+}
+
+
+
+type addresses struct {
+	myMAC      net.HardwareAddr
+	myIP       net.IP
+	targetMAC  net.HardwareAddr
+	targetIP   net.IP
+	apMAC	   net.HardwareAddr
+	apIP       net.IP
 }
 
 
@@ -65,11 +70,21 @@ func newArpPoison(args []string) *arpPoison {
 	iface := netroute.MustRouteIfaceForDstIP(parser.targetIP)
 
 	return &arpPoison{
-		iface     : iface,
-		targetIP  : parser.targetIP,
+		iface : iface,
+		addrs : setAddrs(parser, &iface),
+	}
+}
+
+
+
+func setAddrs(parser *arpPoisonParser, iface *net.Interface) addresses {
+	return addresses{
+		myMAC     : iface.HardwareAddr,
+		myIP      : sysconf.MustIPv4(iface),
 		targetMAC : parser.targetMAC,
-		apIP      : sysconf.MustGatewayIP(&iface),
-		apMAC     : sysconf.MustGatewayMAC(&iface),
+		targetIP  : parser.targetIP,
+		apMAC     : sysconf.MustGatewayMAC(iface),
+		apIP      : sysconf.MustGatewayIP(iface),
 	}
 }
 
@@ -78,22 +93,24 @@ func newArpPoison(args []string) *arpPoison {
 func (ap *arpPoison) execute() {
 	sysconf.MustEnableIPForwarding()
 	ap.initSniffTools()
-	ap.startPoisoner()
+	ap.initPoisoningTools()
 	ap.sniffTargetsTraffic()
+	ap.sendInitialPoisoning()
+	ap.stopTools()
 }
 
 
 
 func (ap *arpPoison) initSniffTools() {
 	ap.sniffer = sniffer.NewSniffer(ap.iface, ap.getBPFFilter(), false)
-	ap.dissec  = dissector.NewPacketDissector()
+	ap.dissec  = packet.NewPacketDissector()
 	ap.createCtx()
 }
 
 
 
 func (ap *arpPoison) getBPFFilter() string {
-	return fmt.Sprintf("host %s", ap.targetIP.String())
+	return fmt.Sprintf("host %s", ap.addrs.targetIP.String())
 }
 
 
@@ -108,6 +125,20 @@ func (ap *arpPoison) createCtx() {
         fmt.Println("\n[!] Interrupt received. Stopping...")
         ap.cancel()
     }()
+}
+
+
+
+func (ap *arpPoison) initPoisoningTools() {
+	ap.socket  = sockets.NewL2Socket(&ap.iface)
+	ap.builder = packet.NewArpPkt()
+	ap.builder.SetReplyOpcode()
+}
+
+
+
+func (ap *arpPoison) sendInitialPoisoning() {
+
 }
 
 
@@ -140,4 +171,12 @@ func (ap *arpPoison) processPkt(pkt []byte) {
 	if !ok2 { return }
 
 	fmt.Printf("%s -> %s", srcIP.String(), dstIP.String())
+}
+
+
+
+
+func (ap *arpPoison) stopTools() {
+	ap.socket.Close()
+	ap.sniffer.Stop()
 }

@@ -23,7 +23,7 @@ import (
 	"math/bits"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/packet/dissector"
+	"offscan/internal/packet"
 	"offscan/internal/sniffer"
 )
 
@@ -97,7 +97,7 @@ func (hd *hostDiscovery) cidrForBPFFilter() string {
 
 
 func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
-    dissector := dissector.NewPacketDissector()
+    dissector := packet.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
     srcIP, ok := dissector.GetSrcIP()

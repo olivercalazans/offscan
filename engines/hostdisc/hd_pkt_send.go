@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/generators"
-	"offscan/internal/packet/builder"
+	"offscan/internal/packet"
 	"offscan/internal/sockets"
 	"time"
 )
@@ -34,9 +34,9 @@ const delay = 40 * time.Millisecond
 type hostDiscProbes struct {
     l2sock   sockets.Layer2Socket
     l3sock   sockets.Layer3Socket
-    arp     *builder.ArpPacket
-    icmp    *builder.IcmpPacket
-    tcp     *builder.TcpPacket
+    arp     *packet.ArpPacket
+    icmp    *packet.IcmpPacket
+    tcp     *packet.TcpPacket
     dstIP    net.IP
 }
 
@@ -83,16 +83,16 @@ func (hd *hostDiscovery) initProbeTools() {
     hd.tools.l3sock = sockets.NewL3Socket(&hd.iface)
     
     if hd.protocols.arp {
-        hd.tools.arp = builder.NewArpPkt()
+        hd.tools.arp = packet.NewArpPkt()
         hd.tools.SetArpReqStatic(hd.iface.HardwareAddr, hd.myIP)
     }
 
     if hd.protocols.icmp {
-        hd.tools.icmp = builder.NewIcmpPkt()
+        hd.tools.icmp = packet.NewIcmpPkt()
     }
 
     if hd.protocols.tcp {
-        hd.tools.tcp  = builder.NewTcpPkt()
+        hd.tools.tcp  = packet.NewTcpPkt()
         hd.tools.rand = generators.NewRandomValues()
     }
 }

@@ -28,13 +28,11 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/netroute"
-	"offscan/internal/packet/builder"
-	"offscan/internal/packet/dissector"
+	"offscan/internal/packet"
 	"offscan/internal/sniffer"
+	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
 	"offscan/internal/utils"
-
-	"offscan/internal/sockets"
 )
 
 
@@ -65,7 +63,7 @@ func newPortScanner(argList []string) *portScanner {
     parser := newParser()
 	parser.parsePortScanArgs(argList)
 
-	dstIP := conv.MustStrToIPv4(parser.TargetIP)
+    dstIP := conv.MustStrToIPv4(parser.TargetIP)
 	iface := netroute.MustRouteIfaceForDstIP(dstIP)
 	myIP  := sysconf.MustIPv4(&iface)
 
@@ -111,7 +109,7 @@ func (ps *portScanner) startPacketProcessor() {
         defer ps.wg.Done()
         
         tempPorts := make(map[uint16]struct{})
-        dissector := dissector.NewPacketDissector()
+        dissector := packet.NewPacketDissector()
 
         for {
 			pkt, ok := <-packetCh
@@ -137,7 +135,7 @@ func (ps *portScanner) getBPFFilter() string {
 
 
 func (ps *portScanner) dissectAndUpdate(
-    dissector  *dissector.PacketDissector, 
+    dissector  *packet.PacketDissector, 
     tempPorts   map[uint16]struct{}, 
     pkt         []byte,
 ) {
@@ -162,7 +160,7 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
-    builder  := builder.NewTcpPkt()
+    builder  := packet.NewTcpPkt()
     socket   := sockets.NewL3Socket(&ps.iface)
     randGen  := generators.NewRandomValues()
     portIter := generators.NewPortIter(ps.ports, ps.random)

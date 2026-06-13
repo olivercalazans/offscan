@@ -22,7 +22,7 @@ import (
 	"net"
 	"time"
 
-	"offscan/internal/frame80211/builder"
+	"offscan/internal/frame80211"
 	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
 	"offscan/internal/utils"
@@ -37,7 +37,7 @@ func Run(args []string) {
 
 
 type deauthentication struct {
-    builder     builder.Deauth
+    builder     frame80211.Deauth
     frmsSent    int
     seqNum      uint16
     socket      sockets.Layer2Socket
@@ -55,7 +55,7 @@ func newDeauth(argList []string) *deauthentication {
     sysconf.MustSetChannel(parser.iface, parser.channel)
     displayInfo(parser)
 
-    builder := builder.NewDeauthFrame()
+    builder := frame80211.NewDeauthFrame()
     builder.SetBSSID(parser.bssid)
 
     return &deauthentication{

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package builder
+package packet
 
 import (
 	"encoding/binary"
@@ -23,11 +23,6 @@ import (
 	"offscan/internal/conv"
 )
 
-
-const (
-	ArpReqCode uint16 = 0x0001
-	ArpRepCode uint16 = 0x0002
-)
 
 
 type ArpPacket struct {
@@ -87,8 +82,14 @@ func (ap *ArpPacket) setProtocolAddrLen() {
 
 
 
-func (ap *ArpPacket) SetOpcode(opcode uint16) {
-	binary.BigEndian.PutUint16(ap.arpHdr[6:8], opcode)
+func (ap *ArpPacket) SetRequestOpcode() {
+	binary.BigEndian.PutUint16(ap.arpHdr[6:8], 0x0001)
+}
+
+
+
+func (ap *ArpPacket) SetReplyOpcode() {
+	binary.BigEndian.PutUint16(ap.arpHdr[6:8], 0x0002)
 }
 
 

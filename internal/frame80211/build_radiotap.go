@@ -15,48 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package arppoison
-
-import (
-	"offscan/internal/packet/builder"
-	"offscan/internal/sockets"
-)
+package frame80211
 
 
-
-func (ap *arpPoison) startPoisoner() {
-	ap.wg.Add(1)
-	go func() {
-		defer ap.wg.Done()
-		ap.initPoisoningTools()
-		ap.sendPoisoningPkts()
-	}()
-}
-
-
-
-func (ap *arpPoison) initPoisoningTools() {
-	ap.socket  = sockets.NewL2Socket(&ap.iface)
-	ap.builder = builder.NewArpPkt()
-	ap.builder.SetOpcode(builder.ArpReqCode)
-}
-
-
-
-func (ap *arpPoison) sendPoisoningPkts() {
-	for {
-		select{
-		case <-ap.ctx.Done():
-			return
-
-		default:
-			ap.sendPkt()
-		}
-	}
-}
-
-
-
-func (ap *arpPoison) sendPkt() {
-
+func minimalRariotapHeader(buffer []byte) {
+	buffer[0]  = 0x00  // Header revision
+	buffer[1]  = 0x00  // Header pad
+	buffer[2]  = 0x0c  // Header length
+	buffer[3]  = 0x00  //
+	buffer[4]  = 0x04  // Bitmap
+	buffer[5]  = 0x80  //
+	buffer[6]  = 0x00  //
+	buffer[7]  = 0x00  //
+	buffer[8]  = 0x02  // Rate
+	buffer[9]  = 0x00  // Rate pad
+	buffer[10] = 0x18  // TX flags
+	buffer[11] = 0x00  //
 }
