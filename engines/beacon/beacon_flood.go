@@ -23,8 +23,8 @@ import (
 
 	"offscan/internal/frame80211/builder"
 	"offscan/internal/generators"
-	"offscan/internal/ifconfig"
 	"offscan/internal/sockets"
+	"offscan/internal/sysconf"
 	"offscan/internal/utils"
 )
 
@@ -51,7 +51,7 @@ func newBeaconFlooder(argList []string) *beaconFlood {
     parser := newParser()
     parser.parseBcFloodArgs(argList)
 
-    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    sysconf.MustSetChannel(parser.iface, parser.channel)
 
     return &beaconFlood{
         channel : uint8(parser.channel),

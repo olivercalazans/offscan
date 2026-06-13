@@ -15,48 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifaceinfo
+package sysconf
 
 import (
 	"fmt"
 	"net"
-	"offscan/internal/utils"
+	"os"
 )
 
 
 
-func IPv4(iface *net.Interface) (net.IP, error) {
-    addrs, err := iface.Addrs()
-    if err != nil {
-        return nil, fmt.Errorf("Unable to get interface IPs: %w", err)
-    }
-
-    for _, addr := range addrs {
-        ipNet, ok := addr.(*net.IPNet)
-     
-        if !ok {
-            continue
-        }
-     
-        ip := ipNet.IP
-        if ip.To4() == nil {
-            continue
-        }
-     
-        return ip, nil
-    }
-    
-    return nil, fmt.Errorf("No IPv4 address found on interface")
-}
-
-
-
-func MustIPv4(iface *net.Interface) net.IP {
-    ip, err := IPv4(iface)
-
-    if err != nil {
-        utils.Abort(fmt.Sprintf("%v", err))
-    }
-
-    return ip
+func IsWireless(iface *net.Interface) bool {
+    _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/wireless", iface.Name))
+    return err == nil
 }

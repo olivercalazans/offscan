@@ -15,33 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifaceinfo
+package sysconf
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
-	"os"
-	"strings"
 )
 
 
 
-func Type(iface *net.Interface) string {
-    if IsWireless(iface) {
-        return "Wireless"
+func BroadcastFromCIDR(cidr string) (net.IP, error) {
+    ip, ipnet, err := net.ParseCIDR(cidr)
+    if err != nil {
+        return nil, fmt.Errorf("Invalid CIDR: %w", err)
     }
 
-	data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/type", iface.Name))
-
-	if err != nil {
-        return "Unknown"
+	ipv4 := ip.To4()
+    if ipv4 == nil {
+        return nil, fmt.Errorf("CIDR is not IPv4")
     }
 
-	typ := strings.TrimSpace(string(data))
+    ipU32 := binary.BigEndian.Uint32(ipv4)
+    mask  := binary.BigEndian.Uint32(ipnet.Mask)
 
-	switch typ {
-    	case "1":   return "Ethernet"
-    	case "772": return "Loopback"
-    	default:    return "Type-" + typ
-    }
+    broadcastU32 := ipU32 | ^mask
+    broadcast    := make(net.IP, 4)
+    binary.BigEndian.PutUint32(broadcast, broadcastU32)
+    
+	return broadcast, nil
 }

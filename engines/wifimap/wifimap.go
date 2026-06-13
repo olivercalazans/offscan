@@ -23,8 +23,8 @@ import (
 	"net"
 	"offscan/internal/conv"
 	"offscan/internal/frame80211/dissector"
-	"offscan/internal/ifconfig"
 	"offscan/internal/sniffer"
+	"offscan/internal/sysconf"
 	"slices"
 	"strings"
 	"sync"
@@ -139,14 +139,14 @@ func (wm *wifiMapper) updateInfo(
 
 
 func (wm *wifiMapper) sniff2GChannels() {
-	channels := ifconfig.Channels2()
+	channels := sysconf.Channels2()
 	wm.sniffChannels(channels, "2.4")
 }
 
 
 
 func (wm *wifiMapper) sniff5GChannels() {
-	channels := ifconfig.Channels5()
+	channels := sysconf.Channels5()
 	wm.sniffChannels(channels, "5")
 }
 
@@ -156,7 +156,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 	var errChannels []int
 
 	for _, chnl := range channels {
-		ok := ifconfig.TrySetChannel(wm.iface, chnl)
+		ok := sysconf.TrySetChannel(wm.iface, chnl)
 
 		if ok != nil {
 			errChannels = append(errChannels, chnl)

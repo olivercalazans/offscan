@@ -15,17 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifaceinfo
+package sysconf
 
 import (
 	"fmt"
-	"net"
+	"offscan/internal/utils"
 	"os"
 )
 
 
+const path string = "/proc/sys/net/ipv4/ip_forward"
 
-func IsWireless(iface *net.Interface) bool {
-    _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/wireless", iface.Name))
-    return err == nil
+
+
+func MustEnableIPForwarding() {
+    err := os.WriteFile(path, []byte("1"), 0644)
+
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to enable IP forwarding %s: %v", path, err))
+    }
+}
+
+
+
+func MustDisableIPForwarding() {
+    err := os.WriteFile(path, []byte("0"), 0644)
+
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to disable IP forwarding %s: %v", path, err))
+    }
 }

@@ -24,8 +24,7 @@ import (
 	"strings"
 
 	"offscan/internal/conv"
-	"offscan/internal/ifaceinfo"
-	"offscan/internal/sysinfo"
+	"offscan/internal/sysconf"
 )
 
 
@@ -34,7 +33,7 @@ func (s *system) executeInfo() {
     var ifaceList []net.Interface
 
     if  s.iface == nil {
-        ifaceList = sysinfo.MustAllIfaces()
+        ifaceList = sysconf.MustAllIfaces()
     } else {
         ifaceList = append(ifaceList, conv.MustStrToIface(s.iface.Name))
     }
@@ -83,7 +82,7 @@ func (ni *networkInfo) execute() {
 
 
 func (ni *networkInfo) setState() {
-    state, err := ifaceinfo.State(ni.current)
+    state, err := sysconf.State(ni.current)
     
 	if err != nil {
         ni.state = "Unknown"
@@ -95,7 +94,7 @@ func (ni *networkInfo) setState() {
 
 
 func (ni *networkInfo) setType() {
-    ni.ifType = ifaceinfo.Type(ni.current)
+    ni.ifType = sysconf.Type(ni.current)
 }
 
 
@@ -107,7 +106,7 @@ func (ni *networkInfo) setMAC() {
 
 
 func (ni *networkInfo) setIP() {
-    ip, err := ifaceinfo.IPv4(ni.current)
+    ip, err := sysconf.IPv4(ni.current)
     
 	if err != nil {
         ni.ip = "None"
@@ -119,7 +118,7 @@ func (ni *networkInfo) setIP() {
 
 
 func (ni *networkInfo) setCIDR() {
-    cidr, err := ifaceinfo.CIDR(ni.current)
+    cidr, err := sysconf.CIDR(ni.current)
     
 	if err != nil {
         ni.cidr = "Unknown"
@@ -163,7 +162,7 @@ func (ni *networkInfo) setMTU() {
 
 
 func (ni *networkInfo) setGatewayMAC() {
-    mac, err := ifaceinfo.GatewayMAC(ni.current)
+    mac, err := sysconf.GatewayMAC(ni.current)
 
     if err != nil {
         ni.gatewayMac = "Unknown"
@@ -175,7 +174,7 @@ func (ni *networkInfo) setGatewayMAC() {
 
 
 func (ni *networkInfo) setGatewayIP() {
-    ip, err := ifaceinfo.GatewayIP(ni.current)
+    ip, err := sysconf.GatewayIP(ni.current)
     
 	if err != nil {
         ni.gatewayIP = "Unknown"
@@ -192,7 +191,7 @@ func (ni *networkInfo) setBroadcast() {
         return
     }
 
-	ip, err := ifaceinfo.BroadcastFromCIDR(ni.cidr)
+	ip, err := sysconf.BroadcastFromCIDR(ni.cidr)
     
 	if err != nil {
         ni.broadcast = "Unknown"

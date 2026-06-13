@@ -15,18 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifconfig
+package sysconf
+
+import (
+	"fmt"
+	"offscan/internal/utils"
+)
 
 
 
-func Channels2() []int {
-	return []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
-}
-
-
-func Channels5() []int {
-	return []int{
-	    36,  40,  44,  48,  52,  56,  60,  64,  100, 104, 108, 112, 116, 120, 
-	    124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165,
+func ValidateChannel(channel int) {
+	if channel < 1 || channel > 165 {
+		utils.Abort(fmt.Sprintf("The channel must be between 1 and 165 (input: %d)", channel))
 	}
 }

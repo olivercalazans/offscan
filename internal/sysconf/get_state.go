@@ -15,46 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifaceinfo
+package sysconf
 
 import (
 	"fmt"
 	"net"
-	"offscan/internal/utils"
+	"os"
+	"strings"
 )
 
 
 
-func CIDR(iface *net.Interface) (string, error) {
-    addrs, err := iface.Addrs()
-    
+func State(iface *net.Interface) (string, error) {
+    data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/operstate", iface.Name))
+
 	if err != nil {
         return "", err
     }
-    
-	for _, addr := range addrs {
-        ipnet, ok := addr.(*net.IPNet)
-    
-		if !ok {
-            continue
-        }
-    
-		if ipnet.IP.To4() != nil {
-            return ipnet.String(), nil
-        }
-    }
-    
-	return "", fmt.Errorf("No IPv4 address found")
-}
 
-
-
-func MustCIDR(iface *net.Interface) string {
-    cidr, err := CIDR(iface)
-    
-    if err != nil {
-        utils.Abort(fmt.Sprintf("Failed to get CIDR for interface %s: %v", iface.Name, err))
-    }
-
-    return cidr
+	return strings.ToUpper(strings.TrimSpace(string(data))), nil
 }

@@ -23,8 +23,8 @@ import (
 	"maps"
 	"math"
 	"net"
-	"offscan/internal/ifconfig"
 	"offscan/internal/sniffer"
+	"offscan/internal/sysconf"
 	"os"
 	"os/signal"
 	"slices"
@@ -150,14 +150,14 @@ func (l2hd *layer2HostDiscovery) sniffEndlessly() {
 
 
 func (l2hd *layer2HostDiscovery) sniff2GChannels() {
-	channels := ifconfig.Channels2()
+	channels := sysconf.Channels2()
 	l2hd.sniff(channels)
 }
 
 
 
 func (l2hd *layer2HostDiscovery) sniff5GChannels() {
-	channels := ifconfig.Channels5()
+	channels := sysconf.Channels5()
 	l2hd.sniff(channels)
 }
 
@@ -167,7 +167,7 @@ func (l2hd *layer2HostDiscovery) sniff(channels []int) {
     for _, chnl := range channels {
         if l2hd.ctx.Err() != nil { return }
         
-		ok := ifconfig.TrySetChannel(l2hd.iface, chnl)
+		ok := sysconf.TrySetChannel(l2hd.iface, chnl)
         if ok != nil {
             l2hd.errChnls[chnl] = struct{}{}
             continue

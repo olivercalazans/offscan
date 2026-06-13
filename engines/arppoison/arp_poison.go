@@ -21,13 +21,12 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
 	"offscan/internal/packet/builder"
 	"offscan/internal/packet/dissector"
 	"offscan/internal/sniffer"
 	"offscan/internal/sockets"
-	"offscan/internal/sysinfo"
+	"offscan/internal/sysconf"
 	"os"
 	"os/signal"
 	"sync"
@@ -69,15 +68,15 @@ func newArpPoison(args []string) *arpPoison {
 		iface     : iface,
 		targetIP  : parser.targetIP,
 		targetMAC : parser.targetMAC,
-		apIP      : ifaceinfo.MustGatewayIP(&iface),
-		apMAC     : ifaceinfo.MustGatewayMAC(&iface),
+		apIP      : sysconf.MustGatewayIP(&iface),
+		apMAC     : sysconf.MustGatewayMAC(&iface),
 	}
 }
 
 
 
 func (ap *arpPoison) execute() {
-	sysinfo.MustEnableIPForwarding()
+	sysconf.MustEnableIPForwarding()
 	ap.initSniffTools()
 	ap.startPoisoner()
 	ap.sniffTargetsTraffic()

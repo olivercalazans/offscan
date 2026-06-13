@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"offscan/internal/frame80211/builder"
-	"offscan/internal/ifconfig"
 	"offscan/internal/sockets"
+	"offscan/internal/sysconf"
 	"offscan/internal/utils"
 )
 
@@ -52,7 +52,7 @@ func newDeauth(argList []string) *deauthentication {
     parser := newParser()
     parser.parseDeauthArgs(argList)
     
-    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    sysconf.MustSetChannel(parser.iface, parser.channel)
     displayInfo(parser)
 
     builder := builder.NewDeauthFrame()

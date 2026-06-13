@@ -15,33 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package sysinfo
+package sysconf
 
 import (
 	"fmt"
-	"offscan/internal/utils"
+	"net"
 	"os"
+	"strings"
 )
 
 
-const path string = "/proc/sys/net/ipv4/ip_forward"
 
-
-
-func MustEnableIPForwarding() {
-    err := os.WriteFile(path, []byte("1"), 0644)
-
-	if err != nil {
-        utils.Abort(fmt.Sprintf("Unable to enable IP forwarding %s: %v", path, err))
+func Type(iface *net.Interface) string {
+    if IsWireless(iface) {
+        return "Wireless"
     }
-}
 
-
-
-func MustDisableIPForwarding() {
-    err := os.WriteFile(path, []byte("0"), 0644)
+	data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/type", iface.Name))
 
 	if err != nil {
-        utils.Abort(fmt.Sprintf("Unable to disable IP forwarding %s: %v", path, err))
+        return "Unknown"
+    }
+
+	typ := strings.TrimSpace(string(data))
+
+	switch typ {
+    	case "1":   return "Ethernet"
+    	case "772": return "Loopback"
+    	default:    return "Type-" + typ
     }
 }

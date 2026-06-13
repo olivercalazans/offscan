@@ -36,7 +36,7 @@ import "C"
 
 import (
 	"fmt"
-	"offscan/internal/sysinfo"
+	"offscan/internal/sysconf"
 	"offscan/internal/utils"
 	"unsafe"
 
@@ -50,7 +50,7 @@ func (s *Sniffer) compileFilter() ([]unix.SockFilter, error) {
 
     var bpfProg C.struct_bpf_program
 
-	linkType, err := sysinfo.GetIfaceLinkType(&s.iface)
+	linkType, err := sysconf.GetIfaceLinkType(&s.iface)
 
 	if err != nil {
 		utils.Abort(fmt.Sprintf("%v", err))

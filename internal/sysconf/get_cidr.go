@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package sysinfo
+package sysconf
 
 import (
 	"fmt"
@@ -25,39 +25,36 @@ import (
 
 
 
-func MustDefaultInterface() net.Interface {
-    conn, err := net.Dial("udp", "8.8.8.8:80")
-
-    if err != nil {
-        utils.Abort(fmt.Sprintf("Failed to bind UDP socket: %v", err))
+func CIDR(iface *net.Interface) (string, error) {
+    addrs, err := iface.Addrs()
+    
+	if err != nil {
+        return "", err
     }
     
-    defer conn.Close()
-
-    localAddr  := conn.LocalAddr().(*net.UDPAddr)
-    interfaces := MustAllIfaces()
-
-    for i := range interfaces {
-        iface := &interfaces[i]
-
-        if iface.Flags & net.FlagUp == 0 {
+	for _, addr := range addrs {
+        ipnet, ok := addr.(*net.IPNet)
+    
+		if !ok {
             continue
         }
-
-        addrs, err := iface.Addrs()
-        if err != nil { continue }
-
-        for _, addr := range addrs {
-            ipNet, ok := addr.(*net.IPNet)
-            
-			if !ok { continue }
-            
-			if ipNet.IP.Equal(localAddr.IP) {
-                return *iface
-            }
+    
+		if ipnet.IP.To4() != nil {
+            return ipnet.String(), nil
         }
     }
+    
+	return "", fmt.Errorf("No IPv4 address found")
+}
 
-    utils.Abort(fmt.Sprintf("No interface found with IP %s", localAddr.IP))
-	return net.Interface{}
+
+
+func MustCIDR(iface *net.Interface) string {
+    cidr, err := CIDR(iface)
+    
+    if err != nil {
+        utils.Abort(fmt.Sprintf("Failed to get CIDR for interface %s: %v", iface.Name, err))
+    }
+
+    return cidr
 }

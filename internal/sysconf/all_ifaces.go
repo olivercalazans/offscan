@@ -15,17 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package ifconfig
+package sysconf
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/utils"
 )
 
 
 
-func ValidateChannel(channel int) {
-	if channel < 1 || channel > 165 {
-		utils.Abort(fmt.Sprintf("The channel must be between 1 and 165 (input: %d)", channel))
-	}
+func MustAllIfaces() []net.Interface {
+	interfaces, err := net.Interfaces()
+    
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to get interface list: %v", err))
+    }
+
+	return interfaces
 }

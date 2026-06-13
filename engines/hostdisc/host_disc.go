@@ -27,10 +27,9 @@ import (
 
 	"offscan/internal/conv"
 	"offscan/internal/generators"
-	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
 	"offscan/internal/sniffer"
-	"offscan/internal/sysinfo"
+	"offscan/internal/sysconf"
 )
 
 
@@ -67,17 +66,17 @@ func newHostDisc(argList []string) *hostDiscovery {
 
 	var iface net.Interface
 	if parser.iface == "" {
-		iface = sysinfo.MustDefaultInterface()
+		iface = sysconf.MustDefaultInterface()
 	} else {
 		iface = conv.MustStrToIface(parser.iface)
 	}
 
-	cidr := ifaceinfo.MustCIDR(&iface)
+	cidr := sysconf.MustCIDR(&iface)
 
     return &hostDiscovery{
         activeIPs : make(map[[4]byte]hostInfo),
         ips       : generators.NewIpv4Iter(cidr, parser.ipRange),
-        myIP      : ifaceinfo.MustIPv4(&iface),
+        myIP      : sysconf.MustIPv4(&iface),
         iface     : iface,
         protocols : protoFlags(&parser, &iface),
     }
