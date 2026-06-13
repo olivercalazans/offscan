@@ -17,45 +17,34 @@
 
 package packet
 
-
-
-type PacketDissector struct {
-    pkt           []byte
-    lenPkt        int
-    isIPv4        bool
-    isArpReply    bool
-    isArpRequest  bool
-}
+import "encoding/binary"
 
 
 
-func NewPacketDissector() *PacketDissector {
-    return &PacketDissector{
-        pkt: make([]byte, 0),
+func (pd *PacketDissector) isTCP() bool {
+    if pd.lenPkt < 24 {
+        return false
     }
+    
+	return pd.pkt[23] == 6
 }
 
 
 
-func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
-    pd.lenPkt = len(rawPkt)
-    pd.pkt    = rawPkt
+func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
+    if pd.lenPkt < 54 || !pd.isIPv4 || !pd.isTCP() {
+        return 0, false
+    }
 
-    pd.flushArpVars()
-    pd.checkArpOpcode()	
-}
+	offset, ok := pd.ipHeaderLen()
+    if !ok {
+        return 0, false
+    }
 
+	if pd.lenPkt < offset+2 {
+        return 0, false
+    }
 
-
-func (pd *PacketDissector) flushArpVars() {
-    pd.isIPv4       = false
-	pd.isArpReply   = false
-	pd.isArpRequest = false
-}
-
-
-
-func (pd *PacketDissector) checkProtocol() {
-    if pd.checkArpOpcode() { return }
-    pd.checkIPv4()
+	port := binary.BigEndian.Uint16(pd.pkt[offset : offset+2])
+    return port, true
 }

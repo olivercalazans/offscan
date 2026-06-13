@@ -17,45 +17,14 @@
 
 package packet
 
-
-
-type PacketDissector struct {
-    pkt           []byte
-    lenPkt        int
-    isIPv4        bool
-    isArpReply    bool
-    isArpRequest  bool
-}
+import "net"
 
 
 
-func NewPacketDissector() *PacketDissector {
-    return &PacketDissector{
-        pkt: make([]byte, 0),
+func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
+    if pd.lenPkt < 12 {
+        return nil, false
     }
-}
-
-
-
-func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
-    pd.lenPkt = len(rawPkt)
-    pd.pkt    = rawPkt
-
-    pd.flushArpVars()
-    pd.checkArpOpcode()	
-}
-
-
-
-func (pd *PacketDissector) flushArpVars() {
-    pd.isIPv4       = false
-	pd.isArpReply   = false
-	pd.isArpRequest = false
-}
-
-
-
-func (pd *PacketDissector) checkProtocol() {
-    if pd.checkArpOpcode() { return }
-    pd.checkIPv4()
+    
+	return net.HardwareAddr(pd.pkt[6:12]), true
 }
