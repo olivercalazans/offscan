@@ -42,7 +42,7 @@ func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
     pd.pkt    = rawPkt
 
     pd.flushArpVars()
-    pd.checkArpOpcode()	
+    pd.checkProtocol()	
 }
 
 
