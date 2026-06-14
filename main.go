@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 
+	"offscan/engines/arppoison"
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
@@ -42,14 +43,15 @@ func main() {
 	}
 
 	var registry = map[string]argparser.CommandHandler{
-	"beacon" : { Run: beacon.Run,   FlagSettings: beacon.FlagSettings   },
-	"deauth" : { Run: deauth.Run,   FlagSettings: deauth.FlagSettings   },
-	"hdisc"  : { Run: hostdisc.Run, FlagSettings: hostdisc.FlagSettings },
-	"l2disc" : { Run: l2disc.Run,   FlagSettings: l2disc.FlagSettings   },
-	"sys"    : { Run: system.Run,   FlagSettings: system.FlagSettings   },
-	"pscan"  : { Run: portscan.Run, FlagSettings: portscan.FlagSettings },
-	"wmap"   : { Run: wifimap.Run,  FlagSettings: wifimap.FlagSettings  },
-}
+		"arp"    : { Run: arppoison.Run, FlagSettings: arppoison.FlagSettings },
+		"beacon" : { Run: beacon.Run,    FlagSettings: beacon.FlagSettings    },
+		"deauth" : { Run: deauth.Run,    FlagSettings: deauth.FlagSettings    },
+		"hdisc"  : { Run: hostdisc.Run,  FlagSettings: hostdisc.FlagSettings  },
+		"l2disc" : { Run: l2disc.Run,    FlagSettings: l2disc.FlagSettings    },
+		"sys"    : { Run: system.Run,    FlagSettings: system.FlagSettings    },
+		"pscan"  : { Run: portscan.Run,  FlagSettings: portscan.FlagSettings  },
+		"wmap"   : { Run: wifimap.Run,   FlagSettings: wifimap.FlagSettings   },
+	}
 
 	cmdName := args[0]
 

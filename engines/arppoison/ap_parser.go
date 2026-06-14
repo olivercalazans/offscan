@@ -18,7 +18,6 @@
 package arppoison
 
 import (
-	"fmt"
 	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
@@ -45,10 +44,8 @@ func newParser() *arpPoisonParser {
 
 
 func FlagSettings() []argparser.Flag {
-	cmdDesc := "It sends ARP packets with spoofed addresses to poison the target ARP table"
-	cmdEG   := "sudo ./offscan arp <FLAGS>"
 	return []argparser.Flag{
-		{ID: 0, Desc: fmt.Sprintf("ARP Poisoning\n%s\n\nE.g.,: $ %s", cmdDesc, cmdEG)},
+		{ID: 0, Desc: "ARP Poisoning\nE.g.,: $ sudo ./offscan arp <FLAGS>"},
 		{ID: targetIP,  Long: "tip",  HasValue: true, Req: true, Desc: "Target IP"},
 		{ID: targetMAC, Long: "tmac", HasValue: true, Req: true, Desc: "Target MAC"},
 	}

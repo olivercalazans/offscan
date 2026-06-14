@@ -16,8 +16,9 @@
   <tr>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
       <ul style="list-style-type: none; padding-left: 0; margin: 0;">
-        <li><strong><em>Deauthentication Attack</em></strong></li>
+        <li><strong><em>ARP Poisoning</em></strong></li>
         <li><strong><em>Beacon Flooding</em></strong></li>
+        <li><strong><em>Deauthentication Attack</em></strong></li>
       </ul>
     </td>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
