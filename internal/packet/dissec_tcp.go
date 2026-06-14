@@ -15,22 +15,36 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package packet
 
-import (
-	"fmt"
-	"net"
-	"offscan/internal/utils"
-)
+import "encoding/binary"
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+func (pd *PacketDissector) isTCP() bool {
+    if pd.lenPkt < 24 {
+        return false
     }
     
-	return MustTo4(ip)
+	return pd.pkt[23] == 6
+}
+
+
+
+func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
+    if pd.lenPkt < 54 || !pd.isIPv4 || !pd.isTCP() {
+        return 0, false
+    }
+
+	offset, ok := pd.ipHeaderLen()
+    if !ok {
+        return 0, false
+    }
+
+	if pd.lenPkt < offset+2 {
+        return 0, false
+    }
+
+	port := binary.BigEndian.Uint16(pd.pkt[offset : offset+2])
+    return port, true
 }

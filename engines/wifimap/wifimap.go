@@ -22,9 +22,9 @@ import (
 	"maps"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/frame80211/dissector"
-	"offscan/internal/ifconfig"
+	"offscan/internal/frame80211"
 	"offscan/internal/sniffer"
+	"offscan/internal/sysconf"
 	"slices"
 	"strings"
 	"sync"
@@ -105,7 +105,7 @@ func getBPFFilter() string {
 
 func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 	tempBuf   := make(map[wifiData]struct{})
-	dissector := dissector.NewDot11Dissector()
+	dissector := frame80211.NewDot11Dissector()
 
 	for {
 		beacon, ok := <-sniffCh
@@ -122,7 +122,7 @@ func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 
 
 func (wm *wifiMapper) updateInfo(
-	dissector  *dissector.Dot11Dissector,
+	dissector  *frame80211.Dot11Dissector,
 	tempBuf     map[wifiData]struct{},
 ) {
 	info := wifiData{
@@ -139,14 +139,14 @@ func (wm *wifiMapper) updateInfo(
 
 
 func (wm *wifiMapper) sniff2GChannels() {
-	channels := ifconfig.Channels2()
+	channels := sysconf.Channels2()
 	wm.sniffChannels(channels, "2.4")
 }
 
 
 
 func (wm *wifiMapper) sniff5GChannels() {
-	channels := ifconfig.Channels5()
+	channels := sysconf.Channels5()
 	wm.sniffChannels(channels, "5")
 }
 
@@ -156,7 +156,7 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 	var errChannels []int
 
 	for _, chnl := range channels {
-		ok := ifconfig.TrySetChannel(wm.iface, chnl)
+		ok := sysconf.TrySetChannel(wm.iface, chnl)
 
 		if ok != nil {
 			errChannels = append(errChannels, chnl)

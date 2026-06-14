@@ -15,22 +15,18 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package netroute
 
-import (
-	"fmt"
-	"net"
-	"offscan/internal/utils"
-)
+import "net"
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+func GetHostName(ip string) string {
+    names, err := net.LookupAddr(ip)
+
+	if err != nil || len(names) < 1 {
+        return "Unknown"
     }
-    
-	return MustTo4(ip)
+
+    return names[0]
 }

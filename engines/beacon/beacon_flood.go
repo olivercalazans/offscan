@@ -19,13 +19,12 @@ package beacon
 
 import (
 	"fmt"
-	"net"
 	"time"
 
-	"offscan/internal/frame80211/builder"
+	"offscan/internal/frame80211"
 	"offscan/internal/generators"
-	"offscan/internal/ifconfig"
 	"offscan/internal/sockets"
+	"offscan/internal/sysconf"
 	"offscan/internal/utils"
 )
 
@@ -42,8 +41,8 @@ type beaconFlood struct {
     ssid      string
     bcSent    int
     socket    sockets.Layer2Socket
-    builder   builder.Beacon
-    randGen   generators.RandomValues
+    builder   frame80211.Beacon
+    randGen  *generators.RandomValues
 }
 
 
@@ -52,13 +51,13 @@ func newBeaconFlooder(argList []string) *beaconFlood {
     parser := newParser()
     parser.parseBcFloodArgs(argList)
 
-    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    sysconf.MustSetChannel(parser.iface, parser.channel)
 
     return &beaconFlood{
         channel : uint8(parser.channel),
         ssid    : parser.ssid,
         bcSent  : 0,
-        builder : builder.NewBeacon(),
+        builder : frame80211.NewBeacon(),
         socket  : sockets.NewL2Socket(&parser.iface),
         randGen : generators.NewRandomValues(),
     }
@@ -81,33 +80,38 @@ func (bf *beaconFlood) execute() {
             return
 
         default:
-            bf.sendBeacons()
+            bf.sendQuartet()
         }
     }
 }
 
 
 
-func (bf *beaconFlood) sendBeacons() {
+func (bf *beaconFlood) sendQuartet() {
+    bf.setFixedInfo()
+    bf.sendBeacon("open")
+    bf.sendBeacon("wpa")
+    bf.sendBeacon("wpa2")
+    bf.sendBeacon("wpa3")
+}
+
+
+
+func (bf *beaconFlood) setFixedInfo() {
     bssid := bf.randGen.RandomMac()
     ssid  := bf.randGen.RandomCaseInversion(bf.ssid)
-    seq   := bf.randGen.RandomSeq()
-    bf.sendQuartet(bssid, ssid, seq)
+
+    bf.builder.SetSrcAddr(bssid)
+    bf.builder.SetBSSID(bssid)
+    bf.builder.SetSeqCtrl(bf.randGen.RandomSeq())
+    bf.builder.SetBodyInfo(ssid, bf.channel)
 }
 
 
 
-func (bf *beaconFlood) sendQuartet(bssid net.HardwareAddr, ssid string, seq uint16) {
-    bf.sendBeacon(bssid, ssid, seq,   "open")
-    bf.sendBeacon(bssid, ssid, seq+1, "wpa")
-    bf.sendBeacon(bssid, ssid, seq+2, "wpa2")
-    bf.sendBeacon(bssid, ssid, seq+3, "wpa3")
-}
-
-
-
-func (bf *beaconFlood) sendBeacon(bssid net.HardwareAddr, ssid string, seq uint16, sec string) {
-    beacon := bf.builder.Beacon(bssid, ssid, seq, bf.channel, sec)
+func (bf *beaconFlood) sendBeacon(sec string) {
+    bf.builder.SetSec(sec)
+    beacon := bf.builder.Beacon()
     bf.socket.Send(beacon)
     bf.bcSent++
 }

@@ -23,9 +23,15 @@ import (
 	"math/bits"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/packet/dissector"
+	"offscan/internal/packet"
 	"offscan/internal/sniffer"
 )
+
+
+type hostInfo struct {
+    Mac  net.HardwareAddr
+    Name string
+}
 
 
 
@@ -91,25 +97,49 @@ func (hd *hostDiscovery) cidrForBPFFilter() string {
 
 
 func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
-    dissector := dissector.NewPacketDissector()
+    dissector := packet.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
+    if dissector.IsArpReply() {
+        hd.processArpPkt(dissector, tempMap)
+        return
+    }
+
+    hd.processIpPkt(dissector, tempMap)
+}
+
+
+
+func (hd *hostDiscovery) processArpPkt(dissector *packet.PacketDissector, tempMap map[[4]byte]hostInfo) {
+    var ok bool
+
+    srcIP, ok := dissector.GetArpSrcIP()
+    if !ok { return }
+
+    ipBytes := [4]byte(srcIP)
+    if !hd.isInRange(srcIP) { return }
+
+    srcMAC, ok := dissector.GetArpSrcMAC()
+    if !ok { return }
+
+    tempMap[ipBytes] = hostInfo{Mac: srcMAC, Name: ""}
+}
+
+
+
+func (hd *hostDiscovery) processIpPkt(dissector *packet.PacketDissector, tempMap map[[4]byte]hostInfo) {
+    var ok bool
+
     srcIP, ok := dissector.GetSrcIP()
-    if !ok {
-        return
-    }
-    ipBytes := [4]byte(srcIP.To4())
+    if !ok { return }
 
-    if !hd.isInRange(srcIP) {
-        return
-    }
+    ipBytes := [4]byte(srcIP)
+    if !hd.isInRange(srcIP) { return }
 
-	if _, exists := tempMap[ipBytes]; exists {
-        return
-    }
+    srcMAC, ok := dissector.GetEtherSrcMAC()
+    if !ok { return }
 
-    mac, _ := dissector.GetSrcMac()
-    tempMap[ipBytes] = hostInfo{Mac: mac, Name: ""}
+    tempMap[ipBytes] = hostInfo{Mac: srcMAC, Name: ""}
 }
 
 

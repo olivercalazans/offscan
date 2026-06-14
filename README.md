@@ -16,8 +16,9 @@
   <tr>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
       <ul style="list-style-type: none; padding-left: 0; margin: 0;">
-        <li><strong><em>Deauthentication Attack</em></strong></li>
+        <li><strong><em>ARP Poisoning</em></strong></li>
         <li><strong><em>Beacon Flooding</em></strong></li>
+        <li><strong><em>Deauthentication Attack</em></strong></li>
       </ul>
     </td>
     <td style="width:50%; vertical-align: top; padding: 15px; background-color: #0D1117; color: #C9D1D9; border-radius: 8px; height: 150px;">
@@ -40,9 +41,9 @@ If you don't have Go installed, follow the instructions on the [official Go webs
 All Go dependencies are managed automatically via the `go.mod` file – no manual installation required.  
 You can find them listed in the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file.
 
-However, because OffScan relies on libpcap for low-level network operations, **you must install the libpcap development headers** on your system before compiling.
+However, because OffScan relies on `libpcap` for low-level network operations and `iw` command, **you must install both** on your system before compiling.
 ```bash
-sudo apt install libpcap-dev
+sudo apt install libpcap-dev iw
 ```
 
 <br>

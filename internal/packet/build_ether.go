@@ -15,22 +15,32 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package packet
 
 import (
-	"fmt"
+	"encoding/binary"
 	"net"
-	"offscan/internal/utils"
 )
 
 
+type etherHeader struct {
+	header  *[14]byte
+}
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
-    }
-    
-	return MustTo4(ip)
+
+
+func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
+	copy(eh.header[0:6], dstMAC)
+}
+
+
+
+func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
+	copy(eh.header[6:12], srcMAC)
+}
+
+
+
+func (eh *etherHeader) setArpType() {
+	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
 }

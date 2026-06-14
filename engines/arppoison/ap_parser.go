@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package beacon
+package arppoison
 
 import (
 	"net"
@@ -25,48 +25,43 @@ import (
 
 
 
-type bcFloodParser struct {
-	ssid     string
-	iface    net.Interface
-	channel  int
+type arpPoisonParser struct {
+	targetIP   net.IP
+	targetMAC  net.HardwareAddr
 }
 
 
 const (
-	iface    uint8 = 1
-	ssid     uint8 = 2
-	channel  uint8 = 3
+	targetIP   uint8 = 1
+	targetMAC  uint8 = 2
 )
 
 
-
-func newParser() *bcFloodParser {
-	return &bcFloodParser{}
+func newParser() *arpPoisonParser {
+	return &arpPoisonParser{}
 }
 
 
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Beacon Flooder\nE.g.,: $ sudo ./offscan beacon <FLAGS>"},
-		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
-		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true, Desc: "SSID/Network name"},		
-		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
+		{ID: 0, Desc: "ARP Poisoning\nE.g.,: $ sudo ./offscan arp <FLAGS>"},
+		{ID: targetIP,  Long: "tip",  HasValue: true, Req: true, Desc: "Target IP"},
+		{ID: targetMAC, Long: "tmac", HasValue: true, Req: true, Desc: "Target MAC"},
 	}
 }
 
 
 
-func (bfp *bcFloodParser) parseBcFloodArgs(args []string) {
+func (app *arpPoisonParser) parseArpPoisonArgs(args []string) {
     flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 
 	for _, flag := range flags {    
 		switch flag.ID {
-		case iface   : bfp.iface   = conv.MustStrToIface(flag.ValueStr)
-		case ssid    : bfp.ssid    = flag.ValueStr
-		case channel : bfp.channel = conv.MustStrToInt(flag.ValueStr)
+		case targetIP  : app.targetIP  = conv.MustStrToIPv4(flag.ValueStr)
+		case targetMAC : app.targetMAC = conv.MustStrToMac(flag.ValueStr)
 		}
 	}
 }

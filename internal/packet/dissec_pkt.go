@@ -15,22 +15,47 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
-
-import (
-	"fmt"
-	"net"
-	"offscan/internal/utils"
-)
+package packet
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+type PacketDissector struct {
+    pkt           []byte
+    lenPkt        int
+    isIPv4        bool
+    isArpReply    bool
+    isArpRequest  bool
+}
+
+
+
+func NewPacketDissector() *PacketDissector {
+    return &PacketDissector{
+        pkt: make([]byte, 0),
     }
-    
-	return MustTo4(ip)
+}
+
+
+
+func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
+    pd.lenPkt = len(rawPkt)
+    pd.pkt    = rawPkt
+
+    pd.flushArpVars()
+    pd.checkArpOpcode()	
+}
+
+
+
+func (pd *PacketDissector) flushArpVars() {
+    pd.isIPv4       = false
+	pd.isArpReply   = false
+	pd.isArpRequest = false
+}
+
+
+
+func (pd *PacketDissector) checkProtocol() {
+    if pd.checkArpOpcode() { return }
+    pd.checkIPv4()
 }

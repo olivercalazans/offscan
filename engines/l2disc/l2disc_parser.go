@@ -50,9 +50,7 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: 
-			"Layer 2 Host Discovery\nIt sniffs the 802.11 frames to discover active devices and which Access Point it is associated with\n\nE.g., $ sudo ./offscan l2disc <FLAGS>",
-		},
+		{ID: 0, Desc: "Layer 2 Host Discovery\nE.g., $ sudo ./offscan l2disc <FLAGS>"},
 		{
 			ID: iface, Short: "i", Long: "iface", HasValue: true, Req: true,
 			Desc: "Define a network interface to sniff frames",

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package sysconf
 
 import (
 	"fmt"
@@ -25,12 +25,34 @@ import (
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+func IPv4(iface *net.Interface) (net.IP, error) {
+    addrs, err := iface.Addrs()
+    if err != nil {
+        return nil, fmt.Errorf("Unable to get interface IPs: %w", err)
+    }
+
+    for _, addr := range addrs {
+        ipNet, ok := addr.(*net.IPNet)
+     
+        if !ok { continue }
+     
+        ip := ipNet.IP.To4()
+        if ip == nil { continue }
+     
+        return ip, nil
     }
     
-	return MustTo4(ip)
+    return nil, fmt.Errorf("No IPv4 address found on interface %s", iface.Name)
+}
+
+
+
+func MustIPv4(iface *net.Interface) net.IP {
+    ip, err := IPv4(iface)
+
+    if err != nil {
+        utils.Abort(fmt.Sprintf("%v", err))
+    }
+
+    return ip
 }

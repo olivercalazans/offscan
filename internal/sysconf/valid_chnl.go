@@ -15,22 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package sysconf
 
 import (
 	"fmt"
-	"net"
 	"offscan/internal/utils"
 )
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
-    }
-    
-	return MustTo4(ip)
+func ValidateChannel(channel int) {
+	if channel < 1 || channel > 165 {
+		utils.Abort(fmt.Sprintf("The channel must be between 1 and 165 (input: %d)", channel))
+	}
 }

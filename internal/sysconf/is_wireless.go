@@ -15,22 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package sysconf
 
 import (
 	"fmt"
 	"net"
-	"offscan/internal/utils"
+	"os"
 )
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
-    }
-    
-	return MustTo4(ip)
+func IsWireless(iface *net.Interface) bool {
+    _, err := os.Stat(fmt.Sprintf("/sys/class/net/%s/wireless", iface.Name))
+    return err == nil
 }

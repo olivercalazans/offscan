@@ -15,22 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package sysconf
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
-	"offscan/internal/utils"
 )
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+func BroadcastFromCIDR(cidr string) (net.IP, error) {
+    ip, ipnet, err := net.ParseCIDR(cidr)
+    if err != nil {
+        return nil, fmt.Errorf("Invalid CIDR: %w", err)
     }
+
+	ipv4 := ip.To4()
+    if ipv4 == nil {
+        return nil, fmt.Errorf("CIDR is not IPv4")
+    }
+
+    ipU32 := binary.BigEndian.Uint32(ipv4)
+    mask  := binary.BigEndian.Uint32(ipnet.Mask)
+
+    broadcastU32 := ipU32 | ^mask
+    broadcast    := make(net.IP, 4)
+    binary.BigEndian.PutUint32(broadcast, broadcastU32)
     
-	return MustTo4(ip)
+	return broadcast, nil
 }

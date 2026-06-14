@@ -15,22 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package sysconf
 
 import (
 	"fmt"
-	"net"
 	"offscan/internal/utils"
+	"os"
 )
 
 
+const path string = "/proc/sys/net/ipv4/ip_forward"
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+
+
+func MustEnableIPForwarding() {
+    err := os.WriteFile(path, []byte("1"), 0644)
+
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to enable IP forwarding %s: %v", path, err))
     }
-    
-	return MustTo4(ip)
+}
+
+
+
+func MustDisableIPForwarding() {
+    err := os.WriteFile(path, []byte("0"), 0644)
+
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to disable IP forwarding %s: %v", path, err))
+    }
 }

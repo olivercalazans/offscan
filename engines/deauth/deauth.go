@@ -22,9 +22,9 @@ import (
 	"net"
 	"time"
 
-	"offscan/internal/frame80211/builder"
-	"offscan/internal/ifconfig"
+	"offscan/internal/frame80211"
 	"offscan/internal/sockets"
+	"offscan/internal/sysconf"
 	"offscan/internal/utils"
 )
 
@@ -37,7 +37,7 @@ func Run(args []string) {
 
 
 type deauthentication struct {
-    builder     builder.Deauth
+    builder     frame80211.Deauth
     frmsSent    int
     seqNum      uint16
     socket      sockets.Layer2Socket
@@ -52,11 +52,14 @@ func newDeauth(argList []string) *deauthentication {
     parser := newParser()
     parser.parseDeauthArgs(argList)
     
-    ifconfig.MustSetChannel(parser.iface, parser.channel)
+    sysconf.MustSetChannel(parser.iface, parser.channel)
     displayInfo(parser)
 
+    builder := frame80211.NewDeauthFrame()
+    builder.SetBSSID(parser.bssid)
+
     return &deauthentication{
-        builder   : builder.NewDeauthFrame(parser.bssid),
+        builder   : builder,
         frmsSent  : 0,
         seqNum    : 1,
         socket    : sockets.NewL2Socket(&parser.iface),
@@ -108,7 +111,11 @@ func (d *deauthentication) execute() {
 
 
 func (d *deauthentication) sendFrame(srcMac, dstMac net.HardwareAddr) {
-    frame := d.builder.Frame(dstMac, srcMac, d.seqNum)
+    d.builder.SetSrcAddr(srcMac)
+    d.builder.SetDstAddr(dstMac)
+    d.builder.SetSeqCtrl(d.seqNum)
+    
+    frame := d.builder.Frame()
     d.socket.Send(frame)
     
 	d.updateSeqNum()

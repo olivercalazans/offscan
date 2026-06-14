@@ -15,22 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package sysconf
 
 import (
 	"fmt"
 	"net"
-	"offscan/internal/utils"
+	"os"
+	"strings"
 )
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+func State(iface *net.Interface) (string, error) {
+    data, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/operstate", iface.Name))
+
+	if err != nil {
+        return "", err
     }
-    
-	return MustTo4(ip)
+
+	return strings.ToUpper(strings.TrimSpace(string(data))), nil
 }

@@ -15,22 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package packet
 
-import (
-	"fmt"
-	"net"
-	"offscan/internal/utils"
-)
+import "net"
 
 
 
-func MustStrToIPv4(s string) net.IP {
-    ip := net.ParseIP(s)
-    
-	if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
+    if pd.lenPkt < 12 {
+        return nil, false
     }
     
-	return MustTo4(ip)
+	return net.HardwareAddr(pd.pkt[6:12]), true
 }

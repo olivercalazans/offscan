@@ -34,9 +34,9 @@ type RandomValues struct {
 
 
 
-func NewRandomValues() RandomValues {
+func NewRandomValues() *RandomValues {
 	src := rand.NewSource(time.Now().UnixNano())
-	return RandomValues{ rng: rand.New(src) }
+	return &RandomValues{ rng: rand.New(src) }
 }
 
 

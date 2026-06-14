@@ -27,15 +27,12 @@ import (
 
 	"offscan/internal/conv"
 	"offscan/internal/generators"
-	"offscan/internal/ifaceinfo"
 	"offscan/internal/netroute"
-	"offscan/internal/packet/builder"
-	"offscan/internal/packet/dissector"
+	"offscan/internal/packet"
 	"offscan/internal/sniffer"
-	"offscan/internal/utils"
-
 	"offscan/internal/sockets"
-	"offscan/internal/sysinfo"
+	"offscan/internal/sysconf"
+	"offscan/internal/utils"
 )
 
 
@@ -66,9 +63,9 @@ func newPortScanner(argList []string) *portScanner {
     parser := newParser()
 	parser.parsePortScanArgs(argList)
 
-	dstIP := conv.MustStrToIPv4(parser.TargetIP)
+    dstIP := conv.MustStrToIPv4(parser.TargetIP)
 	iface := netroute.MustRouteIfaceForDstIP(dstIP)
-	myIP  := ifaceinfo.MustIPv4(&iface)
+	myIP  := sysconf.MustIPv4(&iface)
 
     return &portScanner{
         iface     : iface,
@@ -112,7 +109,7 @@ func (ps *portScanner) startPacketProcessor() {
         defer ps.wg.Done()
         
         tempPorts := make(map[uint16]struct{})
-        dissector := dissector.NewPacketDissector()
+        dissector := packet.NewPacketDissector()
 
         for {
 			pkt, ok := <-packetCh
@@ -138,7 +135,7 @@ func (ps *portScanner) getBPFFilter() string {
 
 
 func (ps *portScanner) dissectAndUpdate(
-    dissector  *dissector.PacketDissector, 
+    dissector  *packet.PacketDissector, 
     tempPorts   map[uint16]struct{}, 
     pkt         []byte,
 ) {
@@ -163,9 +160,7 @@ func (ps *portScanner) stopPacketProcessor() {
 
 
 func (ps *portScanner) sendTcpProbes() {
-    builder := builder.NewTcpPkt()
-    builder.Init()
-
+    builder  := packet.NewTcpPkt()
     socket   := sockets.NewL3Socket(&ps.iface)
     randGen  := generators.NewRandomValues()
     portIter := generators.NewPortIter(ps.ports, ps.random)
@@ -175,8 +170,12 @@ func (ps *portScanner) sendTcpProbes() {
         
         if !hasPort { break }
         
-		srcPort := randGen.RandomPort()
-        pkt     := builder.L3SynPkt(ps.myIP, srcPort, ps.targetIP, port)
+        builder.IPHdr.SetSrcIP(ps.myIP)
+        builder.IPHdr.SetDstIP(ps.targetIP)
+        builder.SetSrcPort(randGen.RandomPort())
+        builder.SetDstPort(port)
+        
+        pkt := builder.Pkt()
         
         socket.SendTo(pkt, ps.targetIP)
         time.Sleep(delay)
@@ -197,7 +196,7 @@ func (ps *portScanner) closeSocket(socket *sockets.Layer3Socket) {
 
 
 func (ps *portScanner) displayResult() {
-    deviceName := sysinfo.GetHostName(ps.targetIP.String())    
+    deviceName := netroute.GetHostName(ps.targetIP.String())    
 	fmt.Printf("\nOpen ports from %s (%s)\n", deviceName, ps.targetIP.String())
     ps.formatPorts()
 }
