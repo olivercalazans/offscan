@@ -43,7 +43,7 @@ type arpPoison struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	dissec   *packet.PacketDissector
-	idpkg     uint
+	pkts      uint
 }
 
 
@@ -195,6 +195,7 @@ func (ap *arpPoison) sendPoison() {
 
 func (ap *arpPoison) sniffTargetsTraffic() {
 	sniffCh := ap.sniffer.Start()
+	ap.displayExecInfo()
 
 	for {
 		select {
@@ -205,10 +206,18 @@ func (ap *arpPoison) sniffTargetsTraffic() {
 			pkt, ok := <-sniffCh
 			if !ok { return }
 			
+			ap.pkts++
 			ap.dissec.UpdatePkt(pkt)
 			ap.sendRequestedPoison()
 		}
 	}
+}
+
+
+
+func (ap *arpPoison) displayExecInfo() {
+	fmt.Printf("[*] IFACE...: %s\n", ap.iface.Name)
+	fmt.Printf("[*] TARGET..: %s - %s\n", ap.addrs.targetMAC.String(), ap.addrs.targetIP.String())
 }
 
 
@@ -221,8 +230,13 @@ func (ap *arpPoison) sendRequestedPoison() {
 	ap.setPoisonToTarget()
 	ap.sendPoison()
 
-	ap.idpkg++
-	fmt.Printf("%d Poison sent to target %s\n", ap.idpkg, ap.addrs.targetIP.String())
+	timeNow := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf(
+		"%s - Poison sent to %s. Packets %d sniffed\n", 
+		timeNow, 
+		ap.addrs.targetIP.String(), 
+		ap.pkts,
+	)
 }
 
 
