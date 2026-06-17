@@ -209,7 +209,10 @@ func (ap *arpPoison) sniffTargetsTraffic() {
 			
 			ap.pkts++
 			ap.dissec.UpdatePkt(pkt)
-			ap.sendRequestedPoison()
+			
+			if ap.dissec.IsARP() && ap.dissec.IsArpRequest() {
+				ap.sendRequestedPoison()
+			}
 		}
 	}
 }
@@ -224,10 +227,6 @@ func (ap *arpPoison) displayExecInfo() {
 
 
 func (ap *arpPoison) sendRequestedPoison() {
-	if !ap.dissec.IsArpRequest() {
-		return
-	}
-
 	ap.setPoisonToTarget()
 	ap.sendPoison()
 

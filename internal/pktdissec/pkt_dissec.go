@@ -25,14 +25,13 @@ type PacketDissector struct {
     isIPv4        bool
     isArpReply    bool
     isArpRequest  bool
+    isDHCP        bool
 }
 
 
 
 func NewPacketDissector() *PacketDissector {
-    return &PacketDissector{
-        pkt: make([]byte, 0),
-    }
+    return &PacketDissector{ pkt: make([]byte, 0) }
 }
 
 
@@ -40,22 +39,14 @@ func NewPacketDissector() *PacketDissector {
 func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
     pd.lenPkt = len(rawPkt)
     pd.pkt    = rawPkt
-
-    pd.flushArpVars()
-    pd.checkProtocol()	
+    pd.flushFlags()
 }
 
 
 
-func (pd *PacketDissector) flushArpVars() {
+func (pd *PacketDissector) flushFlags() {
     pd.isIPv4       = false
 	pd.isArpReply   = false
 	pd.isArpRequest = false
-}
-
-
-
-func (pd *PacketDissector) checkProtocol() {
-    if pd.checkArpOpcode() { return }
-    pd.checkIPv4()
+    pd.isDHCP       = false
 }

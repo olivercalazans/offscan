@@ -141,12 +141,9 @@ func (ps *portScanner) dissectAndUpdate(
     pkt         []byte,
 ) {
     dissector.UpdatePkt(pkt)
-    var port uint16
-    var ok bool
+    if !dissector.IsIPv4() { return }
 
-    port, ok = dissector.GetTcpSrcPort()
-
-	if ok {
+    if port, ok := dissector.GetTcpSrcPort(); ok {
         tempPorts[port] = struct{}{}
     }
 }

@@ -33,22 +33,26 @@ func (pd *PacketDissector) IsArpRequest() bool {
 
 
 
-func (pd *PacketDissector) checkArpOpcode() bool {
+func (pd *PacketDissector) IsARP() bool {
 	if pd.lenPkt < 42 {
 		return false
 	}
 
-	etherType := (uint16(pd.pkt[12]) << 8) | uint16(pd.pkt[13])
-	if etherType != 0x0806 {
+	if pd.getEtherType() != 0x0806 {
 		return false
 	}
 
+	pd.checkArpOpcode()
+	return true
+}
+
+
+
+func (pd *PacketDissector) checkArpOpcode() {
 	opCode := (uint16(pd.pkt[20]) << 8) | uint16(pd.pkt[21])
 	
 	pd.isArpRequest = opCode == 1
     pd.isArpReply   = opCode == 2
-	
-	return true
 }
 
 

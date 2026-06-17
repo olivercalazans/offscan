@@ -15,23 +15,33 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package pktdissec
+package rogueap
 
-import "net"
+import (
+	"net"
+	"offscan/internal/pktbuild"
+)
 
 
 
-func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
-    if pd.lenPkt < 12 {
-        return nil, false
-    }
-    
-	return net.HardwareAddr(pd.pkt[6:12]), true
+type dhcpServer struct {
+	iface  net.Interface
+	hdr    pktbuild.DHCPHeader
 }
 
 
 
-func (pd *PacketDissector) getEtherType() uint16 {
-    if pd.lenPkt < 14 { return 0 }
-    return (uint16(pd.pkt[12]) << 8) | uint16(pd.pkt[13])
+func newDHCPServer(iface net.Interface) dhcpServer {
+	return dhcpServer{
+		iface : iface,
+		hdr   : pktbuild.NewDHCPHeader(),
+	}
+}
+
+
+
+func (ds *dhcpServer) run() {
+	for {
+
+	}
 }

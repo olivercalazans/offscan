@@ -100,12 +100,14 @@ func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostIn
     dissector := pktdissec.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
-    if dissector.IsArpReply() {
+    if dissector.IsARP() && dissector.IsArpReply() {
         hd.processArpPkt(dissector, tempMap)
         return
     }
 
-    hd.processIpPkt(dissector, tempMap)
+    if dissector.IsIPv4() {
+        hd.processIpPkt(dissector, tempMap)
+    }
 }
 
 

@@ -25,7 +25,7 @@ import (
 
 
 type DHCPHeader struct {
-	buffer  [277]byte
+	buffer  [300]byte
 	offset  int
 }
 
@@ -42,6 +42,8 @@ func (dh *DHCPHeader) buildFixed() {
 	dh.setOp()
 	dh.setHType()
 	dh.setHLen()
+	dh.setHops()
+	dh.setSecs()
 	dh.setMagicCookie()
 }
 
@@ -73,6 +75,13 @@ func (dh *DHCPHeader) setHops() {
 
 func (dh *DHCPHeader) SetXID(xid uint32) {
 	binary.BigEndian.PutUint32(dh.buffer[4:8], xid)
+}
+
+
+
+func (dh *DHCPHeader) setSecs() {
+	dh.buffer[8] = 0
+	dh.buffer[9] = 0
 }
 
 
@@ -109,6 +118,7 @@ func (dh *DHCPHeader) SetGIAddr(ip net.IP) {
 
 func (dh *DHCPHeader) SetCHAddr(mac net.HardwareAddr) {
 	copy(dh.buffer[28:34], mac)
+	clear(dh.buffer[34:44])
 }
 
 
@@ -129,11 +139,51 @@ func (dh *DHCPHeader) FlushOptions() {
 
 
 
-func (dh *DHCPHeader) SetOfferMsg() {
+func (dh *DHCPHeader) setMsg() {
 	dh.buffer[dh.offset]     = 53
 	dh.buffer[dh.offset + 1] = 1
-	dh.buffer[dh.offset + 2] = 2
-	dh.offset += 3
+	dh.offset += 2
+}
+
+
+
+func (dh *DHCPHeader) SetOfferMsg() {
+	dh.setMsg()
+	dh.buffer[dh.offset] = 2
+	dh.offset += 1
+}
+
+
+
+func (dh *DHCPHeader) SetAckMsg() {
+	dh.setMsg()
+	dh.buffer[dh.offset] = 5
+	dh.offset += 1
+}
+
+
+
+func (dh *DHCPHeader) SetNakMsg() {
+	dh.setMsg()
+	dh.buffer[dh.offset] = 6
+	dh.offset += 1
+}
+
+
+
+func (dh *DHCPHeader) SetErrorMsg(msg string) {
+	lenMsg := len(msg)
+
+    if lenMsg > 255 {
+        msg = msg[:255]
+    }
+
+    dh.buffer[dh.offset]     = 56
+    dh.buffer[dh.offset + 1] = byte(lenMsg)
+    dh.offset += 2
+ 
+	copy(dh.buffer[dh.offset : dh.offset + lenMsg], msg)
+    dh.offset += lenMsg
 }
 
 
@@ -179,6 +229,17 @@ func (dh *DHCPHeader) SetLeaseTime() {
 
 	binary.BigEndian.PutUint32(dh.buffer[dh.offset : dh.offset + 4], 86400)
 	dh.offset += 4
+}
+
+
+
+func (dh *DHCPHeader) SetServerID(ip net.IP) {
+    dh.buffer[dh.offset]   = 54
+    dh.buffer[dh.offset+1] = 4
+    dh.offset += 2
+
+    copy(dh.buffer[dh.offset : dh.offset + 4], ip)
+    dh.offset += 4
 }
 
 

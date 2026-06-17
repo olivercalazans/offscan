@@ -17,21 +17,15 @@
 
 package pktdissec
 
-import "net"
 
-
-
-func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
-    if pd.lenPkt < 12 {
-        return nil, false
-    }
-    
-	return net.HardwareAddr(pd.pkt[6:12]), true
+func (pd *PacketDissector) IsDHCP() bool {
+	pd.isDHCP = pd.lenPkt >= 240 && pd.checkMagicCookie()
+	return pd.isDHCP
 }
 
 
 
-func (pd *PacketDissector) getEtherType() uint16 {
-    if pd.lenPkt < 14 { return 0 }
-    return (uint16(pd.pkt[12]) << 8) | uint16(pd.pkt[13])
+func (pd *PacketDissector) checkMagicCookie() bool {
+    return pd.pkt[236] == 0x63 && pd.pkt[237] == 0x82 &&
+           pd.pkt[238] == 0x53 && pd.pkt[239] == 0x63
 }

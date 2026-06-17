@@ -18,19 +18,13 @@
 package pktdissec
 
 import (
-	"encoding/binary"
 	"net"
 )
 
 
-func (pd *PacketDissector) checkIPv4() {
-    if pd.lenPkt < 34 {
-		pd.isIPv4 = false 
-		return
-	}
-
-	ethertype := binary.BigEndian.Uint16(pd.pkt[12:14])
-    pd.isIPv4  = ethertype == 0x0800
+func (pd *PacketDissector) IsIPv4() bool {
+    pd.isIPv4 = pd.lenPkt >= 34 && pd.getEtherType() == 0x0800
+    return pd.isIPv4
 }
 
 
