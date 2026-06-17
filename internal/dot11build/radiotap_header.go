@@ -15,47 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package packet
+package dot11build
 
 
-
-type PacketDissector struct {
-    pkt           []byte
-    lenPkt        int
-    isIPv4        bool
-    isArpReply    bool
-    isArpRequest  bool
-}
-
-
-
-func NewPacketDissector() *PacketDissector {
-    return &PacketDissector{
-        pkt: make([]byte, 0),
-    }
-}
-
-
-
-func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
-    pd.lenPkt = len(rawPkt)
-    pd.pkt    = rawPkt
-
-    pd.flushArpVars()
-    pd.checkProtocol()	
-}
-
-
-
-func (pd *PacketDissector) flushArpVars() {
-    pd.isIPv4       = false
-	pd.isArpReply   = false
-	pd.isArpRequest = false
-}
-
-
-
-func (pd *PacketDissector) checkProtocol() {
-    if pd.checkArpOpcode() { return }
-    pd.checkIPv4()
+func minimalRariotapHeader(buffer []byte) {
+	buffer[0]  = 0x00  // Header revision
+	buffer[1]  = 0x00  // Header pad
+	buffer[2]  = 0x0c  // Header length
+	buffer[3]  = 0x00  //
+	buffer[4]  = 0x04  // Bitmap
+	buffer[5]  = 0x80  //
+	buffer[6]  = 0x00  //
+	buffer[7]  = 0x00  //
+	buffer[8]  = 0x02  // Rate
+	buffer[9]  = 0x00  // Rate pad
+	buffer[10] = 0x18  // TX flags
+	buffer[11] = 0x00  //
 }

@@ -20,13 +20,13 @@ package l2disc
 import (
 	"fmt"
 	"offscan/internal/conv"
-	"offscan/internal/frame80211"
+	"offscan/internal/dot11dissec"
 	"strings"
 )
 
 
 func (l2hd *layer2HostDiscovery) processFrame(sniffCh <-chan []byte) {
-	dissector := frame80211.NewDot11Dissector()
+	dissector := dot11dissec.NewDot11Dissector()
 
 	for {
 		frame, ok := <-sniffCh
@@ -38,7 +38,7 @@ func (l2hd *layer2HostDiscovery) processFrame(sniffCh <-chan []byte) {
 
 
 
-func (l2hd *layer2HostDiscovery) sendToUpdate(dissector *frame80211.Dot11Dissector) {
+func (l2hd *layer2HostDiscovery) sendToUpdate(dissector *dot11dissec.Dot11Dissector) {
 	info := dot11Info{}
 
 	if dissector.IsBeacon {

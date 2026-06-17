@@ -23,7 +23,7 @@ import (
 	"math/bits"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/packet"
+	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
 )
 
@@ -97,7 +97,7 @@ func (hd *hostDiscovery) cidrForBPFFilter() string {
 
 
 func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
-    dissector := packet.NewPacketDissector()
+    dissector := pktdissec.NewPacketDissector()
     dissector.UpdatePkt(pkt)
 
     if dissector.IsArpReply() {
@@ -110,7 +110,7 @@ func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostIn
 
 
 
-func (hd *hostDiscovery) processArpPkt(dissector *packet.PacketDissector, tempMap map[[4]byte]hostInfo) {
+func (hd *hostDiscovery) processArpPkt(dissector *pktdissec.PacketDissector, tempMap map[[4]byte]hostInfo) {
     var ok bool
 
     srcIP, ok := dissector.GetArpSrcIP()
@@ -127,7 +127,7 @@ func (hd *hostDiscovery) processArpPkt(dissector *packet.PacketDissector, tempMa
 
 
 
-func (hd *hostDiscovery) processIpPkt(dissector *packet.PacketDissector, tempMap map[[4]byte]hostInfo) {
+func (hd *hostDiscovery) processIpPkt(dissector *pktdissec.PacketDissector, tempMap map[[4]byte]hostInfo) {
     var ok bool
 
     srcIP, ok := dissector.GetSrcIP()

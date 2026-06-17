@@ -15,32 +15,36 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package packet
+package pktdissec
 
-import (
-	"encoding/binary"
-	"net"
-)
+import "encoding/binary"
 
 
-type etherHeader struct {
-	header  *[14]byte
+
+func (pd *PacketDissector) isTCP() bool {
+    if pd.lenPkt < 24 {
+        return false
+    }
+    
+	return pd.pkt[23] == 6
 }
 
 
 
-func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
-	copy(eh.header[0:6], dstMAC)
-}
+func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
+    if pd.lenPkt < 54 || !pd.isIPv4 || !pd.isTCP() {
+        return 0, false
+    }
 
+	offset, ok := pd.ipHeaderLen()
+    if !ok {
+        return 0, false
+    }
 
+	if pd.lenPkt < offset+2 {
+        return 0, false
+    }
 
-func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
-	copy(eh.header[6:12], srcMAC)
-}
-
-
-
-func (eh *etherHeader) setArpType() {
-	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
+	port := binary.BigEndian.Uint16(pd.pkt[offset : offset+2])
+    return port, true
 }

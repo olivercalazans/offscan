@@ -15,36 +15,47 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package packet
-
-import "encoding/binary"
+package pktdissec
 
 
 
-func (pd *PacketDissector) isTCP() bool {
-    if pd.lenPkt < 24 {
-        return false
-    }
-    
-	return pd.pkt[23] == 6
+type PacketDissector struct {
+    pkt           []byte
+    lenPkt        int
+    isIPv4        bool
+    isArpReply    bool
+    isArpRequest  bool
 }
 
 
 
-func (pd *PacketDissector) GetTcpSrcPort() (uint16, bool) {
-    if pd.lenPkt < 54 || !pd.isIPv4 || !pd.isTCP() {
-        return 0, false
+func NewPacketDissector() *PacketDissector {
+    return &PacketDissector{
+        pkt: make([]byte, 0),
     }
+}
 
-	offset, ok := pd.ipHeaderLen()
-    if !ok {
-        return 0, false
-    }
 
-	if pd.lenPkt < offset+2 {
-        return 0, false
-    }
 
-	port := binary.BigEndian.Uint16(pd.pkt[offset : offset+2])
-    return port, true
+func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
+    pd.lenPkt = len(rawPkt)
+    pd.pkt    = rawPkt
+
+    pd.flushArpVars()
+    pd.checkProtocol()	
+}
+
+
+
+func (pd *PacketDissector) flushArpVars() {
+    pd.isIPv4       = false
+	pd.isArpReply   = false
+	pd.isArpRequest = false
+}
+
+
+
+func (pd *PacketDissector) checkProtocol() {
+    if pd.checkArpOpcode() { return }
+    pd.checkIPv4()
 }

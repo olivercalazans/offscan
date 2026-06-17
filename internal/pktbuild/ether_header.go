@@ -15,16 +15,32 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package packet
+package pktbuild
 
-import "net"
+import (
+	"encoding/binary"
+	"net"
+)
+
+
+type etherHeader struct {
+	header  *[14]byte
+}
 
 
 
-func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
-    if pd.lenPkt < 12 {
-        return nil, false
-    }
-    
-	return net.HardwareAddr(pd.pkt[6:12]), true
+func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
+	copy(eh.header[0:6], dstMAC)
+}
+
+
+
+func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
+	copy(eh.header[6:12], srcMAC)
+}
+
+
+
+func (eh *etherHeader) setArpType() {
+	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
 }

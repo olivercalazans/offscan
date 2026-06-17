@@ -22,7 +22,7 @@ import (
 	"maps"
 	"net"
 	"offscan/internal/conv"
-	"offscan/internal/frame80211"
+	"offscan/internal/dot11dissec"
 	"offscan/internal/sniffer"
 	"offscan/internal/sysconf"
 	"slices"
@@ -105,7 +105,7 @@ func getBPFFilter() string {
 
 func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 	tempBuf   := make(map[wifiData]struct{})
-	dissector := frame80211.NewDot11Dissector()
+	dissector := dot11dissec.NewDot11Dissector()
 
 	for {
 		beacon, ok := <-sniffCh
@@ -122,7 +122,7 @@ func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 
 
 func (wm *wifiMapper) updateInfo(
-	dissector  *frame80211.Dot11Dissector,
+	dissector  *dot11dissec.Dot11Dissector,
 	tempBuf     map[wifiData]struct{},
 ) {
 	info := wifiData{

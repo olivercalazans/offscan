@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"offscan/internal/frame80211"
+	"offscan/internal/dot11build"
 	"offscan/internal/generators"
 	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
@@ -41,7 +41,7 @@ type beaconFlood struct {
     ssid      string
     bcSent    int
     socket    sockets.Layer2Socket
-    builder   frame80211.Beacon
+    builder   dot11build.Beacon
     randGen  *generators.RandomValues
 }
 
@@ -57,7 +57,7 @@ func newBeaconFlooder(argList []string) *beaconFlood {
         channel : uint8(parser.channel),
         ssid    : parser.ssid,
         bcSent  : 0,
-        builder : frame80211.NewBeacon(),
+        builder : dot11build.NewBeacon(),
         socket  : sockets.NewL2Socket(&parser.iface),
         randGen : generators.NewRandomValues(),
     }

@@ -20,7 +20,7 @@ package hostdisc
 import (
 	"net"
 	"offscan/internal/generators"
-	"offscan/internal/packet"
+	"offscan/internal/pktbuild"
 	"offscan/internal/sockets"
 )
 
@@ -28,9 +28,9 @@ import (
 type probeTools struct {
     l2sock   sockets.Layer2Socket
     l3sock   sockets.Layer3Socket
-    arp     *packet.ArpPacket
-    icmp    *packet.IcmpPacket
-    tcp     *packet.TcpPacket
+    arp     *pktbuild.ArpPacket
+    icmp    *pktbuild.IcmpPacket
+    tcp     *pktbuild.TcpPacket
     rand    *generators.RandomValues
     dstIP    net.IP
 }

@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/netroute"
-	"offscan/internal/packet"
+	"offscan/internal/pktbuild"
+	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
 	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
@@ -37,12 +38,12 @@ import (
 type arpPoison struct {
 	iface     net.Interface
 	addrs     addresses
-	builder  *packet.ArpPacket
+	builder  *pktbuild.ArpPacket
 	socket    sockets.Layer2Socket
 	sniffer  *sniffer.Sniffer
 	ctx       context.Context
 	cancel    context.CancelFunc
-	dissec   *packet.PacketDissector
+	dissec   *pktdissec.PacketDissector
 	pkts      uint
 }
 
@@ -104,7 +105,7 @@ func (ap *arpPoison) execute() {
 
 func (ap *arpPoison) initSniffTools() {
 	ap.sniffer = sniffer.NewSniffer(ap.iface, ap.getBPFFilter(), false)
-	ap.dissec  = packet.NewPacketDissector()
+	ap.dissec  = pktdissec.NewPacketDissector()
 	ap.createCtx()
 }
 
@@ -132,7 +133,7 @@ func (ap *arpPoison) createCtx() {
 
 func (ap *arpPoison) initPoisoningTools() {
 	ap.socket  = sockets.NewL2Socket(&ap.iface)
-	ap.builder = packet.NewArpPkt()
+	ap.builder = pktbuild.NewArpPkt()
 	ap.builder.SetReplyOpcode()
 	ap.setFixedPktData()
 }
