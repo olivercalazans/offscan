@@ -94,9 +94,9 @@ func (ps *portScanner) displayInfo() {
     var scan string
     if ps.random { scan = "Random" } else { scan = "Serial" }
 
-	fmt.Printf("[*] Iface...: %s\n", ps.iface.Name)
-    fmt.Printf("[*] Target..: %s\n", ps.targetIP.String())
-    fmt.Printf("[*] Proto...: TCP (%s)\n", scan)
+	fmt.Printf("[i] Iface...: %s\n", ps.iface.Name)
+    fmt.Printf("[i] Target..: %s\n", ps.targetIP.String())
+    fmt.Printf("[i] Proto...: TCP (%s)\n", scan)
 }
 
 

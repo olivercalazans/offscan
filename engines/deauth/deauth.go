@@ -72,10 +72,10 @@ func newDeauth(argList []string) *deauthentication {
 
 
 func displayInfo(args *deauthParser) {
-    fmt.Printf("[*] IFACE...: %s\n", args.iface.Name)
-    fmt.Printf("[*] BSSID...: %s\n", args.bssid.String())
-    fmt.Printf("[*] TARGET..: %s\n", args.targetMac.String())
-    fmt.Printf("[*] CHANNEL.: %d\n", args.channel)
+    fmt.Printf("[i] IFACE...: %s\n", args.iface.Name)
+    fmt.Printf("[i] BSSID...: %s\n", args.bssid.String())
+    fmt.Printf("[i] TARGET..: %s\n", args.targetMac.String())
+    fmt.Printf("[i] CHANNEL.: %d\n", args.channel)
 }
 
 

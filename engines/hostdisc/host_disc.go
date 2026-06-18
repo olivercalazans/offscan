@@ -135,10 +135,10 @@ func (hd *hostDiscovery) displayExecInfo() {
     last   := conv.U32ToIP(hd.ips.EndU32)
     length := hd.ips.EndU32 - hd.ips.StartU32 + 1
 
-    fmt.Printf("[*] Iface..: %s\n", hd.iface.Name)
-    fmt.Printf("[*] Range..: %s - %s\n", first.String(), last.String())
-    fmt.Printf("[*] Len IPs: %d\n", length)
-    fmt.Printf("[*] Proto..: %s\n", proto)
+    fmt.Printf("[i] Iface..: %s\n", hd.iface.Name)
+    fmt.Printf("[i] Range..: %s - %s\n", first.String(), last.String())
+    fmt.Printf("[i] Len IPs: %d\n", length)
+    fmt.Printf("[i] Proto..: %s\n", proto)
 }
 
 

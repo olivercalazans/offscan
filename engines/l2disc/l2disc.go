@@ -85,8 +85,8 @@ func (l2hd *layer2HostDiscovery) execute() {
 
 
 func (l2hd *layer2HostDiscovery) displayExecInfo() {
-	fmt.Printf("[*] IFACE: %s\n", l2hd.iface.Name)
-	fmt.Printf("[*] DELAY: %.2fs\n", l2hd.sniffTime.Seconds())
+	fmt.Printf("[i] IFACE: %s\n", l2hd.iface.Name)
+	fmt.Printf("[i] DELAY: %.2fs\n", l2hd.sniffTime.Seconds())
 }
 
 
