@@ -53,6 +53,7 @@ func main() {
 		"wmap"   : { Run: wifimap.Run,   FlagSettings: wifimap.FlagSettings   },
 	}
 
+	displayHeader()
 	cmdName := args[0]
 
 	if cmdName == "--help" {
@@ -67,4 +68,11 @@ func main() {
 	}
 
 	engine.Run(args[1:])
+}
+
+
+
+func displayHeader() {
+	fmt.Println("OffScan - The offensive security and scanning tool for Wi-Fi")
+	fmt.Println("Repository: https://github.com/olivercalazans/offscan")
 }

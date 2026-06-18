@@ -39,7 +39,10 @@ type pixieDustAttack struct {
 
 
 
-func newPixieDust() pixieDustAttack {
+func newPixieDust(args []string) pixieDustAttack {
+	parser := pixieDustParser{}
+	parser.parsePortScanArgs(args)
+
 	return pixieDustAttack{
 		jobs: runtime.NumCPU(),
 	}

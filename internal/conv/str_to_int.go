@@ -33,3 +33,17 @@ func MustStrToInt(str string) int {
 
 	return value
 }
+
+
+
+func StrToInt(str string) int {
+	if str == "" { return 0 }
+	
+	value, err := strconv.Atoi(str)
+
+	if err != nil {
+		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
+	}
+
+	return value
+}
