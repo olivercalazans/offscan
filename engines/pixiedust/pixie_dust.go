@@ -18,23 +18,27 @@
 package pixiedust
 
 import (
+	"bytes"
+	"fmt"
 	"runtime"
+	"slices"
 	"time"
 )
 
 
 
 type pixieDustAttack struct {
-	pke       string
-    pkr       string
-    eHash1    string
-    eHash2    string
-    authKey   string
-    eNonce    string
-    rNonce    string
-    bssid     string    
+	pke       []byte
+    pkr       []byte
+    eHash1    []byte
+    eHash2    []byte
+    authKey   []byte
+    eNonce    []byte
+    rNonce    []byte
+    bssid     []byte    
     jobs      int
 	modeAuto  bool
+	modes     []uint8
 }
 
 
@@ -52,4 +56,27 @@ func newPixieDust(args []string) pixieDustAttack {
 
 func (pda *pixieDustAttack) execute() {
 	timeStart := time.Now()
+	displayTime(timeStart)
+}
+
+
+
+func (pda *pixieDustAttack) isModeSelect(mode uint8) bool {
+	return slices.Contains(pda.modes, mode)
+}
+
+
+
+func validatePKE(pke []byte) error {
+    if !bytes.Equal(pke, wpsRtlPke) {
+        return fmt.Errorf("Model not supported! (PKE does not match RTL819x)")
+    }
+    return nil
+}
+
+
+
+func displayTime(timeStart time.Time) {
+	elapsed := time.Since(timeStart).Seconds()
+    fmt.Printf("[%%] %.2f seconds in execution\n", elapsed)
 }
