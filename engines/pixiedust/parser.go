@@ -20,7 +20,6 @@ package pixiedust
 import (
 	"encoding/hex"
 	"fmt"
-	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/utils"
@@ -28,46 +27,25 @@ import (
 )
 
 
-
-type pixieDustParser struct {
-	jobs     int
-	pke      []byte
-	pkr      []byte
-	eHash1   []byte
-	eHash2   []byte
-	authKey  []byte
-	eNonce   []byte
-	rNonce   []byte
-	ebssid   net.HardwareAddr
-	mode     uint8
-	force    bool
-	dhSmall  bool
-	start    string
-	end      string
-	cStart   int
-	cEnd     int
-}
-
-
 const (
-	jobs     uint8 = 1
-	pke      uint8 = 2
-	pkr      uint8 = 3
-	eHash1   uint8 = 4
-	eHash2   uint8 = 5
-	authKey  uint8 = 6
-	eNonce   uint8 = 7
-	rNonce   uint8 = 8
-	ebssid   uint8 = 9
-	mode     uint8 = 10
-	force    uint8 = 11
-	dhSmall  uint8 = 12
-	m5enc    uint8 = 13
-	m7enc    uint8 = 14
-	start    uint8 = 15
-	end      uint8 = 16
-	cStart   uint8 = 17
-	cEnd     uint8 = 18
+	jobs    = 1
+	pke     = 2
+	pkr     = 3
+	eHash1  = 4
+	eHash2  = 5
+	authKey = 6
+	eNonce  = 7
+	rNonce  = 8
+	ebssid  = 9
+	modes   = 10
+	force   = 11
+	dhSmall = 12
+	m5enc   = 13
+	m7enc   = 14
+	start   = 15
+	end     = 16
+	cStart  = 17
+	cEnd    = 18
 )
 
 
@@ -88,7 +66,7 @@ func FlagSettings() []argparser.Flag {
 		{ID: m7enc,   Short: "7", Long: "m7enc",   HasValue: true, Desc: "DH Small"},
 		{ID: force,   Short: "f", Long: "force",   Desc: "Force bruteforce"},
 		{ID: dhSmall, Short: "S", Long: "dhsmall", Desc: "Use small DH group"},
-		{ID: mode,    Long: "mode",   HasValue: true, Desc: "Attack mode (1-5, 0=auto)"},
+		{ID: modes,    Long: "mode",   HasValue: true, Desc: "Attack mode (1-5, 0=auto)"},
 		{ID: start,   Long: "start",  HasValue: true, Desc: "Start timestamp for mode 3"},
 		{ID: end,     Long: "end",    HasValue: true, Desc: "End timestamp for mode 3"},
 		{ID: cStart,  Long: "cstart", HasValue: true, Desc: "Custom start seed"},
@@ -98,28 +76,31 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (pdp *pixieDustParser) parsePortScanArgs(args []string) {
+func (pda *pixieDustAttack) parsePortScanArgs(args []string) {
     flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case jobs    : pdp.jobs    = getJobs(flag.ValueStr)
-		case pke     : pdp.pke     = pdp.mustStrToHex(flag.ValueStr)
-		case pkr     : pdp.pkr     = pdp.mustStrToHex(flag.ValueStr)
-		case eHash1  : pdp.eHash1  = pdp.mustStrToHex(flag.ValueStr)
-		case eHash2  : pdp.eHash2  = pdp.mustStrToHex(flag.ValueStr)
-		case authKey : pdp.authKey = pdp.mustStrToHex(flag.ValueStr)
-		case eNonce  : pdp.eNonce  = pdp.mustStrToHex(flag.ValueStr)
-		case rNonce  : pdp.rNonce  = pdp.strToHex(flag.ValueStr)
-		case ebssid  : pdp.ebssid  = conv.MustStrToMac(flag.ValueStr)
-		case force   : pdp.force   = flag.ValueBool
-		case dhSmall : pdp.dhSmall = flag.ValueBool
-		case start   : pdp.start   = flag.ValueStr
-		case end     : pdp.end     = flag.ValueStr
-		case cStart  : pdp.cStart  = conv.StrToInt(flag.ValueStr)
-		case cEnd    : pdp.cEnd    = conv.StrToInt(flag.ValueStr)
+		case jobs    : pda.jobs    = getJobs(flag.ValueStr)
+		case pke     : pda.pke     = mustStrToHex(flag.ValueStr)
+		case pkr     : pda.pkr     = mustStrToHex(flag.ValueStr)
+		case eHash1  : pda.eHash1  = mustStrToHex(flag.ValueStr)
+		case eHash2  : pda.eHash2  = mustStrToHex(flag.ValueStr)
+		case authKey : pda.authKey = mustStrToHex(flag.ValueStr)
+		case eNonce  : pda.eNonce  = mustStrToHex(flag.ValueStr)
+		case rNonce  : pda.rNonce  = strToHex(flag.ValueStr)
+		case ebssid  : pda.ebssid  = conv.MustStrToMac(flag.ValueStr)
+		case modes   : pda.modes   = flag.ValueStr
+		case m5enc   : pda.m5enc   = strToHex(flag.ValueStr)
+		case m7enc   : pda.m7enc   = strToHex(flag.ValueStr)
+		case force   : pda.force   = flag.ValueBool
+		case dhSmall : pda.dhSmall = flag.ValueBool
+		case start   : pda.start   = flag.ValueStr
+		case end     : pda.end     = flag.ValueStr
+		case cStart  : pda.cStart  = conv.StrToInt(flag.ValueStr)
+		case cEnd    : pda.cEnd    = conv.StrToInt(flag.ValueStr)
 		}
 	}
 }
@@ -153,7 +134,7 @@ func getCoresNum() int {
 
 
 
-func (pdp *pixieDustParser) strToHex(str string) []byte {
+func strToHex(str string) []byte {
 	if str == "" {
 		return []byte{}
 	}
@@ -169,7 +150,7 @@ func (pdp *pixieDustParser) strToHex(str string) []byte {
 
 
 
-func (pdp *pixieDustParser) mustStrToHex(str string) []byte {
+func mustStrToHex(str string) []byte {
 	hash, err := hex.DecodeString(str)
 	
 	if err == nil {
