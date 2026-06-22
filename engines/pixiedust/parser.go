@@ -24,6 +24,7 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/utils"
 	"runtime"
+	"strings"
 )
 
 
@@ -92,7 +93,7 @@ func (pda *pixieDustAttack) parsePortScanArgs(args []string) {
 		case eNonce  : pda.eNonce  = mustStrToHex(flag.ValueStr)
 		case rNonce  : pda.rNonce  = strToHex(flag.ValueStr)
 		case ebssid  : pda.ebssid  = conv.MustStrToMac(flag.ValueStr)
-		case modes   : pda.modes   = flag.ValueStr
+		case modes   : pda.modes   = validateModes(flag.ValueStr)
 		case m5enc   : pda.m5enc   = strToHex(flag.ValueStr)
 		case m7enc   : pda.m7enc   = strToHex(flag.ValueStr)
 		case force   : pda.force   = flag.ValueBool
@@ -158,4 +159,26 @@ func mustStrToHex(str string) []byte {
 	}
 
 	return hash
+}
+
+
+
+func validateModes(str string) []uint8 {
+	modesStr := strings.Split(str, ",")
+	len   := len(modesStr)
+
+	if len <= 0 {
+		return []uint8{}
+	}
+
+	if len > 5 {
+		utils.Abort("More than 5 modes selected")
+	}
+
+	var modesU8 []uint8
+	for _, s := range modesStr {
+		modesU8 = append(modesU8, []byte(s)...)
+	}
+
+	return modesU8
 }

