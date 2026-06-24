@@ -18,18 +18,13 @@
 package beacon
 
 import (
-	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
+	"offscan/internal/dot11build"
+	"offscan/internal/generators"
+	"offscan/internal/sockets"
 )
 
-
-
-type bcFloodParser struct {
-	ssid     string
-	iface    net.Interface
-	channel  int
-}
 
 
 const (
@@ -37,12 +32,6 @@ const (
 	ssid     uint8 = 2
 	channel  uint8 = 3
 )
-
-
-
-func newParser() *bcFloodParser {
-	return &bcFloodParser{}
-}
 
 
 
@@ -57,16 +46,21 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (bfp *bcFloodParser) parseBcFloodArgs(args []string) {
+func (bf *beaconFlood) parseArgs(args []string) {
     flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 
 	for _, flag := range flags {    
 		switch flag.ID {
-		case iface   : bfp.iface   = conv.MustStrToIface(flag.ValueStr)
-		case ssid    : bfp.ssid    = flag.ValueStr
-		case channel : bfp.channel = conv.MustStrToInt(flag.ValueStr)
+		case iface   : bf.iface   = conv.MustStrToIface(flag.ValueStr)
+		case ssid    : bf.ssid    = flag.ValueStr
+		case channel : bf.channel = uint8(conv.MustStrToInt(flag.ValueStr))
 		}
 	}
+
+	bf.bcSent  = 0
+	bf.builder = dot11build.NewBeacon()
+	bf.socket  = sockets.NewL2Socket(&bf.iface)
+    bf.randGen = generators.NewRandomValues()
 }

@@ -19,6 +19,7 @@ package beacon
 
 import (
 	"fmt"
+	"net"
 	"time"
 
 	"offscan/internal/dot11build"
@@ -31,12 +32,15 @@ import (
 
 
 func Run(args []string) {
-    newBeaconFlooder(args).execute()
+    bf := beaconFlood{}
+    bf.parseArgs(args)
+    bf.execute()
 }
 
 
 
 type beaconFlood struct {
+    iface     net.Interface
     channel   uint8
     ssid      string
     bcSent    int
@@ -47,25 +51,8 @@ type beaconFlood struct {
 
 
 
-func newBeaconFlooder(argList []string) *beaconFlood {
-    parser := newParser()
-    parser.parseBcFloodArgs(argList)
-
-    sysconf.MustSetChannel(parser.iface, parser.channel)
-
-    return &beaconFlood{
-        channel : uint8(parser.channel),
-        ssid    : parser.ssid,
-        bcSent  : 0,
-        builder : dot11build.NewBeacon(),
-        socket  : sockets.NewL2Socket(&parser.iface),
-        randGen : generators.NewRandomValues(),
-    }
-}
-
-
-
 func (bf *beaconFlood) execute() {
+    sysconf.MustSetChannel(bf.iface, int(bf.channel))
     ctx   := utils.SignalContext()
     start := time.Now()
     

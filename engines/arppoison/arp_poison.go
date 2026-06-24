@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"offscan/internal/netroute"
 	"offscan/internal/pktbuild"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
@@ -60,33 +59,9 @@ type addresses struct {
 
 
 func Run(args []string) {
-    newArpPoison(args).execute()
-}
-
-
-
-func newArpPoison(args []string) *arpPoison {
-	parser := newParser()
-	parser.parseArpPoisonArgs(args)
-
-	iface := netroute.MustRouteIfaceForDstIP(parser.targetIP)
-
-	return &arpPoison{
-		iface : iface,
-		addrs : setAddrs(parser, &iface),
-	}
-}
-
-
-
-func setAddrs(parser *arpPoisonParser, iface *net.Interface) addresses {
-	return addresses{
-		myMAC     : iface.HardwareAddr,
-		targetMAC : parser.targetMAC,
-		targetIP  : parser.targetIP,
-		apMAC     : sysconf.MustGatewayMAC(iface),
-		apIP      : sysconf.MustGatewayIP(iface),
-	}
+	ap := arpPoison{}
+	ap.parseArgs(args)
+	ap.execute()
 }
 
 

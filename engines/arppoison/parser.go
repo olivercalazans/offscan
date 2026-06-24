@@ -18,28 +18,18 @@
 package arppoison
 
 import (
-	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
+	"offscan/internal/netroute"
+	"offscan/internal/sysconf"
 )
 
-
-
-type arpPoisonParser struct {
-	targetIP   net.IP
-	targetMAC  net.HardwareAddr
-}
 
 
 const (
 	targetIP   uint8 = 1
 	targetMAC  uint8 = 2
 )
-
-
-func newParser() *arpPoisonParser {
-	return &arpPoisonParser{}
-}
 
 
 
@@ -53,15 +43,22 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (app *arpPoisonParser) parseArpPoisonArgs(args []string) {
-    flags  := FlagSettings()
+func (ap *arpPoison) parseArgs(args []string) {
+	flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
+	
+	ap.addrs = addresses{}
 
 	for _, flag := range flags {    
 		switch flag.ID {
-		case targetIP  : app.targetIP  = conv.MustStrToIPv4(flag.ValueStr)
-		case targetMAC : app.targetMAC = conv.MustStrToMac(flag.ValueStr)
+		case targetIP  : ap.addrs.targetIP  = conv.MustStrToIPv4(flag.ValueStr)
+		case targetMAC : ap.addrs.targetMAC = conv.MustStrToMac(flag.ValueStr)
 		}
 	}
+
+	ap.iface       = netroute.MustRouteIfaceForDstIP(ap.addrs.targetIP)
+	ap.addrs.myMAC = ap.iface.HardwareAddr
+	ap.addrs.apMAC = sysconf.MustGatewayMAC(&ap.iface)
+	ap.addrs.apIP  = sysconf.MustGatewayIP(&ap.iface)
 }

@@ -18,20 +18,14 @@
 package deauth
 
 import (
-	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
+	"offscan/internal/dot11build"
+	"offscan/internal/sockets"
+	"offscan/internal/utils"
+	"time"
 )
 
-
-
-type deauthParser struct {
-    iface      net.Interface 
-    targetMac  net.HardwareAddr
-    bssid      net.HardwareAddr
-    delay      int
-    channel    int
-}
 
 
 const (
@@ -41,12 +35,6 @@ const (
 	channel   uint8 = 4
 	delay     uint8 = 5
 )
-
-
-
-func newParser() *deauthParser {
-	return &deauthParser{}
-}
 
 
 
@@ -63,25 +51,30 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (dp *deauthParser) parseDeauthArgs(args []string) {
+func (da *deauthAttack) parseArgs(args []string) {
     flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 	
 	for _, f := range flags {
 		switch f.ID {
-		case iface     : dp.iface     = conv.MustStrToIface(f.ValueStr)
-		case targetMac : dp.targetMac = conv.MustStrToMac(f.ValueStr)
-		case bssid     : dp.bssid     = conv.MustStrToMac(f.ValueStr)
-		case delay     : dp.delay     = parseDelay(f.ValueStr)
-		case channel   : dp.channel   = conv.MustStrToInt(f.ValueStr)
+		case iface     : da.iface     = conv.MustStrToIface(f.ValueStr)
+		case targetMac : da.targetMAC = conv.MustStrToMac(f.ValueStr)
+		case bssid     : da.apMAC     = conv.MustStrToMac(f.ValueStr)
+		case delay     : da.delay     = parseDelay(f.ValueStr)
+		case channel   : da.channel   = conv.MustStrToInt(f.ValueStr)
 		}
 	}
+
+	da.builder  = dot11build.NewDeauthFrame()
+	da.frmsSent = 0
+	da.seqNum   = 1
+	da.socket   = sockets.NewL2Socket(&da.iface)
 }
 
 
 
-func parseDelay(str string) int {
-	if str == "" { return 30 }
-	return conv.MustStrToInt(str)
+func parseDelay(str string) time.Duration {
+	delay := utils.Pick(str == "", 30, conv.MustStrToInt(str))
+	return time.Duration(delay) * time.Millisecond
 }

@@ -29,13 +29,14 @@ import (
 	"offscan/internal/generators"
 	"offscan/internal/netroute"
 	"offscan/internal/sniffer"
-	"offscan/internal/sysconf"
 )
 
 
 
 func Run(args []string) {
-    newHostDisc(args).execute()
+    hd := hostDiscovery{}
+    hd.parseArgs(args)
+    hd.execute()
 }
 
 
@@ -57,58 +58,6 @@ type hostDiscovery struct {
 
 type protocols struct {
     arp, icmp, tcp bool
-}
-
-
-func newHostDisc(argList []string) *hostDiscovery {
-    parser := newParser()
-    parser.parseHostDiscArgs(argList)
-
-	var iface net.Interface
-	if parser.iface == "" {
-		iface = sysconf.MustDefaultInterface()
-	} else {
-		iface = conv.MustStrToIface(parser.iface)
-	}
-
-	cidr := sysconf.MustCIDR(&iface)
-
-    return &hostDiscovery{
-        activeIPs : make(map[[4]byte]hostInfo),
-        ips       : generators.NewIpv4Iter(cidr, parser.ipRange),
-        myIP      : sysconf.MustIPv4(&iface),
-        iface     : iface,
-        protocols : protoFlags(&parser, &iface),
-    }
-}
-
-
-
-func protoFlags(parser *hostDiscParser, iface *net.Interface) protocols {
-    prots := protocols{
-        arp  : true,
-        icmp : true,
-        tcp  : true,
-    }
-
-    if parser.arp || parser.icmp || parser.tcp {
-        prots.arp  = parser.arp
-        prots.icmp = parser.icmp
-        prots.tcp  = parser.tcp
-
-        return prots
-    }
-    
-    isLocal := true
-
-    if parser.ipRange != "" {
-        for _, ip := range strings.Split(parser.ipRange, "*") {
-            ipv4    := conv.MustStrToIPv4(ip)
-            isLocal  = isLocal && netroute.IsLocal(iface, ipv4)
-        }
-    }
-
-    return prots
 }
 
 

@@ -27,7 +27,7 @@ import (
 
 
 func Run(args []string) {
-    s := newSys()
+    s := system{}
 	s.parseArgs(args)
 	s.validateCmdFlags()
 	s.execute()
@@ -47,12 +47,6 @@ type system struct {
 	fwd      bool
 	enable   bool
 	disable  bool
-}
-
-
-
-func newSys() system {
-	return system{}
 }
 
 
