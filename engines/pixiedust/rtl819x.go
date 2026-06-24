@@ -52,11 +52,14 @@ func (pda *pixieDustAttack) executeRTL819xCase() {
 	pda.keyDerivationFunction(kdk)
 
 	decrypted7 := pda.decryptEncryptedSettings(pda.m7enc)
+	pda.m7enc   = nil
+
 	decrypted5 := pda.decryptEncryptedSettings(pda.m5enc)
+	pda.m5enc   = nil
 
 	pda.emptyPinHMAC()
 	pda.findESecrets(decrypted5, decrypted7)
-	pda.
+	pda.crackFirstHalf([]byte{})
 }
 
 

