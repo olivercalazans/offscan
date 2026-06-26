@@ -232,3 +232,29 @@ func (pda *pixieDustAttack) validateModes(str string) {
 		pda.modes = append(pda.modes, modeU8)
 	}
 }
+
+
+
+func (pda *pixieDustAttack) validDHSmallFlag() {
+    if pda.dhSmall && pda.pkr != nil {
+        utils.Abort("Options -S/--dhsmall and -r/--pkr are mutually exclusive")
+    }
+
+    if !pda.dhSmall && pda.pkr == nil {
+        utils.Abort("Either -S/--dhsmall or -r/--pkr must be specified")
+    }
+}
+
+
+
+func (pda *pixieDustAttack) validRequiredFlags() {
+	b1 := pda.pke == nil || pda.eHash1 == nil || pda.eHash2 == nil || pda.eNonce == nil
+	b2 := pda.dhSmall || pda.isRTL819xPKE()
+	b3 := pda.ebssid != nil && pda.rNonce != nil
+	
+	miss := b1 || (pda.authKey == nil && !(b2 && b3))
+
+	if miss {
+		utils.Abort("Not all required arguments have been supplied")
+	}
+}

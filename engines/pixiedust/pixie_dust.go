@@ -81,22 +81,11 @@ func newPixieDust(args []string) pixieDustAttack {
 
 func (pda *pixieDustAttack) execute() {
 	pda.timeExec = time.Now()
-    pda.executeRTL819xCase() // if executed, it will stop here
+    pda.executeRTL819xCase() // it stops here if executed
     pda.validDHSmallFlag()
     pda.checkSmallDHKeys()
+    pda.validRequiredFlags()
     pda.displayTime()
-}
-
-
-
-func (pda *pixieDustAttack) validDHSmallFlag() {
-    if pda.dhSmall && pda.pkr != nil {
-        utils.Abort("Options -S/--dhsmall and -r/--pkr are mutually exclusive")
-    }
-
-    if !pda.dhSmall && pda.pkr == nil {
-        utils.Abort("Either -S/--dhsmall or -r/--pkr must be specified")
-    }
 }
 
 

@@ -108,7 +108,7 @@ func (pda *pixieDustAttack) crackSecondHalf() {
         utils.Abort(fmt.Sprintf("Invalid first half: %d", pda.firstHalf))
     }
 
-    for secondHalf := range 1000{
+    for secondHalf := range 1000 {
         checksum    := wpsPinChecksum(pda.firstHalf * 1000 + secondHalf)
         cSecondHalf := secondHalf * 10 + checksum
         psk, ok     := pda.checkPinHalf(pda.eSecret2, pda.eHash2, cSecondHalf)
