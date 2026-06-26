@@ -29,13 +29,6 @@ import (
 )
 
 
-const (
-    wpsTagESecretNonce1 = 0x1016
-    wpsTagESecretNonce2 = 0x1017
-	wpsTagSSID          = 0x1045
-)
-
-
 
 func (pda *pixieDustAttack) executeRTL819xCase() {
 	if len(pda.m7enc) == 0 { return }
@@ -181,8 +174,8 @@ func (pda *pixieDustAttack) hasAllRTLdata() bool {
 
 
 func (pda *pixieDustAttack) findESecrets() {
-	pda.eSecret1 = extractSecret(pda.decrypted5, wpsTagESecretNonce1, "E-SNONCE 1")
-	pda.eSecret2 = extractSecret(pda.decrypted7, wpsTagESecretNonce2, "E-SNONCE 2")
+	pda.eSecret1 = extractSecret(pda.decrypted5, 0x1016, "E-SNONCE 1")
+	pda.eSecret2 = extractSecret(pda.decrypted7, 0x1017, "E-SNONCE 2")
 }
 
 
@@ -200,7 +193,7 @@ func extractSecret(data []byte, tagID uint16, fieldName string) []byte {
 
 
 func (pda *pixieDustAttack) displaySSIDFromM7() {
-	ssidTag, err := findVTag(pda.decrypted7, wpsTagSSID, 0)
+	ssidTag, err := findVTag(pda.decrypted7, 0x1045, 0)
 	
 	if err == nil {
 	    ssid := string(ssidTag)
