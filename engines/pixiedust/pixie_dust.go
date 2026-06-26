@@ -72,8 +72,8 @@ type pixieDustAttack struct {
 
 
 func newPixieDust(args []string) pixieDustAttack {
-	pda := pixieDustAttack{ firstHalf: -1, secondHalf: -1}
-	pda.parsePortScanArgs(args)
+	pda := pixieDustAttack{}
+	pda.parseArgs(args)
 	return pda
 }
 

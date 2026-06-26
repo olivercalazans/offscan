@@ -24,6 +24,8 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/utils"
 	"runtime"
+	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -77,25 +79,27 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (pda *pixieDustAttack) parsePortScanArgs(args []string) {
+func (pda *pixieDustAttack) parseArgs(args []string) {
+	pda.setStatic()
+
     flags  := FlagSettings()
 	parser := argparser.NewArgParser(flags, args)
 	parser.ParseFlags()
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case jobs    : pda.jobs    = getJobs(flag.ValueStr)
-		case pke     : pda.pke     = mustStrToHex(flag.ValueStr)
-		case pkr     : pda.pkr     = mustStrToHex(flag.ValueStr)
-		case eHash1  : pda.eHash1  = mustStrToHex(flag.ValueStr)
-		case eHash2  : pda.eHash2  = mustStrToHex(flag.ValueStr)
-		case authKey : pda.authKey = mustStrToHex(flag.ValueStr)
-		case eNonce  : pda.eNonce  = mustStrToHex(flag.ValueStr)
-		case rNonce  : pda.rNonce  = strToHex(flag.ValueStr)
-		case ebssid  : pda.ebssid  = conv.MustStrToMac(flag.ValueStr)
-		case modes   : pda.modes   = validateModes(flag.ValueStr)
-		case m5enc   : pda.m5enc   = strToHex(flag.ValueStr)
-		case m7enc   : pda.m7enc   = strToHex(flag.ValueStr)
+		case jobs    : pda.setJobs(flag.ValueStr)
+		case pke     : strToHex(&flag, pda.pke, wpsPkeyLen)
+		case pkr     : strToHex(&flag, pda.pkr, wpsPkeyLen)
+		case eHash1  : strToHex(&flag, pda.eHash1, wpsHashLen)
+		case eHash2  : strToHex(&flag, pda.eHash2, wpsHashLen)
+		case authKey : strToHex(&flag, pda.authKey, wpsHashLen)
+		case eNonce  : strToHex(&flag, pda.eNonce, wpsNonceLen)
+		case rNonce  : strToHex(&flag, pda.rNonce, wpsNonceLen)
+		case ebssid  : strToHex(&flag, pda.ebssid, wpsBssidLen)
+		case modes   : pda.validateModes(flag.ValueStr)
+		case m5enc   : hexStrToByteSliceMax(&flag, pda.m5enc, encSettingsLen)
+		case m7enc   : hexStrToByteSliceMax(&flag, pda.m7enc, encSettingsLen)
 		case force   : pda.force   = flag.ValueBool
 		case dhSmall : pda.dhSmall = flag.ValueBool
 		case start   : pda.start   = flag.ValueStr
@@ -108,77 +112,123 @@ func (pda *pixieDustAttack) parsePortScanArgs(args []string) {
 
 
 
-func getJobs(str string) int {
+func (pda *pixieDustAttack) setStatic() {
+	pda.firstHalf  = -1
+	pda.secondHalf = -1
+}
+
+
+
+func (pda *pixieDustAttack) setJobs(str string) {
 	if str == "" {
-		return getCoresNum()
+		pda.jobs = getCoresNum()
 	}
 
-	val := conv.StrToInt(str)
-    if val <= 0 {
-        return getCoresNum()
+	num := conv.StrToInt(str)
+    if num < 0 {
+        utils.Abort(fmt.Sprintf("Bad number of jobs: %s", str))
     }
 
-    return val
+    pda.jobs = num
 }
 
 
 
 func getCoresNum() int {
-	cores := runtime.NumCPU()
-		
-	if cores <= 0 {
-		return 1
-	}
-
-	return cores
+	cores := runtime.NumCPU()	
+	return utils.Pick(cores <= 0, 1, cores)
 }
 
 
 
-func strToHex(str string) []byte {
-	if str == "" {
-		return []byte{}
-	}
+func strToHex(flag *argparser.Flag, buf []byte, mustLen int) {
+	if flag.ValueStr == "" { return }
 
-	hash, err := hex.DecodeString(str)
+	err := hexStrToByteSlice(flag.ValueStr, buf, mustLen)
 	
 	if err == nil {
-		utils.Abort(fmt.Sprintf("%v", err))
+		flagName := argparser.GetInlineFlags(flag)
+		utils.Abort(fmt.Sprintf("%s %v", flagName, err))
 	}
-
-	return hash
 }
 
 
 
-func mustStrToHex(str string) []byte {
-	hash, err := hex.DecodeString(str)
-	
-	if err == nil {
-		utils.Abort(fmt.Sprintf("%v", err))
-	}
+func hexStrToByteSlice(str string, buf []byte, mustLen int) error {
+    clean := removeSeparetors(str)
 
-	return hash
+    if len(clean) != mustLen * 2 {
+        return fmt.Errorf("Invalid length: expected %d hex chars, got %d", mustLen*2, len(clean))
+    }
+
+    _, err := hex.Decode(buf, []byte(clean))
+    return err
 }
 
 
 
-func validateModes(str string) []uint8 {
+func removeSeparetors(str string) string {
+	return strings.Map(func(r rune) rune {
+        if r == ':' || r == '-' || r == ' ' {
+            return -1 
+        }
+        return r
+    }, str)
+}
+
+
+
+func hexStrToByteSliceMax(flag *argparser.Flag, buf []byte, maxLen int) {
+	if flag.ValueStr == "" { return }
+
+    clean := removeSeparetors(flag.ValueStr)
+
+    if len(clean)%2 != 0 {
+        utils.Abort("Odd length hex string")
+    }
+
+    byteLen := len(clean) / 2
+    if byteLen > maxLen {
+        utils.Abort(fmt.Sprintf("Hex string too long: max %d bytes, got %d", maxLen, byteLen))
+    }
+
+    buf = make([]byte, byteLen)
+    if _, err := hex.Decode(buf, []byte(clean)); err != nil {
+        utils.Abort(fmt.Sprintf("Invalid hex string: %v", err))
+    }
+}
+
+
+
+func (pda *pixieDustAttack) validateModes(str string) {
 	modesStr := strings.Split(str, ",")
-	len   := len(modesStr)
+	len      := len(modesStr)
 
 	if len <= 0 {
-		return []uint8{}
+		pda.modes = []uint8{}
 	}
 
 	if len > 5 {
 		utils.Abort("More than 5 modes selected")
 	}
 
-	var modesU8 []uint8
 	for _, s := range modesStr {
-		modesU8 = append(modesU8, []byte(s)...)
-	}
+		mode, err := strconv.ParseInt(s, 10, 8)
 
-	return modesU8
+		if err != nil {
+			utils.Abort(fmt.Sprintf("Bad char for mode: %s", s))
+		}
+		
+		if mode > 5 || mode < 0 {
+			utils.Abort(fmt.Sprintf("Bad number for mode: %s. Use 0-5 for modes", s))
+		}
+
+		modeU8 := uint8(mode)
+
+		if slices.Contains(pda.modes, modeU8) {
+			utils.Abort(fmt.Sprintf("Duplicated number mode: %s", s))
+		}
+		
+		pda.modes = append(pda.modes, modeU8)
+	}
 }
