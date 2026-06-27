@@ -45,16 +45,14 @@ type ArgParser struct {
 
 
 
-func NewArgParser(flags []Flag, args []string) *ArgParser {
-    return &ArgParser{
-		flagSettins : flags,
-        args  : args,
-	}
+func NewArgParser(flags []Flag) *ArgParser {
+    return &ArgParser{ flagSettins : flags }
 }
 
 
 
-func (ap *ArgParser) ParseFlags() {
+func (ap *ArgParser) ParseFlags(args []string) {
+    ap.args = args
     ap.saveAllFlags()
     ap.checkRequired()
     ap.parseFlagsWithValue()

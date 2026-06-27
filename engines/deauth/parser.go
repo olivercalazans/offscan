@@ -53,8 +53,9 @@ func FlagSettings() []argparser.Flag {
 
 func (da *deauthAttack) parseArgs(args []string) {
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 	
 	for _, f := range flags {
 		switch f.ID {

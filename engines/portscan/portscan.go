@@ -25,21 +25,21 @@ import (
 	"sync"
 	"time"
 
-	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/netroute"
 	"offscan/internal/pktbuild"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
 	"offscan/internal/sockets"
-	"offscan/internal/sysconf"
 	"offscan/internal/utils"
 )
 
 
 
 func Run(args []string) {
-    newPortScanner(args).execute()
+    ps := portScanner{}
+    ps.parseArgs(args)
+    ps.execute()
 }
 
 
@@ -56,26 +56,6 @@ type portScanner struct {
     mut         sync.Mutex
     wg          sync.WaitGroup
     sniffer    *sniffer.Sniffer
-}
-
-
-
-func newPortScanner(argList []string) *portScanner {
-    parser := newParser()
-	parser.parsePortScanArgs(argList)
-
-    dstIP := conv.MustStrToIPv4(parser.TargetIP)
-	iface := netroute.MustRouteIfaceForDstIP(dstIP)
-	myIP  := sysconf.MustIPv4(&iface)
-
-    return &portScanner{
-        iface     : iface,
-        myIP      : myIP,
-        targetIP  : dstIP,
-        ports     : parser.Ports,
-        random    : parser.Random,
-        openPorts : make(map[uint16]struct{}),
-    }
 }
 
 

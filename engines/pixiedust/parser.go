@@ -83,8 +83,10 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 	pda.setStatic()
 
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
+
 
 	for _, flag := range flags {
 		switch flag.ID {

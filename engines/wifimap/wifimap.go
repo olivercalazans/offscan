@@ -33,7 +33,9 @@ import (
 
 
 func Run(args []string) {
-	newWifiMapper(args).execute()
+	wm := wifiMapper{}
+	wm.parseArgs(args)
+	wm.execute()
 }
 
 
@@ -56,18 +58,6 @@ type wifiMapper struct {
 	mut       sync.Mutex
 	wg        sync.WaitGroup
 	cancel    chan struct{}
-}
-
-
-
-func newWifiMapper(argList []string) *wifiMapper {
-	parser := newParser()
-	parser.parseWMapArgs(argList)
-
-	return &wifiMapper{
-		wInfo: make(map[wifiData]struct{}),
-		iface: conv.MustStrToIface(parser.Iface),
-	}
 }
 
 

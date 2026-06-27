@@ -45,8 +45,9 @@ func FlagSettings() []argparser.Flag {
 
 func (ap *arpPoison) parseArgs(args []string) {
 	flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 	
 	ap.addrs = addresses{}
 

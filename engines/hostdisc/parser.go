@@ -54,8 +54,9 @@ func FlagSettings() []argparser.Flag {
 
 func (hd *hostDiscovery) parseArgs(args []string) {
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 
 	var rangeIP string
 
@@ -70,7 +71,7 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 	cidr         := sysconf.MustCIDR(&hd.iface)
 	hd.ips        = generators.NewIpv4Iter(cidr, rangeIP)
 	hd.myIP       = sysconf.MustIPv4(&hd.iface)
-	hd.protoFlags(flags, rangeIP)
+	hd.protoFlags(flags, rangeIP)	
 }
 
 

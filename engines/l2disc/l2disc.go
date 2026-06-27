@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"math"
 	"net"
 	"offscan/internal/sniffer"
 	"offscan/internal/sysconf"
@@ -36,7 +35,9 @@ import (
 
 
 func Run(args []string) {
-    newL2Disc(args).execute()
+	l2hd := layer2HostDiscovery{}
+    l2hd.parseArgs(args)
+	l2hd.execute()
 }
 
 
@@ -50,26 +51,6 @@ type layer2HostDiscovery struct{
 	ctx         context.Context
 	cancel      context.CancelFunc
 	errChnls    map[int]struct{}
-}
-
-
-
-func newL2Disc(args []string) *layer2HostDiscovery {
-	parser := newParser()
-	parser.parseL2DiscArgs(args)
-
-	return &layer2HostDiscovery{
-		iface     : parser.Iface,
-		sniffTime : calculateDuration(parser.sniffTime),
-		errChnls  : make(map[int]struct{}),
-	}
-}
-
-
-
-func calculateDuration(sniffTime float64) time.Duration {
-	nano := math.Round(sniffTime * float64(time.Second))
-	return time.Duration(nano)
 }
 
 

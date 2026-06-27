@@ -19,21 +19,11 @@ package wifimap
 
 import (
 	"offscan/internal/argparser"
+	"offscan/internal/conv"
 )
 
 
-type wmapParser struct {
-    Iface  string
-}
-
-
 const iface uint8 = 1	
-
-
-
-func newParser() wmapParser {
-	return wmapParser{}
-}
 
 
 
@@ -53,14 +43,17 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (wmp *wmapParser) parseWMapArgs(args []string) {
+func (wm *wifiMapper) parseArgs(args []string) {
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case iface : wmp.Iface = flag.ValueStr
+		case iface : wm.iface = conv.MustStrToIface(flag.ValueStr)
 		}
 	}
+
+	wm.wInfo = make(map[wifiData]struct{})
 }

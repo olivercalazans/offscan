@@ -48,8 +48,9 @@ func FlagSettings() []argparser.Flag {
 
 func (bf *beaconFlood) parseArgs(args []string) {
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 
 	for _, flag := range flags {    
 		switch flag.ID {

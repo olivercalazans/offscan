@@ -81,12 +81,12 @@ func FlagSettings() []argparser.Flag {
 
 
 func (s *system) parseArgs(args []string) {
-    flags := FlagSettings()
-	parser  := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
-	s.flags = flags
+    s.flags  = FlagSettings()
+	parser  := argparser.NewArgParser(s.flags)
+	parser.ParseFlags(args)
+	args = nil
 
-	for _, flag := range flags {
+	for _, flag := range s.flags {
 		switch flag.ID {
 		case iface   : s.iface   = conv.StrToIface(flag.ValueStr)
 		case info    : s.info    = flag.ValueBool

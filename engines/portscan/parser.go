@@ -19,15 +19,10 @@ package portscan
 
 import (
 	"offscan/internal/argparser"
+	"offscan/internal/conv"
+	"offscan/internal/netroute"
+	"offscan/internal/sysconf"
 )
-
-
-
-type portScanParser struct {
-    TargetIP  string
-    Ports     string
-    Random    bool
-}
 
 
 const (
@@ -35,12 +30,6 @@ const (
 	ports  uint8 = 2
 	random uint8 = 3
 )
-
-
-
-func newParser() portScanParser {
-	return portScanParser{}
-}
 
 
 
@@ -55,16 +44,21 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (psp *portScanParser) parsePortScanArgs(args []string) {
+func (ps *portScanner) parseArgs(args []string) {
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case target : psp.TargetIP = flag.ValueStr
-		case ports  : psp.Ports    = flag.ValueStr
-		case random : psp.Random   = flag.ValueBool
+		case target : ps.targetIP = conv.MustStrToIPv4(flag.ValueStr)
+		case ports  : ps.ports    = flag.ValueStr
+		case random : ps.random   = flag.ValueBool
 		}
 	}
+
+	ps.iface     = netroute.MustRouteIfaceForDstIP(ps.targetIP)
+	ps.myIP      = sysconf.MustIPv4(&ps.iface)
+	ps.openPorts = make(map[uint16]struct{})
 }

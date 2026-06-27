@@ -19,26 +19,13 @@ package l2disc
 
 import (
 	"fmt"
-	"net"
+	"math"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/utils"
 	"strconv"
+	"time"
 )
-
-
-type l2DiscParser struct {
-    Iface      net.Interface
-	sniffTime  float64
-	retrys     int
-}
-
-
-
-func newParser() l2DiscParser {
-	return l2DiscParser{}
-}
-
 
 
 const (
@@ -46,6 +33,7 @@ const (
 	sniffTime  uint8 = 2
 	retrys     uint8 = 3
 )
+
 
 
 func FlagSettings() []argparser.Flag {
@@ -64,17 +52,28 @@ func FlagSettings() []argparser.Flag {
 
 
 
-func (l2dp *l2DiscParser) parseL2DiscArgs(args []string) {
+func (l2hd *layer2HostDiscovery) parseArgs(args []string) {
     flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags, args)
-	parser.ParseFlags()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case iface     : l2dp.Iface     = conv.MustStrToIface(flag.ValueStr)
-		case sniffTime : l2dp.sniffTime = parseFloat(flag.ValueStr)
+		case iface     : l2hd.iface = conv.MustStrToIface(flag.ValueStr)
+		case sniffTime : l2hd.calculateDuration(flag.ValueStr)
 		}
 	}
+
+	l2hd.errChnls = make(map[int]struct{})
+}
+
+
+
+func (l2hd *layer2HostDiscovery) calculateDuration(strTime string) {
+	sniffTime      := parseFloat(strTime)
+	nano           := math.Round(sniffTime * float64(time.Second))
+	l2hd.sniffTime  = time.Duration(nano)
 }
 
 
