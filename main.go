@@ -43,14 +43,14 @@ func main() {
 	}
 
 	var registry = map[string]argparser.CommandHandler{
-		"arp"    : { Run: arppoison.Run, FlagSettings: arppoison.FlagSettings },
-		"beacon" : { Run: beacon.Run,    FlagSettings: beacon.FlagSettings    },
-		"deauth" : { Run: deauth.Run,    FlagSettings: deauth.FlagSettings    },
-		"hdisc"  : { Run: hostdisc.Run,  FlagSettings: hostdisc.FlagSettings  },
-		"l2disc" : { Run: l2disc.Run,    FlagSettings: l2disc.FlagSettings    },
-		"sys"    : { Run: system.Run,    FlagSettings: system.FlagSettings    },
-		"pscan"  : { Run: portscan.Run,  FlagSettings: portscan.FlagSettings  },
-		"wmap"   : { Run: wifimap.Run,   FlagSettings: wifimap.FlagSettings   },
+		"arp"    : { Run: arppoison.Run, Helper: arppoison.DisplayHelp },
+		"beacon" : { Run: beacon.Run,    Helper: beacon.DisplayHelp    },
+		"deauth" : { Run: deauth.Run,    Helper: deauth.DisplayHelp    },
+		"hdisc"  : { Run: hostdisc.Run,  Helper: hostdisc.DisplayHelp  },
+		"l2disc" : { Run: l2disc.Run,    Helper: l2disc.DisplayHelp    },
+		"sys"    : { Run: system.Run,    Helper: system.DisplayHelp    },
+		"pscan"  : { Run: portscan.Run,  Helper: portscan.DisplayHelp  },
+		"wmap"   : { Run: wifimap.Run,   Helper: wifimap.DisplayHelp   },
 	}
 
 	displayHeader()

@@ -64,17 +64,33 @@ const (
 
 
 
+func DisplayHelp() {
+	help := "\n# Interface and system configuration. E.g., $ sudo ./offscan sys <FLAGS>\n\n" +
+	"    -I, --info    : (Command 1)  Set monitor or managed mode on interface\n" +
+	"    -F, --forward : (Command 2) Set monitor or managed mode on interface\n" +
+	"    -e, --enable  : (Req CMD 2) Enable forwarding\n" +
+	"    -d, --disable : (Req CMD 2) Disable forwarding\n" +	
+	"    -M, --mode    : (Command 3) Set monitor or managed mode on interface\n" +
+	"        --mon     : (Req CMD 3) Set interface on monitor mode\n" +
+	"        --man     : (Req CMD 3) Set interface on maneged mode\n" +
+	"    -i, --iface   : (Req All CMD) Interface\n" +
+	"\n    OBS.: Only ONE command can be used at a time\n"
+
+	fmt.Println(help)
+}
+
+
+
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Interface and system configuration\nE.g., $ sudo ./offscan sys <FLAGS>"},
-		{ID: iface,   Short: "i", Long: "iface",   HasValue: true,  Desc: "Interface"},
-		{ID: info,    Short: "I", Long: "info",    HasValue: false, Desc: "Display all or selected interface information"},		
-		{ID: mode,    Short: "M", Long: "mode",    HasValue: false, Desc: "Set monitor or managed mode on interface"},		
-		{ID: mon,     Short: "",  Long: "mon",     HasValue: false, Desc: "Set interface on monitor mode"},
-		{ID: man,     Short: "",  Long: "man",     HasValue: false, Desc: "Set interface on managed mode"},
-		{ID: fwd,     Short: "F", Long: "forward", HasValue: false, Desc: "Enable or disable forwarding"},
-		{ID: enable,  Short: "e", Long: "enable",  HasValue: false, Desc: "Enable forwarding"},
-		{ID: disable, Short: "d", Long: "disable", HasValue: false, Desc: "Disable forwarding"},
+		{ID: iface,   Short: "i", Long: "iface", HasValue: true},
+		{ID: info,    Short: "I", Long: "info"},		
+		{ID: mode,    Short: "M", Long: "mode"},		
+		{ID: mon,     Short: "",  Long: "mon"},
+		{ID: man,     Short: "",  Long: "man"},
+		{ID: fwd,     Short: "F", Long: "forward"},
+		{ID: enable,  Short: "e", Long: "enable"},
+		{ID: disable, Short: "d", Long: "disable"},
 	}
 }
 
@@ -111,7 +127,7 @@ func (s *system) validateCmdFlags() {
 
 	if count > 1 {
 		str := s.getCmdStr()
-		utils.Abort(fmt.Sprintf("Only one of these flags can be used at a time:\n%s", str))
+		utils.Abort(fmt.Sprintf("Only command can be used at a time:\n%s", str))
 	}
 
 	if count <= 0 {
@@ -129,7 +145,7 @@ func (s *system) getCmdStr() string {
 
     for _, f := range cmds {
         flags := argparser.GetInlineFlags(&f)		
-        str   += fmt.Sprintf("\t%-*s : %s\n", descLen, flags, f.Desc)
+        str   += fmt.Sprintf("%-*s, ", descLen, flags)
     }
 
 	return str

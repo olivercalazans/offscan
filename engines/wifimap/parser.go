@@ -18,9 +18,20 @@
 package wifimap
 
 import (
+	"fmt"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 )
+
+
+
+func DisplayHelp() {
+	help := "\n# WiFi Mapper. E.g., $ sudo ./offscan wmap <FLAGS>\n\n" +
+	"    -i, --iface <IFACE> : (Required) Interface to be used to sniff\n"
+
+	fmt.Println(help)
+}
+
 
 
 const iface uint8 = 1	
@@ -29,15 +40,7 @@ const iface uint8 = 1
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "WiFi Mapper\nE.g., $ sudo ./offscan wmap <FLAGS>"},
-		{
-			ID	     : iface, 
-			Short	 : "i", 
-			Long	 : "iface", 
-			HasValue : true, 
-			Req      : true, 
-			Desc	 : "Interface to be used to sniff",
-		},
+		{ ID: iface, Short: "i", Long: "iface", HasValue: true, Req: true },
 	}
 }
 

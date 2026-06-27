@@ -18,12 +18,24 @@
 package beacon
 
 import (
+	"fmt"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/dot11build"
 	"offscan/internal/generators"
 	"offscan/internal/sockets"
 )
+
+
+
+func DisplayHelp() {
+	help := "\n# Beacon Flooder. E.g.,: $ sudo ./offscan beacon <FLAGS>\n\n" +
+	        "    -c, --channel <INT> : (Required) Channel\n" +
+	        "    -i, --iface <IFACE> : (Required) Network interface to send frames\n" +
+	        "    -s, --ssid <SSID>   : (Required) SSID/Network name\n"
+	
+	fmt.Println(help)
+}
 
 
 
@@ -37,10 +49,9 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Beacon Flooder\nE.g.,: $ sudo ./offscan beacon <FLAGS>"},
-		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
-		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true, Desc: "SSID/Network name"},		
-		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
+		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true},
+		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true},
+		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true},
 	}
 }
 

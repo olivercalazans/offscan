@@ -18,11 +18,27 @@
 package portscan
 
 import (
+	"fmt"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
 )
+
+
+
+func DisplayHelp() {
+	help := "\n# Port Scanner. E.g., $ sudo ./offscan pscan <FLAGS>\n\n" +
+	"    -t, --target <IP> : (Required) Target IP\n" +
+	"    -p, --port <INT>  : (Optional) Specific ports or ranges\n" +
+	"                          22,80 - Specific ports\n" +
+	"                          20-50 - Port range\n" +
+	"                          20,22-50 - Both can be used\n" +
+	"    -r, --random      : (Optional) Scan ports in random order\n"
+
+	fmt.Println(help)
+}
+
 
 
 const (
@@ -35,10 +51,9 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Port Scanner\nE.g., $ sudo ./offscan pscan <FLAGS>"},
-		{ID: target, Short: "t", Long: "target", HasValue: true,  Req: true,  Desc: "Target IP"},
-		{ID: ports,  Short: "p", Long: "ports",  HasValue: true,  Desc: "Specific ports or ranges (e.g., 22,80 or 20-50)"},		
-		{ID: random, Short: "r", Long: "random", HasValue: false, Desc: "Scan ports in random order"},		
+		{ID: target, Short: "t", Long: "target", HasValue: true, Req: true},
+		{ID: ports,  Short: "p", Long: "ports",  HasValue: true},		
+		{ID: random, Short: "r", Long: "random"},		
 	}
 }
 

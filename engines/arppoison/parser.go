@@ -18,11 +18,22 @@
 package arppoison
 
 import (
+	"fmt"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
 )
+
+
+
+func DisplayHelp() {
+	help := "\n# ARP Poisoning. E.g.,: $ sudo ./offscan arp <FLAGS>\n\n" +
+	        "    --tip <IP>   : (Required) Target IP\n" +
+	        "    --tmac <MAC> : (Required) Target MAC\n"
+	
+	fmt.Println(help)
+}
 
 
 
@@ -35,9 +46,8 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "ARP Poisoning\nE.g.,: $ sudo ./offscan arp <FLAGS>"},
-		{ID: targetIP,  Long: "tip",  HasValue: true, Req: true, Desc: "Target IP"},
-		{ID: targetMAC, Long: "tmac", HasValue: true, Req: true, Desc: "Target MAC"},
+		{ID: targetIP,  Long: "tip",  HasValue: true, Req: true},
+		{ID: targetMAC, Long: "tmac", HasValue: true, Req: true},
 	}
 }
 

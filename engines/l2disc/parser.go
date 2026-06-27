@@ -28,6 +28,17 @@ import (
 )
 
 
+
+func DisplayHelp() {
+	help := "\n# Layer 2 Host Discovery. E.g., $ sudo ./offscan l2disc <FLAGS>\n\n" +
+	        "    -i, --iface <IFACE> : (Required) Define a network interface to sniff frames\n" +
+	        "    -t, --time <RANGE>  : (Optional) Time in seconds to sniff each channel (Default 1s)\n"
+
+	fmt.Println(help)
+}
+
+
+
 const (
 	iface      uint8 = 1
 	sniffTime  uint8 = 2
@@ -38,15 +49,8 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Layer 2 Host Discovery\nE.g., $ sudo ./offscan l2disc <FLAGS>"},
-		{
-			ID: iface, Short: "i", Long: "iface", HasValue: true, Req: true,
-			Desc: "Define a network interface to sniff frames",
-		},
-		{
-			ID: sniffTime, Short: "t", Long: "time", HasValue: true, 
-			Desc: "Time in seconds to sniff each channel (Default 1)",
-		},
+		{ ID: iface,     Short: "i", Long: "iface", HasValue: true, Req: true },
+		{ ID: sniffTime, Short: "t", Long: "time",  HasValue: true },
 	}
 }
 

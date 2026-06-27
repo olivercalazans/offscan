@@ -32,7 +32,6 @@ type Flag struct {
     Short      string
     Long       string
     HasValue   bool
-    Desc       string
     Req        bool
 }
 

@@ -18,6 +18,7 @@
 package deauth
 
 import (
+	"fmt"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/dot11build"
@@ -25,6 +26,19 @@ import (
 	"offscan/internal/utils"
 	"time"
 )
+
+
+
+func DisplayHelp() {
+	help := "\n# Deauthentication Attack. E.g., $ sudo ./offscan deauth <FLAGS>\n\n" +
+		    "    -b, --bssid <BSSID> : (Required) BSSID/AP MAC\n"+
+	        "    -c, --channel <INT> : (Required) Channel\n" +
+	        "    -i, --iface <IFACE> : (Required) Network interface to send frames\n" +
+	        "    -t, --tmac <MAC>    : (Required) Target MAC\n"+
+	        "    -d, --delay <INT>   : (Optional) Delay in ms\n"
+
+	fmt.Println(help)
+}
 
 
 
@@ -40,12 +54,11 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Deauthentication Attack\nE.g., $ sudo ./offscan deauth <FLAGS>"},
-		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Req: true, Desc: "Network interface to send frames"},
-		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Req: true, Desc: "Target MAC"},		
-		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Req: true, Desc: "BSSID"},		
-		{ID: channel,   Short: "c", Long: "channel", HasValue: true, Req: true, Desc: "Channel"},		
-		{ID: delay,     Short: "d", Long: "delay",   HasValue: true, Desc: "Delay in ms"},
+		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Req: true},
+		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Req: true},		
+		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Req: true},		
+		{ID: channel,   Short: "c", Long: "channel", HasValue: true, Req: true},		
+		{ID: delay,     Short: "d", Long: "delay",   HasValue: true},
 	}
 }
 

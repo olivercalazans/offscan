@@ -18,6 +18,7 @@
 package hostdisc
 
 import (
+	"fmt"
 	"net"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
@@ -27,6 +28,23 @@ import (
 	"offscan/internal/utils"
 	"strings"
 )
+
+
+
+func DisplayHelp() {
+	help := "\n# Host Discovery. E.g., $ sudo ./offscan hdisc <FLAGS>\n\n" +
+	        "    -i, --iface <IFACE> : (Optional) Network interface to send packets (default: system default)\n" +
+	        "    -r, --range <RANGE> : (Optional) IP range to scan. (*IP or IP*IP or IP*)\n" +
+            "                         > *IP   - From the beginning of the subnet until the specified IP\n" +
+            "                         > IP*IP - Between two specified IPs\n" +
+            "                         > IP*   - From a specified IP until the end of the subnet\n"+
+	        "        --arp           : (Optional) Use only/and ARP probes\n"+
+	        "        --icmp          : (Optional) Use only/and ICMP probes\n" +
+	        "        --tcp           : (Optional) Use only/and TCP probes\n"
+
+	fmt.Println(help)
+}
+
 
 
 const (
@@ -41,12 +59,11 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Host Discovery\nE.g., $ sudo ./offscan hdisc <FLAGS>"},
-		{ID: iface,   Short: "i", Long: "iface", HasValue: true, Desc: "Network interface to send packets (default: system default)"},
-		{ID: ipRange, Short: "r", Long: "range", HasValue: true, Desc: "IP range to scan"},		
-		{ID: arp,     Long: "arp",  HasValue: false, Desc: "Use only/and ARP probes"},		
-		{ID: icmp,    Long: "icmp", HasValue: false, Desc: "Use only/and ICMP probes"},		
-		{ID: tcp,     Long: "tcp",  HasValue: false, Desc: "Use only/and TCP probes"},		
+		{ID: iface,   Short: "i", Long: "iface", HasValue: true},
+		{ID: ipRange, Short: "r", Long: "range", HasValue: true},		
+		{ID: arp,     Long: "arp"},
+		{ID: icmp,    Long: "icmp"},
+		{ID: tcp,     Long: "tcp"},
 	}
 }
 

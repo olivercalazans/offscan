@@ -27,8 +27,8 @@ import (
 
 
 type CommandHandler struct {
-	Run          func(args []string)
-	FlagSettings func() []Flag
+	Run    func(args []string)
+	Helper func()
 }
 
 
@@ -38,39 +38,12 @@ func DisplayAllHelp(registry map[string]CommandHandler) {
 	sort.Strings(cmds)
 
 	for _, cmd := range cmds {
-		reg := registry[cmd]
-		flags := reg.FlagSettings
-		displayFlags(flags())
+		reg  := registry[cmd]
+		help := reg.Helper
+		help()
 	}
 
 	os.Exit(0)
-}
-
-
-
-func displayFlags(flagSettings []Flag) {
-    sort.Slice(flagSettings, func(i, j int) bool {
-        return flagSettings[i].ID < flagSettings[j].ID 
-    })
-
-	formatFlags(flagSettings)
-    descLen := GetFlagMaxLen(flagSettings)
-
-    for _, f := range flagSettings {
-		if f.ID == 0 {
-			fmt.Printf("\n## %s\nFlags:\n", f.Desc)
-			continue
-		}
-
-        flags := GetInlineFlags(&f)
-		req   := "(Optional)"
-		
-		if f.Req { req = "(Required)" }
-
-        fmt.Printf("  %-*s : %s %s\n", descLen, flags, req, f.Desc)
-    }
-
-	fmt.Println("")
 }
 
 
