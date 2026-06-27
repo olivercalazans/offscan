@@ -30,6 +30,32 @@ import (
 )
 
 
+func DisplayHelp() {
+	help := "\n# Pixie Dust. E.g., $ sudo ./offscan pixie <FLAGS>\n\n" +
+	        "    -1, --ehash1 <HASH>  : (Required) Enrollee Hash 1\n" +
+	        "    -2, --ehash2 <HASH>  : (Required) Enrollee Hash 2\n" +
+	        "    -e, --pke <HASH>     : (Required) Public Key Enrollee\n" +
+	        "    -r, --pkr <HASH>     : (Optional) Public Key Registrar\n" +
+	        "    -a, --authkey <KEY>  : (Optional) Authentication Session Key\n" +
+	        "    -n, --enonce <HASH>  : (Optional) Enrollee Nonce\n" +
+	        "    -m, --rnonce <HASH>  : (Optional) Registrar Nonce\n" +
+	        "    -b, --ebssid <BSSID> : (Optional) Enrollee MAC\n" +
+	        "        --mode <INT>     : (Optional) Attack mode (1-5, 0=auto)\n" +
+	        "    -j, --jobs <INT>     : (Optional) Number of workers\n" +
+	        "    -f, --force          : (Optional) Force bruteforce\n" +
+	        "    -S, --small          : (Optional) Use small DH group\n" +
+	        "    -5, --m5enc <HASH>   : (Mode 3)   Recover secret nonce from M5\n" +
+	        "    -7, --m7enc <HASH>   : (Mode 3)   Recover encrypted settings froLm M7\n" +
+	        "        --start <DATE>   : (Optional) Start timestamp for mode 3\n" +
+	        "        --end <DATE>     : (Optional) End timestamp for mode 3\n" +
+	        "        --cstart <HASH>  : (Optional) Custom start seed\n" +
+	        "        --cend <HASH>    : (Optional) Custom end seed\n"
+
+		fmt.Println(help)
+}
+
+
+
 const (
 	jobs    = 1
 	pke     = 2
@@ -55,25 +81,24 @@ const (
 
 func FlagSettings() []argparser.Flag {
 	return []argparser.Flag{
-		{ID: 0, Desc: "Pixie Dust\nE.g., $ sudo ./offscan pixie <FLAGS>"},	
-		{ID: jobs,    Short: "j", Long: "jobs",    HasValue: true, Desc: "Number of workers"},
-		{ID: pke ,    Short: "e", Long: "pke",     HasValue: true, Desc: "Public Key Enrollee"},
-		{ID: pkr ,    Short: "r", Long: "pkr",     HasValue: true, Desc: "Public Key Registrar"},
-		{ID: eHash1,  Short: "1", Long: "ehash1",  HasValue: true, Desc: "Enrollee Hash 1"},
-		{ID: eHash2,  Short: "2", Long: "ehash2",  HasValue: true, Desc: "Enrollee Hash 2"},
-		{ID: authKey, Short: "a", Long: "authkey", HasValue: true, Desc: "Authentication Session Key"},
-		{ID: eNonce,  Short: "n", Long: "enonce",  HasValue: true, Desc: "Enrollee Nonce"},
-		{ID: rNonce,  Short: "m", Long: "rnonce",  HasValue: true, Desc: "Registrar Nonce"},
-		{ID: ebssid,  Short: "b", Long: "ebssid",  HasValue: true, Desc: "Enrollee MAC"},
-		{ID: m5enc,   Short: "5", Long: "m5enc",   HasValue: true, Desc: "DH Small"},
-		{ID: m7enc,   Short: "7", Long: "m7enc",   HasValue: true, Desc: "DH Small"},
-		{ID: force,   Short: "f", Long: "force",   Desc: "Force bruteforce"},
-		{ID: dhSmall, Short: "S", Long: "dhsmall", Desc: "Use small DH group"},
-		{ID: modes,   Long: "mode",   HasValue: true, Desc: "Attack mode (1-5, 0=auto)"},
-		{ID: start,   Long: "start",  HasValue: true, Desc: "Start timestamp for mode 3"},
-		{ID: end,     Long: "end",    HasValue: true, Desc: "End timestamp for mode 3"},
-		{ID: cStart,  Long: "cstart", HasValue: true, Desc: "Custom start seed"},
-		{ID: cEnd,    Long: "cend",   HasValue: true, Desc: "Custom end seed"},
+		{ID: jobs,    Short: "j", Long: "jobs",    HasValue: true},
+		{ID: pke ,    Short: "e", Long: "pke",     HasValue: true},
+		{ID: pkr ,    Short: "r", Long: "pkr",     HasValue: true},
+		{ID: eHash1,  Short: "1", Long: "ehash1",  HasValue: true},
+		{ID: eHash2,  Short: "2", Long: "ehash2",  HasValue: true},
+		{ID: authKey, Short: "a", Long: "authkey", HasValue: true},
+		{ID: eNonce,  Short: "n", Long: "enonce",  HasValue: true},
+		{ID: rNonce,  Short: "m", Long: "rnonce",  HasValue: true},
+		{ID: ebssid,  Short: "b", Long: "ebssid",  HasValue: true},
+		{ID: m5enc,   Short: "5", Long: "m5enc",   HasValue: true},
+		{ID: m7enc,   Short: "7", Long: "m7enc",   HasValue: true},
+		{ID: force,   Short: "f", Long: "force"},
+		{ID: dhSmall, Short: "S", Long: "dhsmall"},
+		{ID: modes,   Long: "mode",   HasValue: true},
+		{ID: start,   Long: "start",  HasValue: true},
+		{ID: end,     Long: "end",    HasValue: true},
+		{ID: cStart,  Long: "cstart", HasValue: true},
+		{ID: cEnd,    Long: "cend",   HasValue: true},
 	}
 }
 
