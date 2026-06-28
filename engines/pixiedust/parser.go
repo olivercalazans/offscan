@@ -27,6 +27,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 
@@ -129,8 +130,8 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 		case m7enc   : hexStrToByteSliceMax(&flag, pda.m7enc, encSettingsLen)
 		case force   : pda.force   = flag.ValueBool
 		case dhSmall : pda.dhSmall = flag.ValueBool
-		case start   : pda.start   = flag.ValueStr
-		case end     : pda.end     = flag.ValueStr
+		case start   : pda.start   = parseDate(flag.ValueStr)
+		case end     : pda.end     = parseDate(flag.ValueStr)
 		case cStart  : pda.cStart  = conv.StrToInt(flag.ValueStr)
 		case cEnd    : pda.cEnd    = conv.StrToInt(flag.ValueStr)
 		}
@@ -142,6 +143,7 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 func (pda *pixieDustAttack) setStatic() {
 	pda.firstHalf  = -1
 	pda.secondHalf = -1
+	pda.modes      = make([]uint8, 0)
 }
 
 
@@ -227,6 +229,14 @@ func hexStrToByteSliceMax(flag *argparser.Flag, buf []byte, maxLen int) {
 
 
 
+func parseDate(str string) int64 {
+	if str == "" { return -1 }
+	date := conv.MustStrToInt(str)
+	return int64(date)
+}
+
+
+
 func (pda *pixieDustAttack) validateModes(str string) {
 	modesStr := strings.Split(str, ",")
 	len      := len(modesStr)
@@ -284,4 +294,62 @@ func (pda *pixieDustAttack) validRequiredFlags() {
 	if miss {
 		utils.Abort("Not all required arguments have been supplied")
 	}
+}
+
+
+
+func (pda *pixieDustAttack) validDates() {
+	if pda.force && (pda.start != -1 || pda.end != -1) {
+		utils.Abort("Cannot specify --start or --end with --force")
+	}
+}
+
+
+
+func (pda *pixieDustAttack) setTimeRange() {
+    if !pda.isModeSelect(rtl819x) { return }
+
+	startArg := pda.start
+	endArg   := pda.end
+
+    now := time.Now().Unix()
+    pda.start = now + secPerDay
+    pda.end = now - secPerDay
+
+    if startArg != -1 {
+        if endArg != -1 {
+            if startArg == endArg {
+                utils.Abort("Starting and ending points must be different")
+            }
+            if endArg > startArg {
+                pda.start = endArg
+                pda.end   = startArg
+            } else {
+                pda.start = startArg
+                pda.end   = endArg
+            }
+
+        } else {
+            if startArg >= pda.start {
+                utils.Abort("Bad starting point")
+            }
+            
+			pda.end = startArg
+        }
+
+    } else {
+        if endArg != -1 {
+            if endArg >= pda.start {
+                utils.Abort("Bad ending point")
+            }
+            
+			pda.end = endArg
+    
+		} else {
+            if pda.force {
+                pda.start += secPerDay
+                pda.end    = 0
+            }
+        }
+    }
 }

