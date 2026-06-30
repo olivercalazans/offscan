@@ -42,7 +42,7 @@ func (pda *pixieDustAttack) displayModes() {
 
 func (pda *pixieDustAttack) displayTime() {
 	elapsed := time.Since(pda.timeExec).Seconds()
-    fmt.Printf("[%%] %.2f seconds in execution\n", elapsed)
+    fmt.Printf("[t] %.2f seconds in execution\n", elapsed)
 }
 
 

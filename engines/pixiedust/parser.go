@@ -144,6 +144,11 @@ func (pda *pixieDustAttack) setStatic() {
 	pda.firstHalf  = -1
 	pda.secondHalf = -1
 	pda.modes      = make([]uint8, 0)
+	pda.dhKey      = make([]byte, 0)
+	pda.psk1       = make([]byte, 0)
+	pda.psk2       = make([]byte, 0)
+	pda.eSecret1   = make([]byte, 0)
+	pda.eSecret2   = make([]byte, 0)
 }
 
 
@@ -238,12 +243,14 @@ func parseDate(str string) int64 {
 
 
 func (pda *pixieDustAttack) validateModes(str string) {
+	if str == "" {
+		pda.auto  = true
+		pda.modes = []uint8{}
+		return
+	}
+
 	modesStr := strings.Split(str, ",")
 	len      := len(modesStr)
-
-	if len <= 0 {
-		pda.modes = []uint8{}
-	}
 
 	if len > 5 {
 		utils.Abort("More than 5 modes selected")
@@ -286,7 +293,7 @@ func (pda *pixieDustAttack) validDHSmallFlag() {
 
 func (pda *pixieDustAttack) validRequiredFlags() {
 	b1 := pda.pke == nil || pda.eHash1 == nil || pda.eHash2 == nil || pda.eNonce == nil
-	b2 := pda.dhSmall || pda.isRTL819xPKE()
+	b2 := pda.dhSmall || pda.isRTL819x
 	b3 := pda.ebssid != nil && pda.rNonce != nil
 	
 	miss := b1 || (pda.authKey == nil && !(b2 && b3))
