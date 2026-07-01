@@ -214,3 +214,17 @@ func (pda *pixieDustAttack) displaySSIDFromM7() {
 	    fmt.Printf("[*] SSID: %s\n", ssid)
 	}
 }
+
+
+
+func (pda *pixieDustAttack) rtl819xSpecialCase() {
+    pda.crackFirstHalf([]byte{})
+    pda.crackSecondHalf()
+
+    if !pda.pinFound() {
+        return
+    }
+
+    pda.foundMode = rtl819x
+    pda.displayPIN()
+}

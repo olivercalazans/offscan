@@ -73,6 +73,7 @@ type pixieDustAttack struct {
     s1Seed      uint32
     s2Seed      uint32
     foundMode   uint8
+    nonceMatch  uint8
 }
 
 
@@ -255,4 +256,28 @@ func (pda *pixieDustAttack) emptyPinHMAC() {
 
 func (pda *pixieDustAttack) pinFound() bool {
     return pda.firstHalf != -1 || pda.secondHalf != -1
+}
+
+
+
+func (pda *pixieDustAttack) trySpecialCases() {
+    if pda.auto { return }
+
+    // ES1 = ES2 = 0
+    if !pda.isRTL819x {
+        pda.ralinkRTSpecialCase()
+    }
+
+    // ES1 = ES2 = E-Nonce
+    pda.rtl819xSpecialCase()
+}
+
+
+
+func (pda *pixieDustAttack) mainLoop() {
+    for m := range pda.modes {
+        switch m {
+        case rt: pda.ralinkFull()
+        }
+    }
 }
