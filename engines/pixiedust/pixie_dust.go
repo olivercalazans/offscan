@@ -87,6 +87,7 @@ func newPixieDust(args []string) pixieDustAttack {
 
 func (pda *pixieDustAttack) execute() {
 	pda.timeExec = time.Now()
+    pda.checkRTL819xPKE()
     pda.executeRTL819xCase() // it stops here if executed
     pda.validDHSmallFlag()
     pda.checkSmallDHKeys()
@@ -100,6 +101,7 @@ func (pda *pixieDustAttack) execute() {
     pda.setKDK()
     pda.kdf()
     pda.emptyPinHMAC()
+    pda.trySpecialCases()   // it stops here if true
     pda.displayTime()
 }
 
@@ -247,4 +249,10 @@ func (pda *pixieDustAttack) kdf() {
 func (pda *pixieDustAttack) emptyPinHMAC() {
     h := hmac.New(sha256.New, pda.authKey)
     pda.emptyPsk = h.Sum(nil)
+}
+
+
+
+func (pda *pixieDustAttack) pinFound() bool {
+    return pda.firstHalf != -1 || pda.secondHalf != -1
 }

@@ -50,18 +50,19 @@ func (pda *pixieDustAttack) displayTime() {
 func (pda *pixieDustAttack) displayPIN() {
     if pda.firstHalf == -1 && pda.secondHalf == -1 {
         fmt.Println("[!] PIN not found")
-        return
+        os.Exit(0)
+
     }
 
     if pda.emptyPin {
         fmt.Println("[*] Empty PIN")
-        return
+        os.Exit(0)
     }
 
     pin := utils.Pick(pda.firstHalf > -1,  fmt.Sprintf("%d", pda.firstHalf),  "????")
     pin += utils.Pick(pda.secondHalf > -1, fmt.Sprintf("%d", pda.secondHalf), "????")
 
-    if pda.firstHalf != -1 && pda.secondHalf == -1 {
+    if !pda.pinFound() {
         fmt.Println("[!] Only the first half was found")
     }
 
