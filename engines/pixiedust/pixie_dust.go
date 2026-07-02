@@ -276,8 +276,13 @@ func (pda *pixieDustAttack) trySpecialCases() {
 
 func (pda *pixieDustAttack) mainLoop() {
     for m := range pda.modes {
-        switch m {
-        case rt: pda.ralinkFull()
+        if m == rt {
+            pda.attackRalink()
+            continue
+        }
+
+        if m == eCosSimple && pda.eNonce != nil {
+
         }
     }
 }

