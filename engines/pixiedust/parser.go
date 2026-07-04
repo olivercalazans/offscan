@@ -116,18 +116,50 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 
 	for _, flag := range flags {
 		switch flag.ID {
-		case jobs    : pda.setJobs(flag.ValueStr)
-		case pke     : strToHex(&flag, pda.pke, wpsPkeyLen)
-		case pkr     : strToHex(&flag, pda.pkr, wpsPkeyLen)
-		case eHash1  : strToHex(&flag, pda.eHash1, wpsHashLen)
-		case eHash2  : strToHex(&flag, pda.eHash2, wpsHashLen)
-		case authKey : strToHex(&flag, pda.authKey, wpsHashLen)
-		case eNonce  : strToHex(&flag, pda.eNonce, wpsNonceLen)
-		case rNonce  : strToHex(&flag, pda.rNonce, wpsNonceLen)
-		case ebssid  : strToHex(&flag, pda.ebssid, wpsBssidLen)
+		case jobs: pda.setJobs(flag.ValueStr)
+		
+		case pke:
+			pda.memAllocPKE()
+			strToHex(&flag, pda.pke, wpsPkeyLen)
+		
+		case pkr:
+			pda.memAllocPKR()
+			strToHex(&flag, pda.pkr, wpsPkeyLen)
+
+		case eHash1: 
+			pda.memAllocEHash1()
+			strToHex(&flag, pda.eHash1, wpsHashLen)
+
+		case eHash2: 
+			pda.memAllocEHash2()
+			strToHex(&flag, pda.eHash2, wpsHashLen)
+
+		case authKey: 
+			pda.memAllocAuthKey()
+			strToHex(&flag, pda.authKey, wpsHashLen)
+
+		case eNonce: 
+			pda.memAllocENonce()
+			strToHex(&flag, pda.eNonce, wpsNonceLen)
+
+		case rNonce: 
+			pda.memAllocRNonce()
+			strToHex(&flag, pda.rNonce, wpsNonceLen)
+
+		case ebssid: 
+			pda.memAllocEbssid()
+			strToHex(&flag, pda.ebssid, wpsBssidLen)
+		
+			
+		case m5enc:
+			pda.memAllocM5()
+			hexStrToByteSliceMax(&flag, pda.m5encr, encSettingsLen)
+		
+		case m7enc:
+			pda.memAllocM7()
+			hexStrToByteSliceMax(&flag, pda.m7encr, encSettingsLen)
+		
 		case modes   : pda.validateModes(flag.ValueStr)
-		case m5enc   : hexStrToByteSliceMax(&flag, pda.m5enc, encSettingsLen)
-		case m7enc   : hexStrToByteSliceMax(&flag, pda.m7enc, encSettingsLen)
 		case force   : pda.force   = flag.ValueBool
 		case dhSmall : pda.dhSmall = flag.ValueBool
 		case start   : pda.start   = parseDate(flag.ValueStr)
@@ -143,12 +175,6 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 func (pda *pixieDustAttack) setStatic() {
 	pda.firstHalf  = -1
 	pda.secondHalf = -1
-	pda.modes      = make([]uint8, 0)
-	pda.dhKey      = make([]byte, 0)
-	pda.psk1       = make([]byte, 0)
-	pda.psk2       = make([]byte, 0)
-	pda.eSecret1   = make([]byte, 0)
-	pda.eSecret2   = make([]byte, 0)
 }
 
 
@@ -243,6 +269,8 @@ func parseDate(str string) int64 {
 
 
 func (pda *pixieDustAttack) validateModes(str string) {
+	pda.modes = make([]uint8, 0)
+
 	if str == "" {
 		pda.auto  = true
 		pda.modes = []uint8{}
