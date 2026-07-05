@@ -158,5 +158,6 @@ func wpsPinChecksum(pin int) int {
         pin /= 10
     }
     
-    return (10 - acc%10) % 10
+    return (10 - acc % 10) % 10
 }
+

