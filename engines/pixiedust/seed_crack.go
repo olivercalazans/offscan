@@ -50,7 +50,7 @@ type CrackJob struct {
 
 
 
-func (pda *pixieDustAttack) initCrackJobs(mode int) {
+func (pda *pixieDustAttack) initCrackJobs(mode int) *JobControl {
     jc := &JobControl{
         pda         : pda,
         jobs        : pda.jobs,
@@ -60,6 +60,7 @@ func (pda *pixieDustAttack) initCrackJobs(mode int) {
     }
 
     jc.initData()
+    return jc
 }
 
 
@@ -343,9 +344,9 @@ func rtlNonceFill(nonce []byte, seed uint32) {
 
 func (pda *pixieDustAttack) findRTLES() bool {
     jc := &JobControl{
-        pda  : pda,
-        jobs : pda.jobs,
-        mode : -rtl819x,
+        pda:  pda,
+        jobs: pda.jobs,
+        mode: -rtl819x,
     }
 
     jc.initData()
@@ -359,12 +360,11 @@ func (pda *pixieDustAttack) findRTLES() bool {
     jc.collectCrackJobs()
 
     if jc.nonceSeed != 0 {
-        pda.s1Seed = jc.nonceSeed
-        copy(pda.eSecret1, nonceBuf)
-        pinCopy := pda.firstHalf
+        pda.s1Seed  = jc.nonceSeed
+        pinCopy    := pda.firstHalf
 
-        for j := range 10 {
-            pda.firstHalf = pinCopy
+        for j := 0; j < 10; j++ {
+            pda.firstHalf = pinCopy 
 
             rtlNonceFill(pda.eSecret2, pda.s1Seed+uint32(j))
             pda.crackSecondHalf()

