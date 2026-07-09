@@ -286,14 +286,14 @@ func (pda *pixieDustAttack) mainLoop() {
             continue
         }
 
-        if m == eCosSimple && pda.eNonce != nil {
-            pda.attackECOSSimple()
+        if pda.eNonce == nil {
             continue
         }
 
-        if m == rtl819x && pda.eNonce != nil {
-            pda.attackRTL819x()
-            continue
+        switch m {
+        case eCosSimple   : pda.attackECOSSimple()
+        case rtl819x      : pda.attackRTL819x()
+        case eCosSimplest : pda.attackECOSSimplest()
         }
     }
 }
