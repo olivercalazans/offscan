@@ -294,6 +294,7 @@ func (pda *pixieDustAttack) mainLoop() {
         case eCosSimple   : pda.attackECOSSimple()
         case rtl819x      : pda.attackRTL819x()
         case eCosSimplest : pda.attackECOSSimplest()
+        case eCosKnuth    : pda.attackECOSKnuth()
         }
     }
 }
