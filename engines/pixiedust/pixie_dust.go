@@ -33,6 +33,14 @@ import (
 
 
 
+func Run(args []string) {
+	pda := pixieDustAttack{}
+	pda.parseArgs(args)
+	pda.execute()
+}
+
+
+
 type pixieDustAttack struct {
     timeExec    time.Time
     firstHalf   int
@@ -74,14 +82,6 @@ type pixieDustAttack struct {
     s2Seed      uint32
     foundMode   uint8
     nonceMatch  uint8
-}
-
-
-
-func newPixieDust(args []string) pixieDustAttack {
-	pda := pixieDustAttack{}
-	pda.parseArgs(args)
-	return pda
 }
 
 

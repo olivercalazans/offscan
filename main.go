@@ -26,6 +26,7 @@ import (
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
 	"offscan/engines/l2disc"
+	"offscan/engines/pixiedust"
 	"offscan/engines/system"
 	"offscan/engines/wifimap"
 	"offscan/internal/argparser"
@@ -47,6 +48,7 @@ func main() {
 		"deauth" : { Run: deauth.Run,    Helper: deauth.DisplayHelp    },
 		"hdisc"  : { Run: hostdisc.Run,  Helper: hostdisc.DisplayHelp  },
 		"l2disc" : { Run: l2disc.Run,    Helper: l2disc.DisplayHelp    },
+		"pixie"  : { Run: pixiedust.Run, Helper: pixiedust.DisplayHelp },
 		"sys"    : { Run: system.Run,    Helper: system.DisplayHelp    },
 		"wmap"   : { Run: wifimap.Run,   Helper: wifimap.DisplayHelp   },
 	}
