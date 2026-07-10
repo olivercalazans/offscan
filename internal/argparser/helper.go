@@ -18,7 +18,6 @@
 package argparser
 
 import (
-	"fmt"
 	"maps"
 	"os"
 	"slices"
@@ -44,17 +43,6 @@ func DisplayAllHelp(registry map[string]CommandHandler) {
 	}
 
 	os.Exit(0)
-}
-
-
-
-func formatFlags(flagSettings []Flag) {
-    for i := range flagSettings {
-        flag := &flagSettings[i]
-        
-        if flag.Short != "" { flag.Short = fmt.Sprintf("-%s", flag.Short) }
-        if flag.Long  != "" { flag.Long  = fmt.Sprintf("--%s", flag.Long) }
-    }
 }
 
 

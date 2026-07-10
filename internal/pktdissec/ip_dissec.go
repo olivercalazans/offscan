@@ -29,56 +29,12 @@ func (pd *PacketDissector) IsIPv4() bool {
 
 
 
-func (pd *PacketDissector) ihl() (uint8, bool) {
-    if pd.lenPkt < 15 {
-        return 0, false
-    }
-
-	ihl := pd.pkt[14] & 0x0F
-
-	if ihl < 5 {
-        return 0, false
-    }
-
-	return ihl, true
-}
-
-
-
-func (pd *PacketDissector) ipHeaderLen() (int, bool) {
-    ihl, ok := pd.ihl()
-    
-	if !ok {
-        return 0, false
-    }
-    
-	return 14 + int(ihl)*4, true
-}
-
-
-
 func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
     if pd.lenPkt < 30 || !pd.isIPv4 {
         return nil, false
     }
     
 	ip := net.IP(pd.pkt[26:30]).To4()
-    
-	if ip == nil {
-        return nil, false
-    }
-    
-	return ip, true
-}
-
-
-
-func (pd *PacketDissector) GetDstIP() (net.IP, bool) {
-    if pd.lenPkt < 34 || !pd.isIPv4 {
-        return nil, false
-    }
-    
-	ip := net.IP(pd.pkt[30:34]).To4()
     
 	if ip == nil {
         return nil, false
