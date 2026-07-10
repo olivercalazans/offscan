@@ -9,7 +9,8 @@ Host Discovery -
 Wifi Mapping -
 ARP Poisoning -
 Beacon Flooding -
-Deauthentication Attack
+Deauthentication Attack -
+Pixie Dust
 </strong></p>
 
 <br>
