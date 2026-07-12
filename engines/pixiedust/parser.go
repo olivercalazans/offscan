@@ -115,6 +115,10 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 
 
 	for _, flag := range flags {
+		if flag.ValueStr == "" && !flag.ValueBool {
+			continue
+		}
+
 		switch flag.ID {
 		case jobs: pda.setJobs(flag.ValueStr)
 		
@@ -149,7 +153,6 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 		case ebssid: 
 			pda.memAllocEbssid()
 			strToHex(&flag, pda.ebssid, wpsBssidLen)
-		
 			
 		case m5enc:
 			pda.memAllocM5()
@@ -175,6 +178,8 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 func (pda *pixieDustAttack) setStatic() {
 	pda.firstHalf  = -1
 	pda.secondHalf = -1
+	pda.start      = -1
+	pda.end        = -1
 }
 
 
@@ -206,7 +211,7 @@ func strToHex(flag *argparser.Flag, buf []byte, mustLen int) {
 
 	err := hexStrToByteSlice(flag.ValueStr, buf, mustLen)
 	
-	if err == nil {
+	if err != nil {
 		flagName := argparser.GetInlineFlags(flag)
 		utils.Abort(fmt.Sprintf("%s %v", flagName, err))
 	}

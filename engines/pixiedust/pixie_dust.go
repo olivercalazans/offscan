@@ -95,13 +95,13 @@ func (pda *pixieDustAttack) execute() {
     pda.validRequiredFlags()
     pda.validDates()
     pda.setModes()
-    pda.displayModes()
     pda.setTimeRange()
     pda.setDHSmall()
     pda.computeAuthKey()
     pda.memAllocSecrestAndPSKs()
     pda.emptyPinHMAC()
     pda.trySpecialCases()   // it stops here if true
+    pda.displayModes()
     pda.mainLoop()
     pda.displayTime()
 }
@@ -146,7 +146,7 @@ func (pda *pixieDustAttack) setModes() {
 func (pda *pixieDustAttack) setDHSmall() {
     if pda.dhSmall && pda.pkr == nil {
         pda.pkr = make([]byte, wpsPkeyLen)
-        pda.pkr[wpsPkeyLen-1] = 0x02
+        pda.pkr[wpsPkeyLen - 1] = 0x02
     }
 }
 

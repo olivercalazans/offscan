@@ -73,6 +73,6 @@ func main() {
 
 
 func displayHeader() {
-	fmt.Println("OffScan - The offensive security and scanning tool for Wi-Fi")
+	fmt.Println("\nOffScan - The offensive security and scanning tool for Wi-Fi")
 	fmt.Println("Repository: https://github.com/olivercalazans/offscan")
 }

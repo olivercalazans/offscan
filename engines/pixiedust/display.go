@@ -35,7 +35,7 @@ func (pda *pixieDustAttack) displayModes() {
 		modes = append(modes, strconv.Itoa(m))
 	}
 
-	fmt.Printf("[i] MODES..: %s", strings.Join(modes, ", "))
+	fmt.Printf("[i] MODES..: %s\n", strings.Join(modes, ", "))
 }
 
 
