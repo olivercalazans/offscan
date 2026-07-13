@@ -50,8 +50,7 @@ func (pda *pixieDustAttack) executeRTL819xCase() {
 		pda.memAllocSecrestAndPSKs()
 		pda.emptyPinHMAC()
 		pda.findESecrets()
-		pda.crackFirstHalf(nil)
-		pda.crackSecondHalf()
+		pda.crackPin()
 	}
 
 	pda.displayTime()
@@ -229,9 +228,7 @@ func (pda *pixieDustAttack) rtl819xSpecialCase() {
 	copy(pda.eSecret1, pda.eNonce)
 	copy(pda.eSecret2, pda.eNonce)
 
-    pda.crackFirstHalf(nil)
-    pda.crackSecondHalf()
-
+    pda.crackPin()
     if !pda.pinFound() {
         return
     }

@@ -25,6 +25,14 @@ import (
 )
 
 
+
+func (pda *pixieDustAttack) crackPin() {
+    pda.crackFirstHalf(nil)
+    pda.crackSecondHalf()
+}
+
+
+
 func (pda *pixieDustAttack) crackFirstHalf(es1Override []byte) {
     eS1 := utils.Pick(es1Override != nil, es1Override, pda.eSecret1)
 

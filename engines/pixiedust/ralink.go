@@ -25,8 +25,7 @@ func (pda *pixieDustAttack) ralinkRTSpecialCase() {
     clear(pda.eSecret1)
     clear(pda.eSecret2)
     
-    pda.crackFirstHalf(nil)
-    pda.crackSecondHalf()
+    pda.crackPin()
     
     if !pda.pinFound() {
         return
@@ -89,8 +88,7 @@ func (pda *pixieDustAttack) attackRalink() {
     }
 
 	pda.calculateSeeds()
-	pda.crackFirstHalf(nil)
-	pda.crackSecondHalf()
+	pda.crackPin()
 
 	if !pda.pinFound() {
 		pda.nonceMatch = rt

@@ -40,8 +40,7 @@ func (pda *pixieDustAttack) attackECOSSimple() {
     pda.memAllocESecret2()
     pda.s2Seed = es.generateECOSSimpleSecret(pda.eSecret2)
 
-    pda.crackFirstHalf(nil)
-    pda.crackSecondHalf()
+    pda.crackPin()
 
     if !pda.pinFound() {
         pda.nonceMatch = eCosSimple

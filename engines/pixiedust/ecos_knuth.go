@@ -34,8 +34,7 @@ func (pda *pixieDustAttack) attackECOSKnuth() {
 		return
 	}
 
-	pda.crackFirstHalf(nil)
-	pda.crackSecondHalf()
+	pda.crackPin()
 
 	if !pda.pinFound() {
 		pda.nonceSeed  = 0
