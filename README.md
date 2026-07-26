@@ -4,14 +4,15 @@
 
 <br>
 
-<p align="center"><strong>
-Host Discovery -
-Wifi Mapping -
-ARP Poisoning -
-Beacon Flooding -
-Deauthentication Attack -
-Pixie Dust
-</strong></p>
+### Attacks
+- ARP Poisoning
+- Beacon Flooding
+- Deauthentication Attack
+- Pixie Dust Attack
+
+### Scannings
+- Host Discovery
+- Wifi Mapping
 
 <br>
 
