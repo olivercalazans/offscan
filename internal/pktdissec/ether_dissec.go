@@ -15,35 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package pktdissec
 
-import (
-	"fmt"
-	"offscan/internal/utils"
-	"strconv"
-)
+import "net"
 
 
-func MustStrToInt(str string) int {
-	value, err := strconv.Atoi(str)
 
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
+    if pd.lenPkt < 12 {
+        return nil, false
+    }
+    
+	return net.HardwareAddr(pd.pkt[6:12]), true
 }
 
 
 
-func StrToInt(str string) int {
-	if str == "" { return 0 }
-	
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+func (pd *PacketDissector) getEtherType() uint16 {
+    if pd.lenPkt < 14 { return 0 }
+    return (uint16(pd.pkt[12]) << 8) | uint16(pd.pkt[13])
 }

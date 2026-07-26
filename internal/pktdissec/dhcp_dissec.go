@@ -15,35 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
-
-import (
-	"fmt"
-	"offscan/internal/utils"
-	"strconv"
-)
+package pktdissec
 
 
-func MustStrToInt(str string) int {
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+func (pd *PacketDissector) IsDHCP() bool {
+	pd.isDHCP = pd.lenPkt >= 240 && pd.checkMagicCookie()
+	return pd.isDHCP
 }
 
 
 
-func StrToInt(str string) int {
-	if str == "" { return 0 }
-	
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+func (pd *PacketDissector) checkMagicCookie() bool {
+    return pd.pkt[236] == 0x63 && pd.pkt[237] == 0x82 &&
+           pd.pkt[238] == 0x53 && pd.pkt[239] == 0x63
 }

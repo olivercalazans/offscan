@@ -65,7 +65,7 @@ func isIPv4ForwardingEnabled() bool {
 func enableIPv4Forwarding() {
     enabled := isIPv4ForwardingEnabled()
     if enabled {
-		fmt.Println("[#] Forwarding already enabled")
+		fmt.Println("[i] Forwarding already enabled")
     }
 
     if err := os.WriteFile(ipv4ForwardPath, []byte{'1'}, 0644); err != nil {
@@ -78,7 +78,7 @@ func enableIPv4Forwarding() {
 func disableIPv4Forwarding() {
 	enabled := isIPv4ForwardingEnabled()
     if !enabled {
-		fmt.Println("[#] Forwarding already enabled")
+		fmt.Println("[i] Forwarding already disabled")
     }
 
     if err := os.WriteFile(ipv4ForwardPath, []byte{'0'}, 0644); err != nil {

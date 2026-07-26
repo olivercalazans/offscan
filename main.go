@@ -26,7 +26,7 @@ import (
 	"offscan/engines/deauth"
 	"offscan/engines/hostdisc"
 	"offscan/engines/l2disc"
-	"offscan/engines/portscan"
+	"offscan/engines/pixiedust"
 	"offscan/engines/system"
 	"offscan/engines/wifimap"
 	"offscan/internal/argparser"
@@ -43,16 +43,17 @@ func main() {
 	}
 
 	var registry = map[string]argparser.CommandHandler{
-		"arp"    : { Run: arppoison.Run, FlagSettings: arppoison.FlagSettings },
-		"beacon" : { Run: beacon.Run,    FlagSettings: beacon.FlagSettings    },
-		"deauth" : { Run: deauth.Run,    FlagSettings: deauth.FlagSettings    },
-		"hdisc"  : { Run: hostdisc.Run,  FlagSettings: hostdisc.FlagSettings  },
-		"l2disc" : { Run: l2disc.Run,    FlagSettings: l2disc.FlagSettings    },
-		"sys"    : { Run: system.Run,    FlagSettings: system.FlagSettings    },
-		"pscan"  : { Run: portscan.Run,  FlagSettings: portscan.FlagSettings  },
-		"wmap"   : { Run: wifimap.Run,   FlagSettings: wifimap.FlagSettings   },
+		"arp"    : { Run: arppoison.Run, Helper: arppoison.DisplayHelp },
+		"beacon" : { Run: beacon.Run,    Helper: beacon.DisplayHelp    },
+		"deauth" : { Run: deauth.Run,    Helper: deauth.DisplayHelp    },
+		"hdisc"  : { Run: hostdisc.Run,  Helper: hostdisc.DisplayHelp  },
+		"l2disc" : { Run: l2disc.Run,    Helper: l2disc.DisplayHelp    },
+		"pixie"  : { Run: pixiedust.Run, Helper: pixiedust.DisplayHelp },
+		"sys"    : { Run: system.Run,    Helper: system.DisplayHelp    },
+		"wmap"   : { Run: wifimap.Run,   Helper: wifimap.DisplayHelp   },
 	}
 
+	displayHeader()
 	cmdName := args[0]
 
 	if cmdName == "--help" {
@@ -67,4 +68,11 @@ func main() {
 	}
 
 	engine.Run(args[1:])
+}
+
+
+
+func displayHeader() {
+	fmt.Println("\nOffScan - The offensive security and scanning tool for Wi-Fi")
+	fmt.Println("Repository: https://github.com/olivercalazans/offscan")
 }

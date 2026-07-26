@@ -15,35 +15,32 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package pktbuild
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"strconv"
+	"encoding/binary"
+	"net"
 )
 
 
-func MustStrToInt(str string) int {
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+type etherHeader struct {
+	header  *[14]byte
 }
 
 
 
-func StrToInt(str string) int {
-	if str == "" { return 0 }
-	
-	value, err := strconv.Atoi(str)
+func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
+	copy(eh.header[0:6], dstMAC)
+}
 
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
 
-	return value
+
+func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
+	copy(eh.header[6:12], srcMAC)
+}
+
+
+
+func (eh *etherHeader) setArpType() {
+	binary.BigEndian.PutUint16(eh.header[12:14], 0x806)
 }

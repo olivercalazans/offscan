@@ -15,35 +15,38 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
-
-import (
-	"fmt"
-	"offscan/internal/utils"
-	"strconv"
-)
+package pktdissec
 
 
-func MustStrToInt(str string) int {
-	value, err := strconv.Atoi(str)
 
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+type PacketDissector struct {
+    pkt           []byte
+    lenPkt        int
+    isIPv4        bool
+    isArpReply    bool
+    isArpRequest  bool
+    isDHCP        bool
 }
 
 
 
-func StrToInt(str string) int {
-	if str == "" { return 0 }
-	
-	value, err := strconv.Atoi(str)
+func NewPacketDissector() *PacketDissector {
+    return &PacketDissector{ pkt: make([]byte, 0) }
+}
 
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
 
-	return value
+
+func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
+    pd.lenPkt = len(rawPkt)
+    pd.pkt    = rawPkt
+    pd.flushFlags()
+}
+
+
+
+func (pd *PacketDissector) flushFlags() {
+    pd.isIPv4       = false
+	pd.isArpReply   = false
+	pd.isArpRequest = false
+    pd.isDHCP       = false
 }

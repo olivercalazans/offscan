@@ -15,35 +15,30 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package pktdissec
 
 import (
-	"fmt"
-	"offscan/internal/utils"
-	"strconv"
+	"net"
 )
 
 
-func MustStrToInt(str string) int {
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+func (pd *PacketDissector) IsIPv4() bool {
+    pd.isIPv4 = pd.lenPkt >= 34 && pd.getEtherType() == 0x0800
+    return pd.isIPv4
 }
 
 
 
-func StrToInt(str string) int {
-	if str == "" { return 0 }
-	
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
+    if pd.lenPkt < 30 || !pd.isIPv4 {
+        return nil, false
+    }
+    
+	ip := net.IP(pd.pkt[26:30]).To4()
+    
+	if ip == nil {
+        return nil, false
+    }
+    
+	return ip, true
 }

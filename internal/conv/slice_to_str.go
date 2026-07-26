@@ -20,7 +20,7 @@ package conv
 import "fmt"
 
 
-func Byte6ToStr(bytes [6]byte) string{
+func Byte6ToStr(bytes [6]byte) string {
 	return fmt.Sprintf(
 		"%02x:%02x:%02x:%02x:%02x:%02x",
 		bytes[0], bytes[1], bytes[2], 

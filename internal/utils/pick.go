@@ -15,35 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
-
-import (
-	"fmt"
-	"offscan/internal/utils"
-	"strconv"
-)
+package utils
 
 
-func MustStrToInt(str string) int {
-	value, err := strconv.Atoi(str)
+func Pick[T any](condition bool, trueValue, falseValue T) T {
+    if condition {
+        return trueValue
+    }
 
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
-}
-
-
-
-func StrToInt(str string) int {
-	if str == "" { return 0 }
-	
-	value, err := strconv.Atoi(str)
-
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
-	}
-
-	return value
+	return falseValue
 }
