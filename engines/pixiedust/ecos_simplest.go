@@ -26,7 +26,7 @@ import (
 func (pda *pixieDustAttack) attackECOSSimplest() {
 	if len(pda.eNonce) < wpsNonceLen { return }
 
-    fmt.Println("[i] Trying eCos Simplest mode")
+    fmt.Printf("[i] Trying eCos Simplest mode (%d)\n", eCosSimplest)
 	sc := eCosSimplesSeedCrack{ pda : pda }
 
 	if !sc.findSeed() {

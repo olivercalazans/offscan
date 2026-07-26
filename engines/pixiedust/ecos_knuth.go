@@ -26,7 +26,7 @@ import (
 func (pda *pixieDustAttack) attackECOSKnuth() {
 	if len(pda.eNonce) < wpsNonceLen { return }
 
-    fmt.Println("[i] Trying eCos Knuth mode")
+    fmt.Printf("[i] Trying eCos Knuth mode (%d)\n", eCosKnuth)
 	sc := eCosKnuthSeedCrack{ pda : pda }
 
 	if !sc.findSeed() {

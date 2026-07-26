@@ -101,7 +101,6 @@ func (pda *pixieDustAttack) execute() {
     pda.memAllocSecrestAndPSKs()
     pda.emptyPinHMAC()
     pda.trySpecialCases()   // it stops here if true
-    pda.displayModes()
     pda.mainLoop()
     pda.displayTime()
 }
@@ -133,11 +132,11 @@ func (pda *pixieDustAttack) setModes() {
     }
 
     pda.modes = append(pda.modes, rt)
-
+    
     if pda.isGlibcNonce() {
         pda.modes = append(pda.modes, rtl819x)
     }
-
+    
     pda.modes = append(pda.modes, eCosSimple)
 }
 
@@ -280,6 +279,8 @@ func (pda *pixieDustAttack) trySpecialCases() {
 
 
 func (pda *pixieDustAttack) mainLoop() {
+    pda.displayModes()
+
     for m := range pda.modes {
         if m == rt {
             pda.attackRalink()
@@ -297,4 +298,6 @@ func (pda *pixieDustAttack) mainLoop() {
         case eCosKnuth    : pda.attackECOSKnuth()
         }
     }
+
+    pda.displayPIN()
 }

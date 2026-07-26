@@ -31,8 +31,8 @@ import (
 func (pda *pixieDustAttack) displayModes() {
 	var modes []string
 
-	for m := range pda.modes {
-		modes = append(modes, strconv.Itoa(m))
+	for _, m := range pda.modes {
+		modes = append(modes, strconv.Itoa(int(m)))
 	}
 
 	fmt.Printf("[i] MODES..: %s\n", strings.Join(modes, ", "))
@@ -49,13 +49,14 @@ func (pda *pixieDustAttack) displayTime() {
 
 func (pda *pixieDustAttack) displayPIN() {
     if pda.firstHalf == -1 && pda.secondHalf == -1 {
-        fmt.Println("[!] PIN not found")
+        pda.displayTime()
+        fmt.Printf("\n[!] PIN not found\n\n")
         os.Exit(0)
-
     }
 
     if pda.emptyPin {
-        fmt.Println("[*] Empty PIN")
+        pda.displayTime()
+        fmt.Printf("\n[*] Empty PIN\n\n")
         os.Exit(0)
     }
 
@@ -66,6 +67,8 @@ func (pda *pixieDustAttack) displayPIN() {
         fmt.Println("[!] Only the first half was found")
     }
 
-    fmt.Printf("[*] PIN: %s", pin)
+    pda.displayTime()
+
+    fmt.Printf("\n[*] PIN: %s\n\n", pin)
     os.Exit(0)
 }

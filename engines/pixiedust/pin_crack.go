@@ -28,6 +28,11 @@ import (
 
 func (pda *pixieDustAttack) crackPin() {
     pda.crackFirstHalf(nil)
+
+    if pda.firstHalf == -1 {
+        return
+    }
+
     pda.crackSecondHalf()
 }
 

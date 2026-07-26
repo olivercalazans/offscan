@@ -70,8 +70,8 @@ const (
 	modes   = 10
 	force   = 11
 	dhSmall = 12
-	m5enc   = 13
-	m7enc   = 14
+	m5encr  = 13
+	m7encr  = 14
 	start   = 15
 	end     = 16
 	cStart  = 17
@@ -91,8 +91,8 @@ func FlagSettings() []argparser.Flag {
 		{ID: eNonce,  Short: "n", Long: "enonce",  HasValue: true},
 		{ID: rNonce,  Short: "m", Long: "rnonce",  HasValue: true},
 		{ID: ebssid,  Short: "b", Long: "ebssid",  HasValue: true},
-		{ID: m5enc,   Short: "5", Long: "m5enc",   HasValue: true},
-		{ID: m7enc,   Short: "7", Long: "m7enc",   HasValue: true},
+		{ID: m5encr,  Short: "5", Long: "m5enc",   HasValue: true},
+		{ID: m7encr,  Short: "7", Long: "m7enc",   HasValue: true},
 		{ID: force,   Short: "f", Long: "force"},
 		{ID: dhSmall, Short: "S", Long: "dhsmall"},
 		{ID: modes,   Long: "mode",   HasValue: true},
@@ -115,54 +115,49 @@ func (pda *pixieDustAttack) parseArgs(args []string) {
 
 
 	for _, flag := range flags {
-		if flag.ValueStr == "" && !flag.ValueBool {
-			continue
-		}
-
 		switch flag.ID {
-		case jobs: pda.setJobs(flag.ValueStr)
-		
 		case pke:
 			pda.memAllocPKE()
-			strToHex(&flag, pda.pke, wpsPkeyLen)
+			pda.pke = strToHex(&flag, wpsPkeyLen)
 		
 		case pkr:
 			pda.memAllocPKR()
-			strToHex(&flag, pda.pkr, wpsPkeyLen)
+			pda.pkr = strToHex(&flag, wpsPkeyLen)
 
 		case eHash1: 
 			pda.memAllocEHash1()
-			strToHex(&flag, pda.eHash1, wpsHashLen)
+			pda.eHash1 = strToHex(&flag, wpsHashLen)
 
 		case eHash2: 
 			pda.memAllocEHash2()
-			strToHex(&flag, pda.eHash2, wpsHashLen)
+			pda.eHash2 = strToHex(&flag, wpsHashLen)
 
 		case authKey: 
 			pda.memAllocAuthKey()
-			strToHex(&flag, pda.authKey, wpsHashLen)
+			pda.authKey = strToHex(&flag, wpsHashLen)
 
 		case eNonce: 
 			pda.memAllocENonce()
-			strToHex(&flag, pda.eNonce, wpsNonceLen)
+			pda.eNonce = strToHex(&flag, wpsNonceLen)
 
 		case rNonce: 
 			pda.memAllocRNonce()
-			strToHex(&flag, pda.rNonce, wpsNonceLen)
+			pda.rNonce = strToHex(&flag, wpsNonceLen)
 
 		case ebssid: 
 			pda.memAllocEbssid()
-			strToHex(&flag, pda.ebssid, wpsBssidLen)
+			pda.ebssid = strToHex(&flag, wpsBssidLen)
 			
-		case m5enc:
+		case m5encr:
 			pda.memAllocM5()
-			hexStrToByteSliceMax(&flag, pda.m5encr, encSettingsLen)
+			pda.m5encr = hexStrToByteSliceMax(&flag, encSettingsLen)
 		
-		case m7enc:
+		case m7encr:
 			pda.memAllocM7()
-			hexStrToByteSliceMax(&flag, pda.m7encr, encSettingsLen)
+			pda.m7encr = hexStrToByteSliceMax(&flag, encSettingsLen)
 		
-		case modes   : pda.validateModes(flag.ValueStr)
+		case jobs	 : pda.setJobs(flag.ValueStr)
+		case modes	 : pda.validateModes(flag.ValueStr)
 		case force   : pda.force   = flag.ValueBool
 		case dhSmall : pda.dhSmall = flag.ValueBool
 		case start   : pda.start   = parseDate(flag.ValueStr)
@@ -206,15 +201,20 @@ func getCoresNum() int {
 
 
 
-func strToHex(flag *argparser.Flag, buf []byte, mustLen int) {
-	if flag.ValueStr == "" { return }
-
-	err := hexStrToByteSlice(flag.ValueStr, buf, mustLen)
-	
+func strToHex(flag *argparser.Flag, mustLen int) []byte {
+    if flag.ValueStr == "" {
+        return nil
+    }
+    
+	buf := make([]byte, mustLen)
+    err := hexStrToByteSlice(flag.ValueStr, buf, mustLen)
+    
 	if err != nil {
-		flagName := argparser.GetInlineFlags(flag)
-		utils.Abort(fmt.Sprintf("%s %v", flagName, err))
-	}
+        flagName := argparser.GetInlineFlags(flag)
+        utils.Abort(fmt.Sprintf("%s %v", flagName, err))
+    }
+    
+	return buf
 }
 
 
@@ -243,24 +243,27 @@ func removeSeparetors(str string) string {
 
 
 
-func hexStrToByteSliceMax(flag *argparser.Flag, buf []byte, maxLen int) {
-	if flag.ValueStr == "" { return }
-
-    clean := removeSeparetors(flag.ValueStr)
-
+func hexStrToByteSliceMax(flag *argparser.Flag, maxLen int) []byte {
+    if flag.ValueStr == "" {
+        return nil
+    }
+    
+	clean := removeSeparetors(flag.ValueStr)
     if len(clean)%2 != 0 {
         utils.Abort("Odd length hex string")
     }
-
-    byteLen := len(clean) / 2
+    
+	byteLen := len(clean) / 2
     if byteLen > maxLen {
         utils.Abort(fmt.Sprintf("Hex string too long: max %d bytes, got %d", maxLen, byteLen))
     }
-
-    buf = make([]byte, byteLen)
+    
+	buf := make([]byte, byteLen)
     if _, err := hex.Decode(buf, []byte(clean)); err != nil {
         utils.Abort(fmt.Sprintf("Invalid hex string: %v", err))
     }
+    
+	return buf
 }
 
 

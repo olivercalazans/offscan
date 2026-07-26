@@ -240,7 +240,7 @@ func (pda *pixieDustAttack) rtl819xSpecialCase() {
 
 
 func (pda *pixieDustAttack) attackRTL819x() {
-	fmt.Println("[i] Trying RTL819x mode")
+	fmt.Printf("[i] Trying RTL819x mode (%d)\n", rtl819x)
 	
 	pda.rtl819xSpecialCase()
 

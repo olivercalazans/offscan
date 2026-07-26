@@ -24,9 +24,9 @@ import "fmt"
 func (pda *pixieDustAttack) ralinkRTSpecialCase() {
     clear(pda.eSecret1)
     clear(pda.eSecret2)
-    
+
     pda.crackPin()
-    
+        
     if !pda.pinFound() {
         return
     }
@@ -74,7 +74,7 @@ func ralinkRandStateRestore(sreg uint32, r byte) uint32 {
 
 
 func (pda *pixieDustAttack) attackRalink() {
-    fmt.Println("[i] Trying Ralink mode")
+    fmt.Printf("[i] Trying Ralink mode (%d)\n", rt)
 
 	if !pda.auto {
 		pda.ralinkRTSpecialCase()

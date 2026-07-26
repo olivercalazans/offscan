@@ -177,7 +177,7 @@ func glibcFastSeed(seed uint32) uint32 {
     // if seed == 0x7fffffff { seed = 0x13f835f3 }
     // if seed == 0xfffffffe { seed = 0x5df735f1 }
 
-    for j := 3; j < 31+3-1; j++ {
+    for j := 3; j < 31 + 3 - 1; j++ {
         word0 += seed * glibcSeedTbl[j]
 
         // seed = (16807 * seed) % 0x7fffffff
