@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"offscan/internal/conv"
 	"offscan/internal/generators"
@@ -52,7 +53,6 @@ type hostDiscovery struct {
     sniffer     *sniffer.Sniffer
     snifferCh    <-chan []byte
     wgPktProc    sync.WaitGroup
-    tools       *probeTools
 }
 
 
@@ -92,6 +92,28 @@ func (hd *hostDiscovery) displayExecInfo() {
 
 
 
+func (hd *hostDiscovery) sendProbes() {
+    hdp := hostDiscProbes{}
+    hdp.initProbeTools(hd.iface, hd.myIP, hd.protocols)
+
+	for {
+        dstIP, hasIP := hd.ips.Next()
+        
+        if !hasIP { break }
+
+        hdp.dstIP = dstIP
+
+        if hd.protocols.arp  { hdp.sendArpProbe()  }
+        if hd.protocols.icmp { hdp.sendIcmpProbe() }
+        if hd.protocols.tcp  { hdp.sendTcpProbe()  }
+    }
+
+    hdp.stopTools()
+    time.Sleep(2 * time.Second)
+}
+
+
+
 func (hd *hostDiscovery) resolveNames() {
     hd.mut.Lock()
     defer hd.mut.Unlock()
@@ -102,6 +124,27 @@ func (hd *hostDiscovery) resolveNames() {
         info.Name = name
         
 		hd.activeIPs[ipBytes] = info
+    }
+}
+
+
+
+func (hd *hostDiscovery) displayResult() {
+    hd.mut.Lock()
+    defer hd.mut.Unlock()
+
+    if len(hd.activeIPs) < 1 {
+        fmt.Println("No host detected")
+        return
+    }
+
+    fmt.Println("")
+
+    for _, ipBytes := range hd.getSortedActiveIPs() {
+        info := hd.activeIPs[ipBytes]
+        ip := net.IP(ipBytes[:])
+
+        fmt.Printf("# %-15s  %s  %s\n", ip.String(), info.Mac.String(), info.Name)
     }
 }
 
@@ -124,25 +167,4 @@ func (hd *hostDiscovery) getSortedActiveIPs() [][4]byte {
     })
     
     return keys
-}
-
-
-
-func (hd *hostDiscovery) displayResult() {
-    hd.mut.Lock()
-    defer hd.mut.Unlock()
-
-    if len(hd.activeIPs) < 1 {
-        fmt.Println("No host detected")
-        return
-    }
-
-    fmt.Println("")
-
-    for _, ipBytes := range hd.getSortedActiveIPs() {
-        info := hd.activeIPs[ipBytes]
-        ip := net.IP(ipBytes[:])
-
-        fmt.Printf("# %-15s  %s  %s\n", ip.String(), info.Mac.String(), info.Name)
-    }
 }
