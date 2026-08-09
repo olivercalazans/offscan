@@ -66,9 +66,8 @@ func (hdp *hostDiscProbes) initProbeTools(
 
 func (hdp *hostDiscProbes) initArpPkt() {
     if !hdp.protocols.arp { return }
-
     hdp.arp = pktbuild.NewArpPkt()
-    hdp.SetArpReqStatic(hdp.iface.HardwareAddr, hdp.myIP)
+    hdp.setArpReqStatic()
 }
 
 
@@ -111,18 +110,17 @@ func (hdp *hostDiscProbes) sendArpProbe() {
 
 
 
-func (hdp *hostDiscProbes) SetArpReqStatic(
-	srcMac  net.HardwareAddr,
-	srcIP   net.IP,
-) {
+func (hdp *hostDiscProbes) setArpReqStatic() {
+    myMAC     := hdp.iface.HardwareAddr
 	broadcast := net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+
 	hdp.arp.EtherHdr.SetDstAddr(broadcast)
-	hdp.arp.EtherHdr.SetSrcAddr(srcMac)
+	hdp.arp.EtherHdr.SetSrcAddr(myMAC)
 
 	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	hdp.arp.SetRequestOpcode()
-	hdp.arp.SetSenderMAC(srcMac)
-	hdp.arp.SetSenderIP(srcIP)
+	hdp.arp.SetSenderMAC(myMAC)
+	hdp.arp.SetSenderIP(hdp.myIP)
 	hdp.arp.SetTargetMAC(nullMac)
 }
 
