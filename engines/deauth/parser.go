@@ -88,11 +88,9 @@ func (da *deauthAttack) parseArgs(args []string) {
 
 
 func parseDelay(str string) time.Duration {
-	var delay int
+	var delay int = 30
 
-	if str == "" { 
-		delay = 30 
-	} else {
+	if str != "" { 
 		delay = conv.MustStrToInt(str)
 	}
 
