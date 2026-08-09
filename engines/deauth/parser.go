@@ -23,7 +23,6 @@ import (
 	"offscan/internal/conv"
 	"offscan/internal/dot11build"
 	"offscan/internal/sockets"
-	"offscan/internal/utils"
 	"time"
 )
 
@@ -89,6 +88,13 @@ func (da *deauthAttack) parseArgs(args []string) {
 
 
 func parseDelay(str string) time.Duration {
-	delay := utils.Pick(str == "", 30, conv.MustStrToInt(str))
+	var delay int
+
+	if str == "" { 
+		delay = 30 
+	} else {
+		delay = conv.MustStrToInt(str)
+	}
+
 	return time.Duration(delay) * time.Millisecond
 }
