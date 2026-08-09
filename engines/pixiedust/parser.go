@@ -195,8 +195,9 @@ func (pda *pixieDustAttack) setJobs(str string) {
 
 
 func getCoresNum() int {
-	cores := runtime.NumCPU()	
-	return utils.Pick(cores <= 0, 1, cores)
+	cores := runtime.NumCPU()
+	if cores <= 0 { cores = 1 }
+	return cores
 }
 
 

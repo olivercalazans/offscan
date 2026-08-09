@@ -39,7 +39,9 @@ func (pda *pixieDustAttack) crackPin() {
 
 
 func (pda *pixieDustAttack) crackFirstHalf(es1Override []byte) {
-    eS1 := utils.Pick(es1Override != nil, es1Override, pda.eSecret1)
+    var eS1 []byte
+
+    if es1Override != nil { eS1 = es1Override } else { eS1 = pda.eSecret1 }
 
     if pda.checkEmptyPinHalf(eS1, pda.eHash1) {
         pda.emptyPin  = true

@@ -19,7 +19,6 @@ package pixiedust
 
 import (
 	"fmt"
-	"offscan/internal/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -60,8 +59,10 @@ func (pda *pixieDustAttack) displayPIN() {
         os.Exit(0)
     }
 
-    pin := utils.Pick(pda.firstHalf > -1,  fmt.Sprintf("%d", pda.firstHalf),  "????")
-    pin += utils.Pick(pda.secondHalf > -1, fmt.Sprintf("%d", pda.secondHalf), "????")
+    var pin string
+
+    if pda.firstHalf  > -1 { pin += fmt.Sprintf("%d", pda.firstHalf)  } else { pin += "????" }
+    if pda.secondHalf > -1 { pin += fmt.Sprintf("%d", pda.secondHalf) } else { pin += "????" }
 
     if !pda.pinFound() {
         fmt.Println("[!] Only the first half was found")

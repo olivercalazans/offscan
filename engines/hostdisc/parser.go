@@ -25,7 +25,6 @@ import (
 	"offscan/internal/generators"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
-	"offscan/internal/utils"
 	"strings"
 )
 
@@ -93,8 +92,12 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 
 
 
-func parseIface(str string) net.Interface {
-	return utils.Pick(str == "", sysconf.MustDefaultInterface(), conv.MustStrToIface(str))
+func parseIface(str string) net.Interface {    
+    if str == "" {
+        return sysconf.MustDefaultInterface()
+    }
+
+    return conv.MustStrToIface(str)
 }
 
 

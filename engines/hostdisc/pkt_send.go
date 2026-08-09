@@ -32,125 +32,146 @@ const delay = 40 * time.Millisecond
 
 
 type hostDiscProbes struct {
-    l2sock   sockets.Layer2Socket
-    l3sock   sockets.Layer3Socket
-    arp     *pktbuild.ArpPacket
-    icmp    *pktbuild.IcmpPacket
-    tcp     *pktbuild.TcpPacket
-    dstIP    net.IP
+    l2sock     sockets.Layer2Socket
+    l3sock     sockets.Layer3Socket
+    arp       *pktbuild.ArpPacket
+    icmp      *pktbuild.IcmpPacket
+    tcp       *pktbuild.TcpPacket
+    rand      *generators.RandomValues
+    iface      net.Interface
+    dstIP      net.IP
+    myIP       net.IP
+    protocols  protocols
 }
 
 
 
-func (hd *hostDiscovery) sendProbes() {
-    hd.initProbeTools()
-    var pktErr uint16 = 0
-
-	for {
-        dstIP, hasIP := hd.ips.Next()
-        
-        if !hasIP { break }
-
-        hd.tools.dstIP = dstIP
-
-        if hd.protocols.arp {
-            ok := hd.sendArpProbe()
-            if !ok { pktErr++ }
-        }
-
-        if hd.protocols.icmp {
-            ok := hd.sendIcmpProbe()
-            if !ok { pktErr++ }
-        }
-
-        if hd.protocols.tcp {
-            ok := hd.sendTcpProbe()
-            if !ok { pktErr++ }
-        }
-    }
-
-    hd.stopTools()
-    if pktErr > 0 { fmt.Printf("[!] Packets not sent = %d\n", pktErr) }
-    time.Sleep(2 * time.Second)
-}
-
-
-
-func (hd *hostDiscovery) initProbeTools() {
-    hd.tools = &probeTools{}
-
-    hd.tools.l2sock = sockets.NewL2Socket(&hd.iface)
-    hd.tools.l3sock = sockets.NewL3Socket(&hd.iface)
+func (hdp *hostDiscProbes) initProbeTools(
+    iface      net.Interface, 
+    myIP       net.IP, 
+    protocols  protocols,
+) {
+    hdp.iface     = iface
+    hdp.myIP      = myIP
+    hdp.protocols = protocols
     
-    if hd.protocols.arp {
-        hd.tools.arp = pktbuild.NewArpPkt()
-        hd.tools.SetArpReqStatic(hd.iface.HardwareAddr, hd.myIP)
-    }
-
-    if hd.protocols.icmp {
-        hd.tools.icmp = pktbuild.NewIcmpPkt()
-    }
-
-    if hd.protocols.tcp {
-        hd.tools.tcp  = pktbuild.NewTcpPkt()
-        hd.tools.rand = generators.NewRandomValues()
-    }
+    hdp.initArpPkt()
+    hdp.initL2Socket()
+    hdp.initIcmpPkt()
+    hdp.initTcpPkt()
+    hdp.initL3Socket()
 }
 
 
 
-func (hd *hostDiscovery) sendArpProbe() bool {
-    hd.tools.arp.SetTargetIP(hd.tools.dstIP)
-    pkt := hd.tools.arp.Pkt()
+func (hdp *hostDiscProbes) initArpPkt() {
+    if !hdp.protocols.arp { return }
+    hdp.arp = pktbuild.NewArpPkt()
+    hdp.setArpReqStatic()
+}
+
+
+
+func (hdp *hostDiscProbes) initL2Socket() {
+    if !hdp.protocols.arp { return }
+    hdp.l2sock = sockets.NewL2Socket(&hdp.iface)
+}
+
+
+
+func (hdp *hostDiscProbes) initIcmpPkt() {
+    if !hdp.protocols.icmp { return }
+    hdp.icmp = pktbuild.NewIcmpPkt()
+}
+
+
+
+func (hdp *hostDiscProbes) initTcpPkt() {
+    if !hdp.protocols.tcp { return }
+    hdp.tcp  = pktbuild.NewTcpPkt()
+    hdp.rand = generators.NewRandomValues()
+}
+
+
+
+func (hdp *hostDiscProbes) initL3Socket() {
+    if !hdp.protocols.icmp && !hdp.protocols.tcp { return }
+    hdp.l3sock = sockets.NewL3Socket(&hdp.iface)
+}
+
+
+
+func (hdp *hostDiscProbes) sendArpProbe() {
+    hdp.arp.SetTargetIP(hdp.dstIP)
+    pkt := hdp.arp.Pkt()
+    hdp.l2sock.Send(pkt)
+    time.Sleep(delay)    
+}
+
+
+
+func (hdp *hostDiscProbes) setArpReqStatic() {
+    myMAC     := hdp.iface.HardwareAddr
+	broadcast := net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+
+	hdp.arp.EtherHdr.SetDstAddr(broadcast)
+	hdp.arp.EtherHdr.SetSrcAddr(myMAC)
+
+	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	hdp.arp.SetRequestOpcode()
+	hdp.arp.SetSenderMAC(myMAC)
+	hdp.arp.SetSenderIP(hdp.myIP)
+	hdp.arp.SetTargetMAC(nullMac)
+}
+
+
+
+func (hdp *hostDiscProbes) sendIcmpProbe() {
+    hdp.setIcmpPkt()
+    pkt := hdp.icmp.Pkt()    
     
-    hd.tools.l2sock.Send(pkt)
+    hdp.l3sock.SendTo(pkt, hdp.dstIP)    
     time.Sleep(delay)
-    
-    return true
 }
 
 
 
-func (hd *hostDiscovery) sendIcmpProbe() bool {
-    hd.tools.icmp.IPHdr.SetSrcIP(hd.myIP)
-    hd.tools.icmp.IPHdr.SetDstIP(hd.tools.dstIP)    
+func (hdp *hostDiscProbes) setIcmpPkt() {
+    hdp.icmp.IPHdr.SetSrcIP(hdp.myIP)
+    hdp.icmp.IPHdr.SetDstIP(hdp.dstIP)    
+}
+
+
+
+func (hdp *hostDiscProbes) sendTcpProbe() {
+    hdp.setTcpPkt()
+    pkt := hdp.tcp.Pkt()
     
-    pkt := hd.tools.icmp.Pkt()    
-    hd.tools.l3sock.SendTo(pkt, hd.tools.dstIP)
+    hdp.l3sock.SendTo(pkt, hdp.dstIP)    
     time.Sleep(delay)
-    
-    return true
 }
 
 
 
-func (hd *hostDiscovery) sendTcpProbe() bool {
-    hd.tools.tcp.IPHdr.SetSrcIP(hd.myIP)
-    hd.tools.tcp.IPHdr.SetDstIP(hd.tools.dstIP)
-    hd.tools.tcp.SetSrcPort(hd.tools.rand.RandomPort())
-    hd.tools.tcp.SetDstPort(80)
-    
-    pkt := hd.tools.tcp.Pkt()
-    hd.tools.l3sock.SendTo(pkt, hd.tools.dstIP)
-    time.Sleep(delay)
-    
-    return true
+func (hdp *hostDiscProbes) setTcpPkt() {
+    hdp.tcp.IPHdr.SetSrcIP(hdp.myIP)
+    hdp.tcp.IPHdr.SetDstIP(hdp.dstIP)
+    hdp.tcp.SetSrcPort(hdp.rand.RandomPort())
+    hdp.tcp.SetDstPort(80)
 }
 
 
 
-func (hd *hostDiscovery) stopTools() {
-    if hd.protocols.arp {
-        if err := hd.tools.l2sock.Close(); err != nil {
+func (hdp *hostDiscProbes) stopTools() {
+    if hdp.protocols.arp {
+        if err := hdp.l2sock.Close(); err != nil {
             fmt.Printf("[!] Error closing layer 2 socket: %v\n", err)
         }
     }
 
-    if hd.protocols.icmp || hd.protocols.tcp {
-        if err := hd.tools.l3sock.Close(); err != nil {
+    if hdp.protocols.icmp || hdp.protocols.tcp {
+        if err := hdp.l3sock.Close(); err != nil {
             fmt.Printf("[!] Error closing layer 3 socket: %v\n", err)
         }
     }
-
-    hd.tools = nil
 }

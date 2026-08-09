@@ -66,7 +66,7 @@ const (
 
 func DisplayHelp() {
 	help := "\n# Interface and system configuration. E.g., $ sudo ./offscan sys <FLAGS>\n\n" +
-	"    -I, --info    : (Command 1)  Set monitor or managed mode on interface\n" +
+	"    -I, --info    : (Command 1) Set monitor or managed mode on interface\n" +
 	"    -F, --forward : (Command 2) Set monitor or managed mode on interface\n" +
 	"    -e, --enable  : (Req CMD 2) Enable forwarding\n" +
 	"    -d, --disable : (Req CMD 2) Disable forwarding\n" +	
