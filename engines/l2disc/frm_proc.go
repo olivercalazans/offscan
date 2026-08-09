@@ -25,37 +25,60 @@ import (
 )
 
 
-func (l2hd *layer2HostDiscovery) processFrame(sniffCh <-chan []byte) {
-	dissector := dot11dissec.NewDot11Dissector()
 
-	for {
-		frame, ok := <-sniffCh
-		if !ok { break }
-		dissector.UpdatePkt(frame)
-		l2hd.sendToUpdate(dissector)
-	}
+type frameProcessor struct {
+	dissector  *dot11dissec.Dot11Dissector
+	idx         uint
+	eventCh     chan dot11Info
+	missBuf     map[station]struct{}
+	netsBuf     map[[6]byte]beacon
+	stasBuf     map[station]struct{}
 }
 
 
 
-func (l2hd *layer2HostDiscovery) sendToUpdate(dissector *dot11dissec.Dot11Dissector) {
+func (fp *frameProcessor) init() {
+	fp.dissector = dot11dissec.NewDot11Dissector()
+	fp.netsBuf   = make(map[[6]byte]beacon)
+	fp.stasBuf   = make(map[station]struct{})
+	fp.missBuf   = make(map[station]struct{})
+	fp.eventCh   = make(chan dot11Info, 1024)
+}
+
+
+
+func (fp *frameProcessor) processFrame(sniffCh <-chan []byte) {
+	for {
+		frame, ok := <-sniffCh
+		if !ok { break }
+
+		fp.dissector.UpdatePkt(frame)
+		fp.sendToUpdate()
+	}
+
+	close(fp.eventCh)
+}
+
+
+
+func (fp *frameProcessor) sendToUpdate() {
 	info := dot11Info{}
 
-	if dissector.IsBeacon {
+	if fp.dissector.IsBeacon {
 		info.isBeacon = true
-		info.bssid    = dissector.GetBSSID()
-		info.chnl     = dissector.GetChannel()
-		info.ssid     = dissector.GetSSID()
+		info.bssid    = fp.dissector.GetBSSID()
+		info.chnl     = fp.dissector.GetChannel()
+		info.ssid     = fp.dissector.GetSSID()
 		
 		select {
-        case l2hd.eventCh <- info:
+        case fp.eventCh <- info:
         default:
         }
         return
 	}
 
-	if dissector.IsDataFrm {
-		bssid, staMac, ok := dissector.GetAddrs()
+	if fp.dissector.IsDataFrm {
+		bssid, staMac, ok := fp.dissector.GetAddrs()
 		if !ok { return }
 		
 		info.isDataFrm = true
@@ -63,7 +86,7 @@ func (l2hd *layer2HostDiscovery) sendToUpdate(dissector *dot11dissec.Dot11Dissec
 		info.staMac    = staMac
 
 		select {
-        case l2hd.eventCh <- info:
+        case fp.eventCh <- info:
         default:
         }
 	}
@@ -71,66 +94,60 @@ func (l2hd *layer2HostDiscovery) sendToUpdate(dissector *dot11dissec.Dot11Dissec
 
 
 
-func (l2hd *layer2HostDiscovery) displayLoop() {
-	bufs := buffers{
-		nets : make(map[[6]byte]beacon),
-		stas : make(map[station]struct{}),
-		miss : make(map[station]struct{}),
-	}
-
-	for data := range l2hd.eventCh {
+func (fp *frameProcessor) displayLoop() {
+	for data := range fp.eventCh {
 		if data.isBeacon {
 			netInfo := beacon{ ssid: data.ssid, chnl: data.chnl }
-			bufs.nets[data.bssid] = netInfo
-			associateStas(&bufs, data.bssid)
+			fp.netsBuf[data.bssid] = netInfo
+			fp.associateStas(data.bssid)
 		}
 
 		if data.isDataFrm {
 			staInfo := station{ bssid: data.bssid, staMac: data.staMac }
-			addStation(&bufs, staInfo)
+			fp.addStation(staInfo)
 		}
 	}
 }
 
 
 
-func associateStas(bufs *buffers, bssid [6]byte) {
-	for sta := range bufs.miss {
+func (fp *frameProcessor) associateStas(bssid [6]byte) {
+	for sta := range fp.missBuf {
         if sta.bssid == bssid {
-        	delete(bufs.miss, sta)
-            addStation(bufs, sta)
+        	delete(fp.missBuf, sta)
+            fp.addStation(sta)
         }
     }
 }
 
 
 
-func addStation(bufs *buffers, staInfo station) {
-    net, ok := bufs.nets[staInfo.bssid]
+func (fp *frameProcessor) addStation(staInfo station) {
+    net, ok := fp.netsBuf[staInfo.bssid]
 
     if !ok {
-        bufs.miss[staInfo] = struct{}{}
+        fp.missBuf[staInfo] = struct{}{}
         return
     }
 
-    if _, exists := bufs.stas[staInfo]; exists {
+    if _, exists := fp.stasBuf[staInfo]; exists {
         return
     }
     
-	bufs.stas[staInfo] = struct{}{}
-    displayStation(&net, &staInfo)
+	fp.stasBuf[staInfo] = struct{}{}
+    fp.displayStation(&net, &staInfo)
 }
 
 
 
 func displayHeader() {
 	fmt.Printf(
-        "\n%-17s  %-17s  %-3s  %s\n",
+        "\n   %-17s  %-17s  %-3s  %s\n",
 		"STA MAC", "BSSID", "Ch", "SSID",
 	)
 
 	fmt.Printf(
-		"%s  %s  %s  %s\n",
+		"   %s  %s  %s  %s\n",
 		strings.Repeat("-", 17),
 		strings.Repeat("-", 17),
 		strings.Repeat("-", 3),
@@ -140,9 +157,12 @@ func displayHeader() {
 
 
 
-func displayStation(net *beacon, sta *station) {
+func (fp *frameProcessor) displayStation(net *beacon, sta *station) {
+	fp.idx++
+
 	fmt.Printf(
-		"%s  %s  %-3d  %s\n",
+		"%d. %s  %s  %-3d  %s\n",
+		fp.idx,
 		conv.Byte6ToStr(sta.staMac),
 		conv.Byte6ToStr(sta.bssid), 
 		net.chnl,

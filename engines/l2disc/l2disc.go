@@ -47,7 +47,6 @@ type layer2HostDiscovery struct{
 	sniffTime   time.Duration
 	sniffer    *sniffer.Sniffer
 	wg          sync.WaitGroup
-	eventCh     chan dot11Info
 	ctx         context.Context
 	cancel      context.CancelFunc
 	errChnls    map[int]struct{}
@@ -87,18 +86,20 @@ func (l2hd *layer2HostDiscovery) createCtx() {
 
 
 func (l2hd *layer2HostDiscovery) startFrameProcessor() {
-	l2hd.eventCh = make(chan dot11Info, 1024)
-    go l2hd.displayLoop()
+	fp := frameProcessor{}
+	fp.init()
+
+    go fp.displayLoop()
 
 	l2hd.sniffer  = sniffer.NewSniffer(l2hd.iface, getBPFFilter(), true)
 	sniffCh      := l2hd.sniffer.Start()
 
-	fmt.Printf("[+] Sniffing 802.11 frames. Press CTRL + C to stop\n")
+	fmt.Printf("[+] Sniffing 802.11 frames. Press CTRL + C to stop\n\n")
 
 	l2hd.wg.Add(1)
 	go func() {
 		defer l2hd.wg.Done()
-		l2hd.processFrame(sniffCh)
+		fp.processFrame(sniffCh)
 	}()
 
 	displayHeader()
@@ -164,7 +165,6 @@ func (l2hd *layer2HostDiscovery) sniff(channels []int) {
 
 func (l2hd *layer2HostDiscovery) stopFrameProcessor() {
 	l2hd.sniffer.Stop()
-	close(l2hd.eventCh)
 	
 	fmt.Println("[-] Process stopped")
 	l2hd.displayErrChannels()
