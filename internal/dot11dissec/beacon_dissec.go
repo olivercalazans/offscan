@@ -40,11 +40,30 @@ func (dd *Dot11Dissector) checkIfIsBeacon() bool {
 
 
 
-func (dd *Dot11Dissector) GetTimestamp() uint64 {
+func (dd *Dot11Dissector) GetTimestamp() string {
 	if !dd.IsBeacon {
-		return 0
+		return "unknown"
 	}
-	return dd.timestamp
+	return formatUptime(dd.timestamp)
+}
+
+
+
+func formatUptime(tsf uint64) string {
+	secs := tsf / 1_000_000
+
+	days := secs / 86400
+	secs %= 86400
+	hours := secs / 3600
+
+	if days > 0 {
+		return fmt.Sprintf("%dd %02dh", days, hours)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	
+	return "less than 1h"
 }
 
 

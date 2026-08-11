@@ -15,29 +15,45 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
+package dot11dissec
+
+import (
+	"encoding/binary"
+	"fmt"
+	"strings"
+)
 
 
-func (dd *Dot11Dissector) GetWPS() *WPSInfo {
-	if !dd.IsBeacon || dd.wpsData == nil {
-		return nil
+
+func (dd *Dot11Dissector) GetWPS() string {
+	if dd.wpsData == nil {
+		return "?????"
 	}
-	return parseWPS(dd.wpsData)
+	
+	wps := WPSInfo{}
+	wps.parseWPS(dd.wpsData)
+	wps.getVersion()
+	wps.getState()
+	wps.getMethods()
+	wps.getLock()
+
+	return strings.Join(wps.str, " ")
 }
 
 
 
 type WPSInfo struct {
-	Version        int
-	State          int 
-	ConfigMethods  uint16
-	APSetupLocked  bool
+	str            []string
+	version        int
+	state          int 
+	configMethods  uint16
+	apSetupLocked  bool
 }
 
 
 
-func parseWPS(data []byte) *WPSInfo {
+func (wps *WPSInfo) parseWPS(data []byte) {
 	lenData := len(data)
-	wps     := &WPSInfo{}
 	pos     := 0
 
 	for pos + 4 <= lenData {
@@ -50,20 +66,71 @@ func parseWPS(data []byte) *WPSInfo {
 		
 		switch t {
 		// Version
-		case 0x104A: if l >= 1 { wps.Version = int(val[0]) }
+		case 0x104A: if l >= 1 { wps.version = int(val[0]) }
 		// WPS State
-		case 0x1044: if l >= 1 { wps.State = int(val[0]) }
+		case 0x1044: if l >= 1 { wps.state = int(val[0]) }
 		// AP Setup Locked
-		case 0x1057: if l >= 1 { wps.APSetupLocked = val[0] != 0 }
+		case 0x1057: if l >= 1 { wps.apSetupLocked = val[0] != 0 }
 		// Config Methods
 		case 0x1008, 0x1053:
-			if l >= 2 { wps.ConfigMethods = binary.BigEndian.Uint16(val) }
+			if l >= 2 { wps.configMethods = binary.BigEndian.Uint16(val) }
 		}
 
 		pos += 4 + l
 	}
 	
-	if wps.Version == 0 { wps.Version = 0x10 }
+	if wps.version == 0 { wps.version = 0x10 }
+}
 
-	return wps
+
+
+func (wps *WPSInfo) getVersion() {
+	if wps.version > 0 {
+		wps.str = append(wps.str, fmt.Sprintf("%d.%d", wps.version >> 4, wps.version & 0x0F))
+	}
+}
+
+
+
+func (wps *WPSInfo) getState() {
+	if wps.state == 0 {
+		wps.str = append(wps.str, "unconfigured")
+		return
+	}
+
+	wps.str = append(wps.str, "configured")
+}
+
+
+
+func (wps *WPSInfo) getMethods() {
+	methods   := wps.configMethods
+	bitToName := []struct {
+		bit  uint16
+		name string
+	}{
+		{0x0001, "USB"},
+		{0x0002, "ETHER"},
+		{0x0004, "LAB"},
+		{0x0008, "DISP"},
+		{0x0010, "EXTNFC"},
+		{0x0020, "INTNFC"},
+		{0x0040, "NFCINTF"},
+		{0x0080, "PBC"},
+		{0x0100, "KPAD"},
+	}
+
+	for _, b := range bitToName {
+		if methods&b.bit != 0 {
+			wps.str = append(wps.str, b.name)
+		}
+	}
+}
+
+
+
+func (wps *WPSInfo) getLock() {
+	if wps.apSetupLocked {
+		wps.str = append(wps.str, "locked")
+	}
 }

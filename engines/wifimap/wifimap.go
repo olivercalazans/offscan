@@ -40,24 +40,14 @@ func Run(args []string) {
 
 
 
-type wifiData struct {
-	ssid  string
-	bssid [6]byte
-	chnl  uint8
-	sec   string
-	std   string
-}
-
-
-
 type wifiMapper struct {
 	iface     net.Interface
-
 	wInfo     map[wifiData]struct{}
 	sniffer  *sniffer.Sniffer
 	mut       sync.Mutex
 	wg        sync.WaitGroup
 	cancel    chan struct{}
+	maxLen    maxLength
 }
 
 
@@ -121,6 +111,8 @@ func (wm *wifiMapper) updateInfo(
 		chnl  : dissector.GetChannel(),
 		sec   : dissector.GetSecurity(),
 		std   : dissector.GetStandard(),
+		wps   : dissector.GetWPS(),
+		time  : dissector.GetTimestamp(),
 	}
 
 	tempBuf[info] = struct{}{}
@@ -172,26 +164,36 @@ func (wm *wifiMapper) stopBeaconProcessor() {
 
 
 func (wm *wifiMapper) displayResults() {
-	keys, maxLen := wm.extractKeysAndMaxLen()
+	keys := wm.extractKeysAndMaxLen()
 	wm.sortWifiData(keys)
-	wm.renderTable(keys, maxLen)
+	wm.renderTable(keys)
 }
 
 
 
-func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData, int) {
-	maxLen := 4
-	keys   := make([]wifiData, 0, len(wm.wInfo))
+func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData) {
+	keys := make([]wifiData, 0, len(wm.wInfo))
 	
 	for netData := range wm.wInfo {
 		keys = append(keys, netData)
-
-        if len(netData.ssid) > maxLen {
-			maxLen = len(netData.ssid)
-		}
+		wm.getMaxLen(&netData)
 	}
 
-    return keys, maxLen
+	wm.wInfo = nil
+    return keys
+}
+
+
+
+func (wm *wifiMapper) getMaxLen(netData *wifiData) {
+	lenSSID := len(netData.ssid)
+	if lenSSID > wm.maxLen.ssid { wm.maxLen.ssid = lenSSID }
+	
+	lenSec := len(netData.sec)
+	if lenSec > wm.maxLen.sec { wm.maxLen.sec = lenSec }
+
+	lenWPS := len(netData.wps)
+	if lenWPS > wm.maxLen.wps { wm.maxLen.wps = lenWPS }
 }
 
 
@@ -211,40 +213,54 @@ func (wm *wifiMapper) sortWifiData(keys []wifiData) {
 
 
 
-func (wm *wifiMapper) renderTable(keys []wifiData, maxLen int) {
-	wm.displayHeader(maxLen)
+func (wm *wifiMapper) renderTable(keys []wifiData) {
+	wm.displayHeader()
 
 	for _, netData := range keys {
-		wm.displayWifiInfo(netData, maxLen)
+		wm.displayWifiInfo(netData)
 	}
 }
 
 
 
-func (wm *wifiMapper) displayHeader(maxLen int) {
+func (wm *wifiMapper) displayHeader() {
 	fmt.Printf(
-        "\n%-*s  %-17s  %-3s  %-8s  %s\n",
-		maxLen, "SSID", "BSSID", "Ch", "Std", "Sec",
+        "\n%-*s  %-17s  %-3s  %-8s  %-*s  %-*s  %s\n",
+		wm.maxLen.ssid, "SSID", 
+		"BSSID", 
+		"Ch", 
+		"Std", 
+		wm.maxLen.sec, "Sec",
+		wm.maxLen.wps, "WPS",
+		"UPTIME",
 	)
 
 	fmt.Printf(
-		"%s  %s  %s  %s  %s\n",
-		strings.Repeat("-", maxLen),
+		"%s  %s  %s  %s  %s  %s  %s\n",
+		strings.Repeat("-", wm.maxLen.ssid),
 		strings.Repeat("-", 17),
 		strings.Repeat("-", 3),
 		strings.Repeat("-", 8),
+		strings.Repeat("-", wm.maxLen.sec),
+		strings.Repeat("-", wm.maxLen.wps),
 		strings.Repeat("-", 6),
 	)
 }
 
 
 
-func (wm *wifiMapper) displayWifiInfo(netData wifiData, maxLen int) {
+func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
 	bssidStr := conv.Byte6ToStr(netData.bssid)
 
 	line := fmt.Sprintf(
-		"%-*s  %-17s  %-3d  %-8s  %-s\n",
-		maxLen, netData.ssid, bssidStr, netData.chnl, netData.std, netData.sec,
+		"%-*s  %-17s  %-3d  %-8s  %-*s  %-*s  %s\n",
+		wm.maxLen.ssid, netData.ssid, 
+		bssidStr, 
+		netData.chnl, 
+		netData.std, 
+		wm.maxLen.sec, netData.sec,
+		wm.maxLen.wps, netData.wps, 
+		netData.time,
 	)
 
 	fmt.Print(line)
