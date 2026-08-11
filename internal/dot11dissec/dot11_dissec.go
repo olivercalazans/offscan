@@ -30,6 +30,7 @@ type Dot11Dissector struct {
 	wpa1Data    []byte
 	wpsData     []byte
 	timestamp   uint64
+	wpsInfo     WPSInfo
 }
 
 
@@ -37,13 +38,25 @@ type Dot11Dissector struct {
 func NewDot11Dissector() *Dot11Dissector {
 	return &Dot11Dissector{
 		ieCache: make(map[uint8][]byte),
+		wpsInfo: WPSInfo{
+			str: make([]string, 0),
+		},
 	}
 }
 
 
 
 func (dd *Dot11Dissector) UpdatePkt(frame []byte) {
-	dd.frame      = frame
+	dd.frame = frame
+	dd.reset()
+	dd.removeRadiotap()
+	dd.checkFrameType()
+	if dd.IsBeacon { dd.cacheIEs() }
+}
+
+
+
+func (dd *Dot11Dissector) reset() {
 	dd.dot11Start = 0
 	dd.IsBeacon   = false
 	dd.IsDataFrm  = false
@@ -51,10 +64,6 @@ func (dd *Dot11Dissector) UpdatePkt(frame []byte) {
 	dd.wpa1Data   = nil
 	dd.wpsData    = nil
 	dd.timestamp  = 0
-
-	dd.removeRadiotap()
-	dd.checkFrameType()
-	if dd.IsBeacon { dd.cacheIEs() }
 }
 
 

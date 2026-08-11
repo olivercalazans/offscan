@@ -30,14 +30,14 @@ func (dd *Dot11Dissector) GetWPS() string {
 		return "?????"
 	}
 	
-	wps := WPSInfo{}
-	wps.parseWPS(dd.wpsData)
-	wps.getVersion()
-	wps.getState()
-	wps.getMethods()
-	wps.getLock()
+	dd.wpsInfo.reset()
+	dd.wpsInfo.parseWPS(dd.wpsData)
+	dd.wpsInfo.getVersion()
+	dd.wpsInfo.getState()
+	dd.wpsInfo.getMethods()
+	dd.wpsInfo.getLock()
 
-	return strings.Join(wps.str, " ")
+	return strings.Join(dd.wpsInfo.str, " ")
 }
 
 
@@ -48,6 +48,18 @@ type WPSInfo struct {
 	state          int 
 	configMethods  uint16
 	apSetupLocked  bool
+}
+
+
+
+func (wps *WPSInfo) reset() {
+	clear(wps.str)
+	wps.str = wps.str[:0]
+
+	wps.version       = 0
+	wps.state         = 0
+	wps.configMethods = 0
+	wps.apSetupLocked = false
 }
 
 
@@ -104,27 +116,17 @@ func (wps *WPSInfo) getState() {
 
 
 func (wps *WPSInfo) getMethods() {
-	methods   := wps.configMethods
-	bitToName := []struct {
-		bit  uint16
-		name string
-	}{
-		{0x0001, "USB"},
-		{0x0002, "ETHER"},
-		{0x0004, "LAB"},
-		{0x0008, "DISP"},
-		{0x0010, "EXTNFC"},
-		{0x0020, "INTNFC"},
-		{0x0040, "NFCINTF"},
-		{0x0080, "PBC"},
-		{0x0100, "KPAD"},
-	}
+	m := wps.configMethods
 
-	for _, b := range bitToName {
-		if methods&b.bit != 0 {
-			wps.str = append(wps.str, b.name)
-		}
-	}
+	if m & 0x0001 != 0 { wps.str = append(wps.str, "USB")     }
+	if m & 0x0002 != 0 { wps.str = append(wps.str, "ETHER")   }
+	if m & 0x0004 != 0 { wps.str = append(wps.str, "LAB")     }
+	if m & 0x0008 != 0 { wps.str = append(wps.str, "DISP")    }
+	if m & 0x0010 != 0 { wps.str = append(wps.str, "EXTNFC")  }
+	if m & 0x0020 != 0 { wps.str = append(wps.str, "INTNFC")  }
+	if m & 0x0040 != 0 { wps.str = append(wps.str, "NFCINTF") }
+	if m & 0x0080 != 0 { wps.str = append(wps.str, "PBC")     }
+	if m & 0x0100 != 0 { wps.str = append(wps.str, "KPAD")    }
 }
 
 
