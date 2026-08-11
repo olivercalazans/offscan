@@ -30,14 +30,14 @@ func (dd *Dot11Dissector) GetWPS() string {
 		return "?????"
 	}
 	
-	wps := WPSInfo{}
-	wps.parseWPS(dd.wpsData)
-	wps.getVersion()
-	wps.getState()
-	wps.getMethods()
-	wps.getLock()
+	dd.wpsInfo.reset()
+	dd.wpsInfo.parseWPS(dd.wpsData)
+	dd.wpsInfo.getVersion()
+	dd.wpsInfo.getState()
+	dd.wpsInfo.getMethods()
+	dd.wpsInfo.getLock()
 
-	return strings.Join(wps.str, " ")
+	return strings.Join(dd.wpsInfo.str, " ")
 }
 
 
@@ -48,6 +48,18 @@ type WPSInfo struct {
 	state          int 
 	configMethods  uint16
 	apSetupLocked  bool
+}
+
+
+
+func (wps *WPSInfo) reset() {
+	clear(wps.str)
+	wps.str = wps.str[:0]
+
+	wps.version       = 0
+	wps.state         = 0
+	wps.configMethods = 0
+	wps.apSetupLocked = false
 }
 
 
