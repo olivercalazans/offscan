@@ -19,7 +19,6 @@ package wifimap
 
 import (
 	"fmt"
-	"maps"
 	"net"
 	"offscan/internal/conv"
 	"offscan/internal/dot11dissec"
@@ -44,7 +43,7 @@ type wifiMapper struct {
 	iface     net.Interface
 	wInfo     map[wifiData]struct{}
 	sniffer  *sniffer.Sniffer
-	mut       sync.Mutex
+	dataCh    chan map[wifiData]struct{}
 	wg        sync.WaitGroup
 	cancel    chan struct{}
 	maxLen    maxLength
@@ -57,6 +56,7 @@ func (wm *wifiMapper) execute() {
 	wm.sniff2GChannels()
 	wm.sniff5GChannels()
 	wm.stopBeaconProcessor()
+	wm.getData()
 	wm.displayResults()
 }
 
@@ -65,12 +65,14 @@ func (wm *wifiMapper) execute() {
 func (wm *wifiMapper) startBeaconProcessor() {
 	wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
 	sniffCh    := wm.sniffer.Start()
+	wm.dataCh   = make(chan map[wifiData]struct{})
 
 	fmt.Printf("[+] Sniffing beacons\n")
 
 	wm.wg.Add(1)
 	go func() {
 		defer wm.wg.Done()
+		defer close(wm.dataCh)
 		wm.processBeacons(sniffCh)
 	}()
 }
@@ -94,9 +96,7 @@ func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
 		wm.updateInfo(dissector, tempBuf)
 	}
 
-	wm.mut.Lock()
-	maps.Copy(wm.wInfo, tempBuf)
-	wm.mut.Unlock()
+	wm.dataCh <- tempBuf
 }
 
 
@@ -158,6 +158,13 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 func (wm *wifiMapper) stopBeaconProcessor() {
 	wm.sniffer.Stop()
 	fmt.Println("[-] Sniffer stopped")
+}
+
+
+
+func (wm *wifiMapper) getData() {
+	wm.wInfo  = <- wm.dataCh
+	wm.dataCh = nil
 	wm.wg.Wait()
 }
 
