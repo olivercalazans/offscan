@@ -17,10 +17,6 @@
 
 package pktdissec
 
-import (
-	"net"
-)
-
 
 func (pd *PacketDissector) IsIPv4() bool {
     pd.isIPv4 = pd.lenPkt >= 34 && pd.getEtherType() == 0x0800
@@ -29,16 +25,14 @@ func (pd *PacketDissector) IsIPv4() bool {
 
 
 
-func (pd *PacketDissector) GetSrcIP() (net.IP, bool) {
+func (pd *PacketDissector) GetSrcIP() ([4]byte, bool) {
+    var ip [4]byte
+
     if pd.lenPkt < 30 || !pd.isIPv4 {
-        return nil, false
+        return ip, false
     }
     
-	ip := net.IP(pd.pkt[26:30]).To4()
-    
-	if ip == nil {
-        return nil, false
-    }
+	copy(ip[:], pd.pkt[26:30])
     
 	return ip, true
 }

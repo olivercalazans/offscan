@@ -83,7 +83,7 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 		}
 	}
 
-	hd.activeIPs  = make(map[[4]byte]hostInfo)
+	hd.activeIPs  = make(map[hostInfo]string)
 	cidr         := sysconf.MustCIDR(&hd.iface)
 	hd.ips        = generators.NewIpv4Iter(cidr, rangeIP)
 	hd.myIP       = sysconf.MustIPv4(&hd.iface)

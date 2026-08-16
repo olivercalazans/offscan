@@ -20,7 +20,6 @@ package wifimap
 import (
 	"fmt"
 	"net"
-	"offscan/internal/conv"
 	"offscan/internal/dot11dissec"
 	"offscan/internal/sniffer"
 	"offscan/internal/sysconf"
@@ -257,7 +256,7 @@ func (wm *wifiMapper) displayHeader() {
 
 
 func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
-	bssidStr := conv.Byte6ToStr(netData.bssid)
+	bssidStr := net.HardwareAddr(netData.bssid[:]).String()
 
 	line := fmt.Sprintf(
 		"%-*s  %-17s  %-3d  %-8s  %-*s  %-*s  %s\n",

@@ -17,16 +17,18 @@
 
 package pktdissec
 
-import "net"
 
 
+func (pd *PacketDissector) GetEtherSrcMAC() ([6]byte, bool) {
+    var mac [6]byte
 
-func (pd *PacketDissector) GetEtherSrcMAC() (net.HardwareAddr, bool) {
     if pd.lenPkt < 12 {
-        return nil, false
+        return mac, false
     }
+
+    copy(mac[:], pd.pkt[6:12])
     
-	return net.HardwareAddr(pd.pkt[6:12]), true
+	return mac, true
 }
 
 

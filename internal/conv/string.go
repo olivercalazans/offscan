@@ -19,9 +19,36 @@ package conv
 
 import (
 	"fmt"
+	"net"
 	"offscan/internal/utils"
 	"strconv"
 )
+
+
+func StrToIface(ifaceName string) *net.Interface {
+	if ifaceName == "" { return nil }
+
+    iface, err := net.InterfaceByName(ifaceName)
+    
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to get interface %s: %v", ifaceName, err))
+    }
+    
+	return iface
+}
+
+
+
+func MustStrToIface(ifaceName string) net.Interface {
+    iface := StrToIface(ifaceName)
+    
+	if iface == nil {
+        utils.Abort("Missing interface name")
+    }
+    
+	return *iface
+}
+
 
 
 func MustStrToInt(str string) int {
@@ -46,4 +73,28 @@ func StrToInt(str string) int {
 	}
 
 	return value
+}
+
+
+
+func MustStrToIPv4(s string) net.IP {
+    ip := net.ParseIP(s)
+    
+	if ip == nil {
+        utils.Abort(fmt.Sprintf("Invalid IP address: %s", s))
+    }
+    
+	return MustTo4(ip)
+}
+
+
+
+func MustStrToMac(macStr string) net.HardwareAddr {    
+	mac, err := net.ParseMAC(macStr)
+    
+	if err != nil {
+        utils.Abort(fmt.Sprintf("Unable to parse MAC address: %v", err))
+    }
+
+	return mac
 }
