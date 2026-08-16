@@ -39,13 +39,14 @@ func Run(args []string) {
 
 
 type wifiMapper struct {
-	iface     net.Interface
-	wInfo     map[wifiData]struct{}
-	sniffer  *sniffer.Sniffer
-	dataCh    chan map[wifiData]struct{}
-	wg        sync.WaitGroup
-	cancel    chan struct{}
-	maxLen    maxLength
+	iface       net.Interface
+	wInfo       map[wifiData]struct{}
+	sniffer    *sniffer.Sniffer
+	dataCh      chan map[wifiData]struct{}
+	wg          sync.WaitGroup
+	cancel      chan struct{}
+	maxLen      maxLength
+	dissector  *dot11dissec.Dot11Dissector
 }
 
 
@@ -55,23 +56,21 @@ func (wm *wifiMapper) execute() {
 	wm.sniff2GChannels()
 	wm.sniff5GChannels()
 	wm.stopBeaconProcessor()
-	wm.getData()
 	wm.displayResults()
 }
 
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-	wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
-	sniffCh    := wm.sniffer.Start()
-	wm.dataCh   = make(chan map[wifiData]struct{})
+	wm.sniffer    = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+	sniffCh      := wm.sniffer.Start()
+	wm.dissector  = dot11dissec.NewDot11Dissector()
 
 	fmt.Printf("[+] Sniffing beacons\n")
 
 	wm.wg.Add(1)
 	go func() {
 		defer wm.wg.Done()
-		defer close(wm.dataCh)
 		wm.processBeacons(sniffCh)
 	}()
 }
@@ -85,36 +84,28 @@ func getBPFFilter() string {
 
 
 func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
-	tempBuf   := make(map[wifiData]struct{})
-	dissector := dot11dissec.NewDot11Dissector()
-
 	for {
 		beacon, ok := <-sniffCh
 		if !ok { break }
-		dissector.UpdatePkt(beacon)
-		wm.updateInfo(dissector, tempBuf)
+		wm.dissector.UpdatePkt(beacon)
+		wm.updateInfo()
 	}
-
-	wm.dataCh <- tempBuf
 }
 
 
 
-func (wm *wifiMapper) updateInfo(
-	dissector  *dot11dissec.Dot11Dissector,
-	tempBuf     map[wifiData]struct{},
-) {
+func (wm *wifiMapper) updateInfo() {
 	info := wifiData{
-		ssid  : dissector.GetSSID(),
-		bssid : dissector.GetBSSID(),
-		chnl  : dissector.GetChannel(),
-		sec   : dissector.GetSecurity(),
-		std   : dissector.GetStandard(),
-		wps   : dissector.GetWPS(),
-		time  : dissector.GetTimestamp(),
+		ssid  : wm.dissector.GetSSID(),
+		bssid : wm.dissector.GetBSSID(),
+		chnl  : wm.dissector.GetChannel(),
+		sec   : wm.dissector.GetSecurity(),
+		std   : wm.dissector.GetStandard(),
+		wps   : wm.dissector.GetWPS(),
+		time  : wm.dissector.GetTimestamp(),
 	}
 
-	tempBuf[info] = struct{}{}
+	wm.wInfo[info] = struct{}{}
 }
 
 
@@ -157,13 +148,6 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 func (wm *wifiMapper) stopBeaconProcessor() {
 	wm.sniffer.Stop()
 	fmt.Println("[-] Sniffer stopped")
-}
-
-
-
-func (wm *wifiMapper) getData() {
-	wm.wInfo  = <- wm.dataCh
-	wm.dataCh = nil
 	wm.wg.Wait()
 }
 
