@@ -29,14 +29,15 @@ import (
 
 
 type Sniffer struct {
-	iface      net.Interface
-	filter     string
-	promisc    bool
-	stopChan   chan struct{}
-	resultCh   chan []byte
-	wg         sync.WaitGroup
-	fd         int
-	stats      unix.TpacketStats
+	iface         net.Interface
+	filter        string
+	promisc       bool
+	stopChan      chan struct{}
+	resultCh      chan []byte
+	wg            sync.WaitGroup
+	fd            int
+	stats         unix.TpacketStats
+	promiscMreq  *unix.PacketMreq
 }
 
 
@@ -114,49 +115,67 @@ func (s *Sniffer) initRawSocket() (int, error) {
 
 
 func (s *Sniffer) configureSocket() error {
-	protocolNative := uint16(htons(unix.ETH_P_ALL))
+	if err := s.bindToInterface(); err != nil { return err }
+	if err := s.enablePromiscuous(); err != nil { return err }
+	if err := s.attachFilter(); err != nil { return err }
 
-	sll := &unix.SockaddrLinklayer{
-		Protocol : protocolNative,
-		Ifindex  : s.iface.Index,
-	}
+	return nil
+}
 
-    if err := unix.Bind(s.fd, sll); err != nil {
-		return fmt.Errorf("Bind to interface %s failed: %w", s.iface.Name, err)
-	}
 
-	if s.promisc {
-		mreq := unix.PacketMreq{
-			Ifindex : int32(s.iface.Index),
-			Type    : unix.PACKET_MR_PROMISC,
-		}
 
-        err := unix.SetsockoptPacketMreq(s.fd, unix.SOL_PACKET, unix.PACKET_ADD_MEMBERSHIP, &mreq)
-		if err != nil {
-			return fmt.Errorf("Failed to add promisc membership: %w", err)
-		}
-		
-        defer func() {
-			_ = unix.SetsockoptPacketMreq(s.fd, unix.SOL_PACKET, unix.PACKET_DROP_MEMBERSHIP, &mreq)
-		}()
-	}
+func (s *Sniffer) bindToInterface() error {
+    protocolNative := uint16(htons(unix.ETH_P_ALL))
 
-    if s.filter != "" {
-		bytecode, err := s.compileFilter()
-		if err != nil {
-			return fmt.Errorf("Failed to compile BPF filter '%s': %w", s.filter, err)
-		}
+    sll := &unix.SockaddrLinklayer{
+        Protocol : protocolNative,
+        Ifindex  : s.iface.Index,
+    }
+    
+	if err := unix.Bind(s.fd, sll); err != nil {
+        return fmt.Errorf("Bind to interface %s failed: %w", s.iface.Name, err)
+    }
+    
+	return nil
+}
 
-		prog := unix.SockFprog{
-			Len    : uint16(len(bytecode)),
-			Filter : &bytecode[0],
-		}
 
-		if err := unix.SetsockoptSockFprog(s.fd, unix.SOL_SOCKET, unix.SO_ATTACH_FILTER, &prog); err != nil {
-			return fmt.Errorf("Failed to attach BPF filter: %w", err)
-		}
-	}
 
+func (s *Sniffer) enablePromiscuous() error {
+	if !s.promisc { return nil }
+
+    mreq := unix.PacketMreq{
+        Ifindex : int32(s.iface.Index),
+        Type    : unix.PACKET_MR_PROMISC,
+    }
+    
+	if err := unix.SetsockoptPacketMreq(s.fd, unix.SOL_PACKET, unix.PACKET_ADD_MEMBERSHIP, &mreq); err != nil {
+        return fmt.Errorf("Failed to add promisc membership: %w", err)
+    }
+
+    s.promiscMreq = &mreq
+    return nil
+}
+
+
+
+func (s *Sniffer) attachFilter() error {
+	if s.filter == "" { return nil }
+
+    bytecode, err := s.compileFilter()
+    if err != nil {
+        return fmt.Errorf("Failed to compile BPF filter '%s': %w", s.filter, err)
+    }
+
+    prog := unix.SockFprog{
+        Len    : uint16(len(bytecode)),
+        Filter : &bytecode[0],
+    }
+    
+	if err := unix.SetsockoptSockFprog(s.fd, unix.SOL_SOCKET, unix.SO_ATTACH_FILTER, &prog); err != nil {
+        return fmt.Errorf("Failed to attach BPF filter: %w", err)
+    }
+    
 	return nil
 }
 
@@ -225,10 +244,27 @@ func (s *Sniffer) collectStats() {
 func (s *Sniffer) Stop() {
 	close(s.stopChan)
 	s.wg.Wait()
+	s.disablePromiscuous()
 
 	fmt.Printf("[$] Packets received = %d\n", s.stats.Packets)
 
 	if s.stats.Drops > 0 {
 		fmt.Printf("[!] Packets dropped = %d\n", s.stats.Drops)
 	}
+}
+
+
+
+func (s *Sniffer) disablePromiscuous() error {
+    if !s.promisc || s.promiscMreq == nil {
+        return nil
+    }
+
+    err := unix.SetsockoptPacketMreq(s.fd, unix.SOL_PACKET, unix.PACKET_DROP_MEMBERSHIP, s.promiscMreq)
+    if err != nil {
+        return fmt.Errorf("Failed to drop promisc membership: %w", err)
+    }
+    
+	s.promiscMreq = nil
+    return nil
 }
