@@ -19,7 +19,7 @@ package l2disc
 
 import (
 	"fmt"
-	"offscan/internal/conv"
+	"net"
 	"offscan/internal/dot11dissec"
 	"strings"
 )
@@ -123,7 +123,7 @@ func (fp *frameProcessor) associateStas(bssid [6]byte) {
 
 
 func (fp *frameProcessor) addStation(staInfo station) {
-    net, ok := fp.netsBuf[staInfo.bssid]
+    netInfo, ok := fp.netsBuf[staInfo.bssid]
 
     if !ok {
         fp.missBuf[staInfo] = struct{}{}
@@ -135,7 +135,7 @@ func (fp *frameProcessor) addStation(staInfo station) {
     }
     
 	fp.stasBuf[staInfo] = struct{}{}
-    fp.displayStation(&net, &staInfo)
+    fp.displayStation(&netInfo, &staInfo)
 }
 
 
@@ -157,15 +157,18 @@ func displayHeader() {
 
 
 
-func (fp *frameProcessor) displayStation(net *beacon, sta *station) {
+func (fp *frameProcessor) displayStation(netInfo *beacon, sta *station) {
 	fp.idx++
+
+	mac   := net.HardwareAddr(sta.staMac[:])
+	bssid := net.HardwareAddr(sta.bssid[:])
 
 	fmt.Printf(
 		"%d. %s  %s  %-3d  %s\n",
 		fp.idx,
-		conv.Byte6ToStr(sta.staMac),
-		conv.Byte6ToStr(sta.bssid), 
-		net.chnl,
-		net.ssid,
+		mac.String(),
+		bssid.String(), 
+		netInfo.chnl,
+		netInfo.ssid,
 	)
 }

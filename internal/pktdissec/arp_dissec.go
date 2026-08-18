@@ -17,8 +17,6 @@
 
 package pktdissec
 
-import "net"
-
 
 
 func (pd *PacketDissector) IsArpReply() bool {
@@ -57,26 +55,28 @@ func (pd *PacketDissector) checkArpOpcode() {
 
 
 
-func (pd *PacketDissector) GetArpSrcIP() (net.IP, bool) {
+func (pd *PacketDissector) GetArpSrcIP() ([4]byte, bool) {
+	var ip [4]byte
+
 	if pd.lenPkt < 32 {
-		return nil, false 
+		return ip, false 
 	}
+
+	copy(ip[:], pd.pkt[28:32])
 	
-	ipv4 := net.IP(pd.pkt[28:32]).To4()
-
-	if ipv4 == nil {
-		return nil, false
-	}
-
-	return ipv4, true
+	return ip, true
 }
 
 
 
-func (pd *PacketDissector) GetArpSrcMAC() (net.HardwareAddr, bool) {
+func (pd *PacketDissector) GetArpSrcMAC() ([6]byte, bool) {
+	var mac [6]byte
+	
 	if pd.lenPkt < 28 {
-		return nil, false
+		return mac, false
 	}
 
-	return net.HardwareAddr(pd.pkt[22:28]), true
+	copy(mac[:], pd.pkt[22:28])
+
+	return mac, true
 }

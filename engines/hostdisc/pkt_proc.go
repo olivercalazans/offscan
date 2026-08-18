@@ -18,145 +18,99 @@
 package hostdisc
 
 import (
-	"fmt"
-	"maps"
-	"math/bits"
-	"net"
-	"offscan/internal/conv"
+	"encoding/binary"
 	"offscan/internal/pktdissec"
-	"offscan/internal/sniffer"
 )
 
 
 type hostInfo struct {
-    Mac  net.HardwareAddr
-    Name string
+    ip   [4]byte
+    mac  [6]byte
 }
 
 
 
 func (hd *hostDiscovery) startPacketProcessor() {
-    hd.sniffer   = sniffer.NewSniffer(hd.iface, hd.getBpfFilter(), false)
-    hd.snifferCh = hd.sniffer.Start()
+    hd.dissector = *pktdissec.NewPacketDissector()
 
     hd.wgPktProc.Add(1)
     go func() {
         defer hd.wgPktProc.Done()
-
-        tempMap := make(map[[4]byte]hostInfo)
         
 		for {
             pkt, ok := <-hd.snifferCh
             if !ok { break }
-            hd.dissectAndUpdate(pkt, tempMap)
+            hd.dissector.UpdatePkt(pkt)
+            hd.processPkt()
         }
-
-        hd.mut.Lock()
-		maps.Copy(hd.activeIPs, tempMap)
-		hd.mut.Unlock()
     }()
 }
 
 
 
-func (hd *hostDiscovery) getBpfFilter() string {
-    return fmt.Sprintf(
-        "(dst host %s and src net %s) or (arp[6:2] = 2)", 
-        hd.myIP.String(),
-        hd.cidrForBPFFilter(),
-    )
-}
-
-
-
-func (hd *hostDiscovery) cidrForBPFFilter() string {
-    xor := hd.ips.StartU32 ^ hd.ips.EndU32
-    var leadingZeros int
-    
-	if xor == 0 {
-        leadingZeros = 32
-    } else {
-        leadingZeros = bits.LeadingZeros32(xor)
-	}
-    
-	prefixLen := uint8(leadingZeros)
-    var mask uint32
-    
-	if prefixLen == 0 {
-        mask = 0
-    } else {
-        mask = ^uint32(0) << (32 - prefixLen)
-    }
-    
-	networkAddr := hd.ips.StartU32 & mask
-    ip 			:= conv.U32ToIP(networkAddr)
-    
-	return fmt.Sprintf("%s/%d", ip.String(), prefixLen)
-}
-
-
-
-func (hd *hostDiscovery) dissectAndUpdate(pkt []byte, tempMap map[[4]byte]hostInfo) {
-    dissector := pktdissec.NewPacketDissector()
-    dissector.UpdatePkt(pkt)
-
-    if dissector.IsARP() && dissector.IsArpReply() {
-        hd.processArpPkt(dissector, tempMap)
+func (hd *hostDiscovery) processPkt() {
+    if hd.dissector.IsARP() && hd.dissector.IsArpReply() {
+        hd.processArpPkt()
         return
     }
 
-    if dissector.IsIPv4() {
-        hd.processIpPkt(dissector, tempMap)
+    if hd.dissector.IsIPv4() {
+        hd.processIpPkt()
     }
 }
 
 
 
-func (hd *hostDiscovery) processArpPkt(dissector *pktdissec.PacketDissector, tempMap map[[4]byte]hostInfo) {
+func (hd *hostDiscovery) processArpPkt() {
     var ok bool
 
-    srcIP, ok := dissector.GetArpSrcIP()
+    srcIP, ok := hd.dissector.GetArpSrcIP()
     if !ok { return }
 
-    ipBytes := [4]byte(srcIP)
     if !hd.isInRange(srcIP) { return }
 
-    srcMAC, ok := dissector.GetArpSrcMAC()
+    srcMAC, ok := hd.dissector.GetArpSrcMAC()
     if !ok { return }
 
-    tempMap[ipBytes] = hostInfo{Mac: srcMAC, Name: ""}
+    info := hostInfo{
+        ip  : srcIP,
+        mac : srcMAC,
+    }
+
+    hd.activeIPs[info] = ""
 }
 
 
 
-func (hd *hostDiscovery) processIpPkt(dissector *pktdissec.PacketDissector, tempMap map[[4]byte]hostInfo) {
+func (hd *hostDiscovery) processIpPkt() {
     var ok bool
 
-    srcIP, ok := dissector.GetSrcIP()
+    srcIP, ok := hd.dissector.GetSrcIP()
     if !ok { return }
 
-    ipBytes := [4]byte(srcIP)
     if !hd.isInRange(srcIP) { return }
 
-    srcMAC, ok := dissector.GetEtherSrcMAC()
+    srcMAC, ok := hd.dissector.GetEtherSrcMAC()
     if !ok { return }
 
-    tempMap[ipBytes] = hostInfo{Mac: srcMAC, Name: ""}
+    info := hostInfo{
+        ip  : srcIP,
+        mac : srcMAC,
+    }
+
+    hd.activeIPs[info] = ""
 }
 
 
 
-func (hd *hostDiscovery) isInRange(ip net.IP) bool {
-    ipU32 := conv.IPToU32(ip)
+func (hd *hostDiscovery) isInRange(ip [4]byte) bool {
+    ipU32 := binary.BigEndian.Uint32(ip[:])
     return ipU32 >= hd.ips.StartU32 && ipU32 <= hd.ips.EndU32
 }
 
 
 
 func (hd *hostDiscovery) stopPacketProcessor() {
-    if hd.sniffer != nil {
-        hd.sniffer.Stop()
-    }
-    
+    hd.sniffer.Stop()
     hd.wgPktProc.Wait()
 }

@@ -19,9 +19,7 @@ package wifimap
 
 import (
 	"fmt"
-	"maps"
 	"net"
-	"offscan/internal/conv"
 	"offscan/internal/dot11dissec"
 	"offscan/internal/sniffer"
 	"offscan/internal/sysconf"
@@ -41,13 +39,14 @@ func Run(args []string) {
 
 
 type wifiMapper struct {
-	iface     net.Interface
-	wInfo     map[wifiData]struct{}
-	sniffer  *sniffer.Sniffer
-	mut       sync.Mutex
-	wg        sync.WaitGroup
-	cancel    chan struct{}
-	maxLen    maxLength
+	iface       net.Interface
+	wInfo       map[wifiData]struct{}
+	sniffer    *sniffer.Sniffer
+	dataCh      chan map[wifiData]struct{}
+	wg          sync.WaitGroup
+	cancel      chan struct{}
+	maxLen      maxLength
+	dissector  *dot11dissec.Dot11Dissector
 }
 
 
@@ -63,8 +62,9 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) startBeaconProcessor() {
-	wm.sniffer  = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
-	sniffCh    := wm.sniffer.Start()
+	wm.sniffer    = sniffer.NewSniffer(wm.iface, getBPFFilter(), false)
+	sniffCh      := wm.sniffer.Start()
+	wm.dissector  = dot11dissec.NewDot11Dissector()
 
 	fmt.Printf("[+] Sniffing beacons\n")
 
@@ -84,38 +84,28 @@ func getBPFFilter() string {
 
 
 func (wm *wifiMapper) processBeacons(sniffCh <-chan []byte) {
-	tempBuf   := make(map[wifiData]struct{})
-	dissector := dot11dissec.NewDot11Dissector()
-
 	for {
 		beacon, ok := <-sniffCh
 		if !ok { break }
-		dissector.UpdatePkt(beacon)
-		wm.updateInfo(dissector, tempBuf)
+		wm.dissector.UpdatePkt(beacon)
+		wm.updateInfo()
 	}
-
-	wm.mut.Lock()
-	maps.Copy(wm.wInfo, tempBuf)
-	wm.mut.Unlock()
 }
 
 
 
-func (wm *wifiMapper) updateInfo(
-	dissector  *dot11dissec.Dot11Dissector,
-	tempBuf     map[wifiData]struct{},
-) {
+func (wm *wifiMapper) updateInfo() {
 	info := wifiData{
-		ssid  : dissector.GetSSID(),
-		bssid : dissector.GetBSSID(),
-		chnl  : dissector.GetChannel(),
-		sec   : dissector.GetSecurity(),
-		std   : dissector.GetStandard(),
-		wps   : dissector.GetWPS(),
-		time  : dissector.GetTimestamp(),
+		ssid  : wm.dissector.GetSSID(),
+		bssid : wm.dissector.GetBSSID(),
+		chnl  : wm.dissector.GetChannel(),
+		sec   : wm.dissector.GetSecurity(),
+		std   : wm.dissector.GetStandard(),
+		wps   : wm.dissector.GetWPS(),
+		time  : wm.dissector.GetTimestamp(),
 	}
 
-	tempBuf[info] = struct{}{}
+	wm.wInfo[info] = struct{}{}
 }
 
 
@@ -250,7 +240,7 @@ func (wm *wifiMapper) displayHeader() {
 
 
 func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
-	bssidStr := conv.Byte6ToStr(netData.bssid)
+	bssidStr := net.HardwareAddr(netData.bssid[:]).String()
 
 	line := fmt.Sprintf(
 		"%-*s  %-17s  %-3d  %-8s  %-*s  %-*s  %s\n",
