@@ -28,13 +28,6 @@ type dot11Info struct {
 }
 
 
-type buffers struct {
-	nets  map[[6]byte]beacon
-	stas  map[station]struct{}
-	miss  map[station]struct{}
-}
-
-
 type beacon struct {
 	ssid  string
 	chnl  uint8
