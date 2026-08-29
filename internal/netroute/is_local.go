@@ -20,29 +20,26 @@ package netroute
 import (
 	"fmt"
 	"net"
-	"offscan/internal/utils"
 )
 
 
 
-func IsLocal(iface *net.Interface, ip net.IP) bool {
+func IsLocal(iface *net.Interface, ip net.IP) (bool, error) {
     addrs, err := iface.Addrs()
     if err != nil {
-        utils.Abort(fmt.Sprintf("Unable to get interface addresses %s: %v", iface.Name, err))
+        return false, fmt.Errorf("Unable to get interface addresses %s: %v", iface.Name, err)
     }
 
     for _, addr := range addrs {
         ipnet, ok := addr.(*net.IPNet)
-        if !ok {
-            continue
-        }
+        if !ok { continue }
 
         if ipnet.IP.To4() != nil && ip.To4() != nil {
             if ipnet.Contains(ip) {
-                return true
+                return true, nil
             }
         }
     }
 
-    return false
+    return false, nil
 }

@@ -25,6 +25,7 @@ import (
 	"offscan/internal/generators"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
+	"offscan/internal/utils"
 	"strings"
 )
 
@@ -134,8 +135,14 @@ func (hd *hostDiscovery) protoFlags(
 
     if rangeIP != "" {
         for _, ip := range strings.Split(rangeIP, "*") {
-            ipv4    := conv.MustStrToIPv4(ip)
-            isLocal  = isLocal && netroute.IsLocal(&hd.iface, ipv4)
+            ipv4 := conv.MustStrToIPv4(ip)
+			
+			value, err := netroute.IsLocal(&hd.iface, ipv4)
+			if err != nil {
+				utils.Abort(err.Error())
+			}
+
+            isLocal  = isLocal && value
         }
     }
 
