@@ -169,6 +169,6 @@ func (fp *frameProcessor) displayStation(netInfo *beacon, sta *station) {
 		mac.String(),
 		bssid.String(), 
 		netInfo.chnl,
-		netInfo.ssid,
+		netInfo.ssid.String(),
 	)
 }

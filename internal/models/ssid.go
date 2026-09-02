@@ -15,38 +15,42 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package pktdissec
+package models
 
 
 
-type PacketDissector struct {
-    pkt           []byte
-    lenPkt        int
-    isIPv4        bool
-    isArpReply    bool
-    isArpRequest  bool
-    isDHCP        bool
+type SSID struct {
+	Data       [32]byte
+	length     uint8
+	IsUnknown  bool
+	IsHidden   bool
 }
 
 
 
-func NewPacketDissector() *PacketDissector {
-    return &PacketDissector{ pkt: make([]byte, 0) }
+func (s *SSID) AddSSID(bytes []byte) bool {
+	lenBytes := len(bytes)
+
+	if lenBytes > 32 || lenBytes < 1 { return false }
+
+	s.length = uint8(len(bytes))
+	copy(s.Data[:s.length], bytes)
+	
+	return true
 }
 
 
 
-func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
-    pd.lenPkt = len(rawPkt)
-    pd.pkt    = rawPkt
-    pd.resetFlags()
+func (s *SSID) Len() int {
+	return int(s.length)
 }
 
 
 
-func (pd *PacketDissector) resetFlags() {
-    pd.isIPv4       = false
-	pd.isArpReply   = false
-	pd.isArpRequest = false
-    pd.isDHCP       = false
+func (s *SSID) String() string {
+    if s.IsUnknown { return "unknown"  }
+    if s.IsHidden  { return "<hidden>" }
+    if s.length == 0  { return "<empty>"  }
+
+    return string(s.Data[:s.length])
 }

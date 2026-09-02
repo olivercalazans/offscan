@@ -17,9 +17,11 @@
 
 package wifimap
 
+import "offscan/internal/models"
+
 
 type wifiData struct {
-	ssid   string
+	ssid   models.SSID
 	bssid  [6]byte
 	chnl   uint8
 	sec    string

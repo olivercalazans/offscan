@@ -17,11 +17,13 @@
 
 package l2disc
 
+import "offscan/internal/models"
+
 
 type dot11Info struct {
 	isBeacon   bool
 	bssid      [6]byte
-	ssid       string
+	ssid       models.SSID
 	chnl       uint8
 	isDataFrm  bool
 	staMac     [6]byte
@@ -29,7 +31,7 @@ type dot11Info struct {
 
 
 type beacon struct {
-	ssid  string
+	ssid  models.SSID
 	chnl  uint8
 }
 

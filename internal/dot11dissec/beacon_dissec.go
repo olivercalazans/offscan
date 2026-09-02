@@ -20,6 +20,7 @@ package dot11dissec
 import (
 	"encoding/binary"
 	"fmt"
+	"offscan/internal/models"
 )
 
 
@@ -79,16 +80,26 @@ func (dd *Dot11Dissector) GetBSSID() [6]byte {
 
 
 
-func (dd *Dot11Dissector) GetSSID() string {
-	if !dd.IsBeacon { return "unknown" }
-	
-	if data, ok := dd.ieCache[0x00]; ok {
-		if len(data) > 0 {
-			return string(data)
-		}
-		return "<hidden>"
-	}
-	return "<hidden>"
+func (dd *Dot11Dissector) GetSSID() models.SSID {
+    var ssid models.SSID
+
+    if !dd.IsBeacon {
+        ssid.IsUnknown = true
+        return ssid
+    }
+
+	data, ok := dd.ieCache[0x00]
+
+    if !ok || len(data) <= 0 {
+		ssid.IsHidden = true
+    	return ssid
+    }
+
+	copyLen := len(data)
+    if copyLen > 32 { copyLen = 32 }
+	ssid.AddSSID(data)
+
+    return ssid
 }
 
 
