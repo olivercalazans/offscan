@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/generators"
+	"offscan/internal/models"
 	"offscan/internal/pktbuild"
 	"offscan/internal/sockets"
 	"time"
@@ -111,13 +112,13 @@ func (hdp *hostDiscProbes) sendArpProbe() {
 
 
 func (hdp *hostDiscProbes) setArpReqStatic() {
-    myMAC     := hdp.iface.HardwareAddr
-	broadcast := net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+    myMAC     := models.MustMacFromSlice(hdp.iface.HardwareAddr)
+    broadcast := models.MAC{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 	hdp.arp.EtherHdr.SetDstAddr(broadcast)
 	hdp.arp.EtherHdr.SetSrcAddr(myMAC)
 
-	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	nullMac := models.MAC{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	hdp.arp.SetRequestOpcode()
 	hdp.arp.SetSenderMAC(myMAC)
 	hdp.arp.SetSenderIP(hdp.myIP)

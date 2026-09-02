@@ -19,13 +19,14 @@ package hostdisc
 
 import (
 	"encoding/binary"
+	"offscan/internal/models"
 	"offscan/internal/pktdissec"
 )
 
 
 type hostInfo struct {
     ip   [4]byte
-    mac  [6]byte
+    mac  models.MAC
 }
 
 

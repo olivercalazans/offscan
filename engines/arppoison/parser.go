@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
+	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
 )
@@ -64,12 +65,12 @@ func (ap *arpPoison) parseArgs(args []string) {
 	for _, flag := range flags {    
 		switch flag.ID {
 		case targetIP  : ap.addrs.targetIP  = conv.MustStrToIPv4(flag.ValueStr)
-		case targetMAC : ap.addrs.targetMAC = conv.MustStrToMac(flag.ValueStr)
+		case targetMAC : ap.addrs.targetMAC = models.MustParseMAC(flag.ValueStr)
 		}
 	}
 
 	ap.iface       = netroute.MustRouteIfaceForDstIP(ap.addrs.targetIP)
-	ap.addrs.myMAC = ap.iface.HardwareAddr
+	ap.addrs.myMAC = models.MustMacFromSlice(ap.iface.HardwareAddr)
 	ap.addrs.apMAC = sysconf.MustGatewayMAC(&ap.iface)
 	ap.addrs.apIP  = sysconf.MustGatewayIP(&ap.iface)
 }

@@ -161,7 +161,7 @@ func (wm *wifiMapper) displayResults() {
 
 
 
-func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData) {
+func (wm *wifiMapper) extractKeysAndMaxLen() []wifiData {
 	keys := make([]wifiData, 0, len(wm.wInfo))
 	
 	for netData := range wm.wInfo {
@@ -267,12 +267,10 @@ func (wm *wifiMapper) displayHeader() {
 
 
 func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
-	bssidStr := net.HardwareAddr(netData.bssid[:]).String()
-
 	line := fmt.Sprintf(
 		"%-*s  %-17s  %-3d  %-8s  %-*s  %-*s  %s\n",
 		wm.maxLen.ssid, netData.ssid.String(), 
-		bssidStr, 
+		netData.bssid.String(), 
 		netData.chnl, 
 		netData.std, 
 		wm.maxLen.sec, netData.sec,

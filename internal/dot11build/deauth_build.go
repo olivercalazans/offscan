@@ -19,7 +19,7 @@ package dot11build
 
 import (
 	"encoding/binary"
-	"net"
+	"offscan/internal/models"
 )
 
 
@@ -62,20 +62,20 @@ func (d *Deauth) setDuration() {
 
 
 
-func (d *Deauth) SetDstAddr(addr net.HardwareAddr) {
-    copy(d.buffer[16:22], addr)
+func (d *Deauth) SetDstAddr(addr models.MAC) {
+    copy(d.buffer[16:22], addr[:])
 }
 
 
 
-func (d *Deauth) SetSrcAddr(addr net.HardwareAddr) {
-    copy(d.buffer[22:28], addr)
+func (d *Deauth) SetSrcAddr(addr models.MAC) {
+    copy(d.buffer[22:28], addr[:])
 }
 
 
 
-func (d *Deauth) SetBSSID(bssid net.HardwareAddr) {
-    copy(d.buffer[28:34], bssid)
+func (d *Deauth) SetBSSID(bssid models.BSSID) {
+    copy(d.buffer[28:34], bssid[:])
 }
 
 

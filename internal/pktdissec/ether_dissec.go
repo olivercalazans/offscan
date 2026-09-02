@@ -17,10 +17,12 @@
 
 package pktdissec
 
+import "offscan/internal/models"
 
 
-func (pd *PacketDissector) GetEtherSrcMAC() ([6]byte, bool) {
-    var mac [6]byte
+
+func (pd *PacketDissector) GetEtherSrcMAC() (models.MAC, bool) {
+    var mac models.MAC
 
     if pd.lenPkt < 12 {
         return mac, false

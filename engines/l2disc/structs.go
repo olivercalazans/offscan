@@ -22,11 +22,11 @@ import "offscan/internal/models"
 
 type dot11Info struct {
 	isBeacon   bool
-	bssid      [6]byte
+	bssid      models.BSSID
 	ssid       models.SSID
 	chnl       uint8
 	isDataFrm  bool
-	staMac     [6]byte
+	staMac     models.MAC
 }
 
 
@@ -37,6 +37,6 @@ type beacon struct {
 
 
 type station struct {
-	bssid   [6]byte
-	staMac  [6]byte
+	bssid   models.BSSID
+	staMac  models.MAC
 }

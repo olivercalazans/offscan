@@ -69,8 +69,8 @@ func formatUptime(tsf uint64) string {
 
 
 
-func (dd *Dot11Dissector) GetBSSID() [6]byte {
-	var bssid [6]byte
+func (dd *Dot11Dissector) GetBSSID() models.BSSID {
+	var bssid models.BSSID
 	if !dd.IsBeacon || len(dd.frame) < 24 {
 		return bssid
 	}

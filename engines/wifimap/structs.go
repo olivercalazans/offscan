@@ -22,7 +22,7 @@ import "offscan/internal/models"
 
 type wifiData struct {
 	ssid   models.SSID
-	bssid  [6]byte
+	bssid  models.BSSID
 	chnl   uint8
 	sec    string
 	std    string

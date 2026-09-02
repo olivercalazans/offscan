@@ -22,6 +22,7 @@ import (
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/dot11build"
+	"offscan/internal/models"
 	"offscan/internal/sockets"
 	"time"
 )
@@ -72,8 +73,8 @@ func (da *deauthAttack) parseArgs(args []string) {
 	for _, f := range flags {
 		switch f.ID {
 		case iface     : da.iface     = conv.MustStrToIface(f.ValueStr)
-		case targetMac : da.targetMAC = conv.MustStrToMac(f.ValueStr)
-		case bssid     : da.apMAC     = conv.MustStrToMac(f.ValueStr)
+		case targetMac : da.targetMAC = models.MustParseMAC(f.ValueStr)
+		case bssid     : da.apMAC     = models.MustParseMAC(f.ValueStr)
 		case delay     : da.delay     = parseDelay(f.ValueStr)
 		case channel   : da.channel   = conv.MustStrToInt(f.ValueStr)
 		}

@@ -21,6 +21,7 @@ import (
 	"encoding/binary"
 	"net"
 	"offscan/internal/conv"
+	"offscan/internal/models"
 )
 
 
@@ -94,8 +95,8 @@ func (ap *ArpPacket) SetReplyOpcode() {
 
 
 
-func (ap *ArpPacket) SetSenderMAC(mac net.HardwareAddr) {
-	copy(ap.arpHdr[8:14], mac)
+func (ap *ArpPacket) SetSenderMAC(mac models.MAC) {
+	copy(ap.arpHdr[8:14], mac[:])
 }
 
 
@@ -107,8 +108,8 @@ func (ap *ArpPacket) SetSenderIP(ip net.IP) {
 
 
 
-func (ap *ArpPacket) SetTargetMAC(mac net.HardwareAddr) {
-	copy(ap.arpHdr[18:24], mac)
+func (ap *ArpPacket) SetTargetMAC(mac models.MAC) {
+	copy(ap.arpHdr[18:24], mac[:])
 }
 
 

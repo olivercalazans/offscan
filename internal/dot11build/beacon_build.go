@@ -20,7 +20,7 @@ package dot11build
 import (
 	"encoding/binary"
 	"fmt"
-	"net"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 	"time"
 )
@@ -74,13 +74,13 @@ func (b *Beacon) setDstAddr() {
 
 
 
-func (b *Beacon) SetSrcAddr(mac net.HardwareAddr) {
+func (b *Beacon) SetSrcAddr(mac models.MAC) {
     copy(b.buffer[22:28], mac[:])
 }
 
 
 
-func (b *Beacon) SetBSSID(bssid net.HardwareAddr) {
+func (b *Beacon) SetBSSID(bssid models.BSSID) {
     copy(b.buffer[28:34], bssid[:])
 }
 

@@ -19,7 +19,7 @@ package pktbuild
 
 import (
 	"encoding/binary"
-	"net"
+	"offscan/internal/models"
 )
 
 
@@ -29,14 +29,14 @@ type etherHeader struct {
 
 
 
-func (eh *etherHeader) SetDstAddr(dstMAC net.HardwareAddr) {
-	copy(eh.header[0:6], dstMAC)
+func (eh *etherHeader) SetDstAddr(dstMAC models.MAC) {
+	copy(eh.header[0:6], dstMAC[:])
 }
 
 
 
-func (eh *etherHeader) SetSrcAddr(srcMAC net.HardwareAddr) {
-	copy(eh.header[6:12], srcMAC)
+func (eh *etherHeader) SetSrcAddr(srcMAC models.MAC) {
+	copy(eh.header[6:12], srcMAC[:])
 }
 
 
