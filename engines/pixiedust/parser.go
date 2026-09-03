@@ -58,24 +58,24 @@ func DisplayHelp() {
 
 
 const (
-	jobs    = 1
-	pke     = 2
-	pkr     = 3
-	eHash1  = 4
-	eHash2  = 5
-	authKey = 6
-	eNonce  = 7
-	rNonce  = 8
-	ebssid  = 9
-	modes   = 10
-	force   = 11
-	dhSmall = 12
-	m5encr  = 13
-	m7encr  = 14
-	start   = 15
-	end     = 16
-	cStart  = 17
-	cEnd    = 18
+	jobs = iota
+	pke     
+	pkr     
+	eHash1  
+	eHash2  
+	authKey 
+	eNonce  
+	rNonce  
+	ebssid  
+	modes  
+	force  
+	dhSmall
+	m5encr 
+	m7encr 
+	start  
+	end    
+	cStart 
+	cEnd   
 )
 
 

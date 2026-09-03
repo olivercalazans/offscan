@@ -34,7 +34,7 @@ func DisplayHelp() {
 
 
 
-const iface uint8 = 1	
+const iface = iota
 
 
 

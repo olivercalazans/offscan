@@ -40,9 +40,9 @@ func DisplayHelp() {
 
 
 const (
-	iface      uint8 = 1
-	sniffTime  uint8 = 2
-	retrys     uint8 = 3
+	iface = iota
+	sniffTime
+	retrys
 )
 
 

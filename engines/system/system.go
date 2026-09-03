@@ -52,14 +52,14 @@ type system struct {
 
 
 const (
-	iface    uint8 = 1
-	info     uint8 = 10
-	mode     uint8 = 20
-	mon      uint8 = 21
-	man      uint8 = 22
-	fwd      uint8 = 30
-	enable   uint8 = 31
-	disable  uint8 = 32
+	iface = iota
+	info
+	mode
+	mon
+	man
+	fwd
+	enable
+	disable
 )
 
 

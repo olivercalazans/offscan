@@ -43,11 +43,11 @@ func DisplayHelp() {
 
 
 const (
-	iface     uint8 = 1
-	targetMac uint8 = 2
-	bssid     uint8 = 3
-	channel   uint8 = 4
-	delay     uint8 = 5
+	iface = iota
+	targetMac
+	bssid
+	channel
+	delay
 )
 
 

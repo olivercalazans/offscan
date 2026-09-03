@@ -48,11 +48,11 @@ func DisplayHelp() {
 
 
 const (
-	iface   uint8 = 1
-	ipRange uint8 = 2
-	arp     uint8 = 3
-	icmp    uint8 = 4
-	tcp     uint8 = 5
+	iface = iota
+	ipRange
+	arp
+	icmp
+	tcp
 )
 
 

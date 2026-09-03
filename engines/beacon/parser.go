@@ -40,9 +40,9 @@ func DisplayHelp() {
 
 
 const (
-	iface    uint8 = 1
-	ssid     uint8 = 2
-	channel  uint8 = 3
+	iface = iota
+	ssid
+	channel
 )
 
 

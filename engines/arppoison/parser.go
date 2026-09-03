@@ -39,8 +39,8 @@ func DisplayHelp() {
 
 
 const (
-	targetIP   uint8 = 1
-	targetMAC  uint8 = 2
+	targetIP = iota
+	targetMAC
 )
 
 
