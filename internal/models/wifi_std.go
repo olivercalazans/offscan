@@ -15,25 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package wifimap
+package models
 
-import "offscan/internal/models"
+type WifiStd uint8
 
 
-type wifiData struct {
-	ssid   models.SSID
-	bssid  models.BSSID
-	chnl   uint8
-	sec    string
-	std    models.WifiStd
-	wps    models.WPSInfo
-	time   models.Uptime
-}
+const (
+    StdUnknown WifiStd = iota
+    StdB_G    // 802.11b/g
+    StdN      // 802.11n
+    StdAC     // 802.11ac
+    StdAX     // 802.11ax
+)
 
 
 
-type maxLength struct {
-	ssid  int
-	sec   int
-	wps   int
+func (s WifiStd) String() string {
+    switch s {
+    case StdB_G: return "802.11b/g"
+    case StdN:   return "802.11n"
+    case StdAC:  return "802.11ac"
+	case StdAX:  return "802.11ax"
+    default:     return "unknown"
+    }
 }

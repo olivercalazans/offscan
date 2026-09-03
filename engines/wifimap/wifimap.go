@@ -272,7 +272,7 @@ func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
 		wm.maxLen.ssid, netData.ssid.String(), 
 		netData.bssid.String(), 
 		netData.chnl, 
-		netData.std, 
+		netData.std.String(),
 		wm.maxLen.sec, netData.sec,
 		wm.maxLen.wps, netData.wps.String(), 
 		netData.time.String(),

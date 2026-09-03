@@ -257,18 +257,22 @@ func decodeAKM(suite []byte) string {
 
 
 
-func (dd *Dot11Dissector) GetStandard() string {
+func (dd *Dot11Dissector) GetStandard() models.WifiStd {
     if !dd.IsBeacon {
-        return "unknown"
-    }
+		return models.StdUnknown
+	}
 
-    // 802.11ax - HE Capabilities (IE 0xFF) with OUI=35
     if len(dd.heCap) > 0 && dd.heCap[0] == 35 {
-        return "802.11ax"
+        return models.StdAX
     }
 
-    if len(dd.vhtCap) > 0 { return "802.11ac" }
-	if len(dd.htCap)  > 0 { return "802.11n"  }
+    if len(dd.vhtCap) > 0 {
+        return models.StdAC
+    }
 
-    return "802.11b/g"
+    if len(dd.htCap) > 0 {
+        return models.StdN
+    }
+
+    return models.StdB_G
 }
