@@ -275,7 +275,7 @@ func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
 		netData.std, 
 		wm.maxLen.sec, netData.sec,
 		wm.maxLen.wps, netData.wps, 
-		netData.time,
+		netData.time.String(),
 	)
 
 	fmt.Print(line)

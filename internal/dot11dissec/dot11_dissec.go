@@ -23,21 +23,25 @@ import "encoding/binary"
 
 type Dot11Dissector struct {
 	frame       []byte
-	dot11Start  int
 	IsBeacon    bool
 	IsDataFrm   bool
-	ieCache     map[uint8][]byte
-	wpa1Data    []byte
-	wpsData     []byte
 	timestamp   uint64
 	wpsInfo     WPSInfo
+
+	ssidData    []byte // IE 0x00
+    dsParam     []byte // IE 0x03 (channel)
+    rsn         []byte // IE 0x30 (WPA2)
+    htCap       []byte // IE 0x2D (802.11n)
+    vhtCap      []byte // IE 0xBF (802.11ac)
+    heCap       []byte // IE 0xFF (802.11ax)
+    wpa1Data    []byte // IE 0xDD (Vendor Specific - WPA1)
+    wpsData     []byte // IE 0xDD (Vendor Specific - WPS)    
 }
 
 
 
 func NewDot11Dissector() *Dot11Dissector {
 	return &Dot11Dissector{
-		ieCache: make(map[uint8][]byte),
 		wpsInfo: WPSInfo{
 			str: make([]string, 0),
 		},
@@ -57,13 +61,17 @@ func (dd *Dot11Dissector) UpdatePkt(frame []byte) {
 
 
 func (dd *Dot11Dissector) reset() {
-	dd.dot11Start = 0
 	dd.IsBeacon   = false
 	dd.IsDataFrm  = false
-	dd.ieCache    = make(map[uint8][]byte)
-	dd.wpa1Data   = nil
-	dd.wpsData    = nil
 	dd.timestamp  = 0
+	dd.ssidData   = nil
+    dd.dsParam 	  = nil
+    dd.rsn	      = nil
+    dd.htCap 	  = nil
+    dd.vhtCap 	  = nil
+    dd.heCap 	  = nil
+    dd.wpa1Data   = nil
+    dd.wpsData    = nil
 }
 
 
@@ -99,29 +107,33 @@ func (dd *Dot11Dissector) cacheIEs() {
 	}
 
 	offset := 36
-	for offset+2 <= lenFrm {
-		ieID  := dd.frame[offset]
-		ieLen := int(dd.frame[offset+1])
+    for offset+2 <= lenFrm {
+        ieID  := dd.frame[offset]
+        ieLen := int(dd.frame[offset+1])
+        if offset+2+ieLen > lenFrm { break }
+
+        data := dd.frame[offset+2 : offset+2+ieLen]
+
+        switch ieID {
 		
-		if offset+2+ieLen > lenFrm {
-			break
-		}
-		
-		data := dd.frame[offset+2 : offset+2+ieLen]
-		dd.ieCache[ieID] = data
+        case 0x00: dd.ssidData = data   // SSID
+        case 0x03: dd.dsParam  = data   // Channel
+        case 0x30: dd.rsn      = data   // RSN (WPA2)
+        case 0x2D: dd.htCap    = data   // 802.11n
+        case 0xBF: dd.vhtCap   = data   // 802.11ac
+        case 0xFF: dd.heCap    = data   // 802.11ax
+        case 0xDD: 						// Vendor Specific
+            if len(data) >= 4 {
+                oui := data[0:3]
+                if oui[0] == 0x00 && oui[1] == 0x50 && oui[2] == 0xF2 {
+                    switch data[3] {
+                    case 0x01: dd.wpa1Data = data[4:] // WPA1
+                    case 0x04: dd.wpsData  = data[4:]  // WPS
+                    }
+                }
+            }
+        }
 
-		if ieID == 0xDD && ieLen >= 4 {
-			oui     := data[0:3]
-			ouiType := data[3]
-
-			if oui[0] == 0x00 && oui[1] == 0x50 && oui[2] == 0xF2 {
-				switch ouiType {
-				case 0x01: dd.wpa1Data = data[4:] // WPA1
-				case 0x04: dd.wpsData  = data[4:] // WPS
-				}
-			}
-		}
-
-		offset += 2 + ieLen
-	}
+        offset += 2 + ieLen
+    }
 }

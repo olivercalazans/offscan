@@ -41,30 +41,23 @@ func (dd *Dot11Dissector) checkIfIsBeacon() bool {
 
 
 
-func (dd *Dot11Dissector) GetTimestamp() string {
+func (dd *Dot11Dissector) GetTimestamp() models.Uptime {
+	var uptime models.Uptime
+
 	if !dd.IsBeacon {
-		return "unknown"
-	}
-	return formatUptime(dd.timestamp)
-}
-
-
-
-func formatUptime(tsf uint64) string {
-	secs := tsf / 1_000_000
-
-	days := secs / 86400
-	secs %= 86400
-	hours := secs / 3600
-
-	if days > 0 {
-		return fmt.Sprintf("%dd %02dh", days, hours)
-	}
-	if hours > 0 {
-		return fmt.Sprintf("%dh", hours)
+		return uptime
 	}
 	
-	return "less than 1h"
+	secs  := dd.timestamp / 1_000_000
+    days  := uint16(secs / 86400)
+    secs  %= 86400
+    hours := uint8(secs / 3600)
+
+    if days == 0 && hours == 0 {
+        return models.Uptime{Days: 0, Hours: 255}
+    }
+
+	return models.Uptime{Days: days, Hours: hours}
 }
 
 
@@ -88,65 +81,57 @@ func (dd *Dot11Dissector) GetSSID() models.SSID {
         return ssid
     }
 
-	data, ok := dd.ieCache[0x00]
-
-    if !ok || len(data) <= 0 {
-		ssid.IsHidden = true
-    	return ssid
+    if len(dd.ssidData) == 0 {
+        ssid.IsHidden = true
+        return ssid
     }
 
-	copyLen := len(data)
-    if copyLen > 32 { copyLen = 32 }
-	ssid.AddSSID(data)
-
+    ssid.AddSSID(dd.ssidData)
     return ssid
 }
 
 
 
 func (dd *Dot11Dissector) GetChannel() uint8 {
-	if !dd.IsBeacon { return 0 }
-	
-	if data, ok := dd.ieCache[0x03]; ok && len(data) >= 1 {
-		return data[0]
-	}
-	
-	return 0
+    if !dd.IsBeacon {
+        return 0
+    }
+
+    if len(dd.dsParam) > 0 {
+        return dd.dsParam[0]
+    }
+
+    return 0
 }
 
 
 
 func (dd *Dot11Dissector) GetSecurity() string {
-	if !dd.IsBeacon { return "unknown" }
-	
-	if len(dd.frame) < 36 {
-		return "OPEN"
-	}
-	
-	capInfo := binary.LittleEndian.Uint16(dd.frame[34:36])
+    if !dd.IsBeacon {
+        return "unknown"
+    }
 
-	// 1. WPA2 (RSN)
-	if data, ok := dd.ieCache[0x30]; ok {
-		sec := parseRSN(data)
-		if sec != "" {
-			return sec
-		}
-	}
+    if len(dd.frame) < 36 {
+        return "OPEN"
+    }
 
-	// 2. WPA1 (vendor specific)
-	if dd.wpa1Data != nil {
-		sec := parseWPA1(dd.wpa1Data)
-		if sec != "" {
-			return sec
-		}
-	}
+    capInfo := binary.LittleEndian.Uint16(dd.frame[34:36])
 
-	// 3. WEP
-	if (capInfo & 0x0010) != 0 {
-		return "WEP"
-	}
+    if len(dd.rsn) > 0 {
+        sec := parseRSN(dd.rsn)
+        if sec != "" { return sec }
+    }
 
-	return "OPEN"
+    if len(dd.wpa1Data) > 0 {
+        sec := parseWPA1(dd.wpa1Data)
+        if sec != "" { return sec }
+    }
+
+    if (capInfo & 0x0010) != 0 {
+        return "WEP"
+    }
+
+    return "OPEN"
 }
 
 
@@ -273,19 +258,17 @@ func decodeAKM(suite []byte) string {
 
 
 func (dd *Dot11Dissector) GetStandard() string {
-	if !dd.IsBeacon { return "unknown" }
+    if !dd.IsBeacon {
+        return "unknown"
+    }
 
-	if data, ok := dd.ieCache[0xFF]; ok && len(data) > 0 && data[0] == 35 {
-		return "802.11ax"
-	}
+    // 802.11ax - HE Capabilities (IE 0xFF) with OUI=35
+    if len(dd.heCap) > 0 && dd.heCap[0] == 35 {
+        return "802.11ax"
+    }
 
-	if _, ok := dd.ieCache[0xBF]; ok || dd.ieCache[0xC0] != nil {
-		return "802.11ac"
-	}
+    if len(dd.vhtCap) > 0 { return "802.11ac" }
+	if len(dd.htCap)  > 0 { return "802.11n"  }
 
-	if _, ok := dd.ieCache[0x2D]; ok || dd.ieCache[0x3D] != nil {
-		return "802.11n"
-	}
-
-	return "802.11b/g"
+    return "802.11b/g"
 }

@@ -15,25 +15,42 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package wifimap
+package models
 
-import "offscan/internal/models"
+import "fmt"
 
 
-type wifiData struct {
-	ssid   models.SSID
-	bssid  models.BSSID
-	chnl   uint8
-	sec    string
-	std    string
-	wps    string
-	time   models.Uptime
+type Uptime struct {
+    Days  uint16
+    Hours uint8
 }
 
 
 
-type maxLength struct {
-	ssid  int
-	sec   int
-	wps   int
+func (u *Uptime) isLessThanHour() bool {
+    return u.Hours == 255
+}
+
+
+
+func (u *Uptime) isUknown() bool {
+	return u.Days == 0 && u.Hours == 0
+}
+
+
+
+func (u *Uptime) String() string {
+	if u.isUknown() {
+		return "unknown"
+	}
+
+    if u.isLessThanHour() {
+        return "less than 1h"
+    }
+ 
+	if u.Days > 0 {
+        return fmt.Sprintf("%dd %02dh", u.Days, u.Hours)
+    }
+    
+	return fmt.Sprintf("%dh", u.Hours)
 }
