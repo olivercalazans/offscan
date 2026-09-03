@@ -181,7 +181,7 @@ func (wm *wifiMapper) getMaxLen(netData *wifiData) {
 	lenSec := len(netData.sec)
 	if lenSec > wm.maxLen.sec { wm.maxLen.sec = lenSec }
 
-	lenWPS := len(netData.wps)
+	lenWPS := netData.wps.Len()
 	if lenWPS > wm.maxLen.wps { wm.maxLen.wps = lenWPS }
 }
 
@@ -274,7 +274,7 @@ func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
 		netData.chnl, 
 		netData.std, 
 		wm.maxLen.sec, netData.sec,
-		wm.maxLen.wps, netData.wps, 
+		wm.maxLen.wps, netData.wps.String(), 
 		netData.time.String(),
 	)
 

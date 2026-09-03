@@ -40,17 +40,9 @@ func (u *Uptime) isUknown() bool {
 
 
 func (u *Uptime) String() string {
-	if u.isUknown() {
-		return "unknown"
-	}
-
-    if u.isLessThanHour() {
-        return "less than 1h"
-    }
- 
-	if u.Days > 0 {
-        return fmt.Sprintf("%dd %02dh", u.Days, u.Hours)
-    }
+	if u.isUknown()       { return "unknown" }
+    if u.isLessThanHour() { return "less than 1h" }
+	if u.Days > 0         { return fmt.Sprintf("%dd %02dh", u.Days, u.Hours) }
     
 	return fmt.Sprintf("%dh", u.Hours)
 }

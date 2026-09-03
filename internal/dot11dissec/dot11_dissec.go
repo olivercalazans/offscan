@@ -26,8 +26,7 @@ type Dot11Dissector struct {
 	IsBeacon    bool
 	IsDataFrm   bool
 	timestamp   uint64
-	wpsInfo     WPSInfo
-
+    
 	ssidData    []byte // IE 0x00
     dsParam     []byte // IE 0x03 (channel)
     rsn         []byte // IE 0x30 (WPA2)
@@ -41,11 +40,7 @@ type Dot11Dissector struct {
 
 
 func NewDot11Dissector() *Dot11Dissector {
-	return &Dot11Dissector{
-		wpsInfo: WPSInfo{
-			str: make([]string, 0),
-		},
-	}
+	return &Dot11Dissector{}
 }
 
 

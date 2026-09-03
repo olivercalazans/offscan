@@ -26,7 +26,7 @@ type wifiData struct {
 	chnl   uint8
 	sec    string
 	std    string
-	wps    string
+	wps    models.WPSInfo
 	time   models.Uptime
 }
 
