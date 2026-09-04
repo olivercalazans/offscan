@@ -77,7 +77,7 @@ func (hd *hostDiscovery) processArpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs[info] = ""
+    hd.activeIPs[info] = struct{}{}
 }
 
 
@@ -98,7 +98,7 @@ func (hd *hostDiscovery) processIpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs[info] = ""
+    hd.activeIPs[info] = struct{}{}
 }
 
 

@@ -46,7 +46,7 @@ func Run(args []string) {
 
 
 type hostDiscovery struct {
-    activeIPs   map[hostInfo]string
+    activeIPs   map[hostInfo]struct{}
     dissector   pktdissec.PacketDissector
     ips         generators.Ipv4Iter
     iface       net.Interface
@@ -71,7 +71,6 @@ func (hd *hostDiscovery) execute() {
     hd.startPacketProcessor()
     hd.sendProbes()
     hd.stopPacketProcessor()
-    hd.resolveNames()
     hd.displayResult()
 }
 
@@ -158,19 +157,10 @@ func (hd *hostDiscovery) sendProbes() {
 
 
 
-func (hd *hostDiscovery) resolveNames() {
-	for addrs := range hd.activeIPs {
-        ip   := net.IP(addrs.ip[:])
-        name := netroute.GetHostName(ip.String())        
-		
-        hd.activeIPs[addrs] = name
-    }
-}
-
-
-
 func (hd *hostDiscovery) displayResult() {
-	if len(hd.activeIPs) < 1 {
+    hosts := hd.resolveNames()
+
+	if len(hosts) < 1 {
 		fmt.Println("No host detected")
 		return
 	}
@@ -178,15 +168,23 @@ func (hd *hostDiscovery) displayResult() {
 	fmt.Println("")
 
 	for _, info := range hd.getSortedActiveIPs() {
-		hostname := hd.activeIPs[info]
-
-		ip  := net.IP(info.ip[:])
-		mac := net.HardwareAddr(info.mac[:])
-
-		fmt.Printf("# %-15s  %s  %s\n", ip.String(), mac.String(), hostname)
+		hostname := hosts[info]
+		fmt.Printf("# %-15s  %s  %s\n", info.ip.String(), info.mac.String(), hostname)
 	}
 }
 
+
+
+func (hd *hostDiscovery) resolveNames() map[hostInfo]string {
+    hosts:= make(map[hostInfo]string, len(hd.activeIPs))
+
+	for addrs := range hd.activeIPs {
+        name         := netroute.GetHostName(addrs.ip)        		
+        hosts[addrs]  = name
+    }
+
+    return hosts
+}
 
 
 
@@ -198,7 +196,7 @@ func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
 	}
 
 	sort.Slice(keys, func(i, j int) bool {
-		for idx := 0; idx < 4; idx++ {
+		for idx := range 4 {
 			if keys[i].ip[idx] != keys[j].ip[idx] {
 				return keys[i].ip[idx] < keys[j].ip[idx]
 			}
@@ -206,5 +204,6 @@ func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
 		return false
 	})
 
+    hd.activeIPs = nil
 	return keys
 }

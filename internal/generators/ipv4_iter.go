@@ -80,7 +80,7 @@ func parseCIDR(cidr string) (network, broadcast uint32) {
 		utils.Abort(fmt.Sprintf("Invalid CIDR: %s", cidr))
 	}
 
-	ip, err := models.ParseIPv4(parts[0])
+	ip, err := models.StrToIPv4(parts[0])
 	if err != nil {
 		utils.Abort(fmt.Sprintf("Invalid IP in CIDR '%s': %v", cidr, err))
 	}
@@ -194,7 +194,7 @@ func parseWildcardRange(
 
 
 func parseIPAddress(ipStr string) models.IPv4 {
-	ip, err := models.ParseIPv4(ipStr)
+	ip, err := models.StrToIPv4(ipStr)
 
     if err != nil {
 		utils.Abort(fmt.Sprintf("Invalid IP address '%s': %v", ipStr, err))

@@ -23,6 +23,7 @@ import (
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/generators"
+	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
 	"offscan/internal/utils"
@@ -84,7 +85,7 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 		}
 	}
 
-	hd.activeIPs  = make(map[hostInfo]string)
+	hd.activeIPs  = make(map[hostInfo]struct{})
 	cidr         := sysconf.MustCIDR(&hd.iface)
 	hd.ips        = generators.NewIpv4Iter(cidr, rangeIP)
 	hd.myIP       = sysconf.MustIPv4(&hd.iface)
@@ -135,7 +136,7 @@ func (hd *hostDiscovery) protoFlags(
 
     if rangeIP != "" {
         for _, ip := range strings.Split(rangeIP, "*") {
-            ipv4 := conv.MustStrToIPv4(ip)
+            ipv4 := models.MustStrToIPv4(ip)
 			
 			value, err := netroute.IsLocal(&hd.iface, ipv4)
 			if err != nil {

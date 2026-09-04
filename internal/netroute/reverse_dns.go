@@ -17,12 +17,15 @@
 
 package netroute
 
-import "net"
+import (
+	"net"
+	"offscan/internal/models"
+)
 
 
 
-func GetHostName(ip string) string {
-    names, err := net.LookupAddr(ip)
+func GetHostName(ip models.IPv4) string {
+    names, err := net.LookupAddr(ip.String())
 
 	if err != nil || len(names) < 1 {
         return "Unknown"

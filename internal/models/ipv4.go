@@ -55,7 +55,7 @@ func (ip IPv4) ToNetIP() net.IP {
 
 
 
-func ParseIPv4(s string) (IPv4, error) {
+func StrToIPv4(s string) (IPv4, error) {
     var ip IPv4
     var idx int
     var val uint8
@@ -102,8 +102,8 @@ func ParseIPv4(s string) (IPv4, error) {
 
 
 
-func MustParseIPv4(s string) IPv4 {
-    ip, err := ParseIPv4(s)
+func MustStrToIPv4(s string) IPv4 {
+    ip, err := StrToIPv4(s)
 
 	if err != nil {
         utils.Abort(err.Error())

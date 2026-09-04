@@ -20,11 +20,12 @@ package netroute
 import (
 	"fmt"
 	"net"
+	"offscan/internal/models"
 )
 
 
 
-func IsLocal(iface *net.Interface, ip net.IP) (bool, error) {
+func IsLocal(iface *net.Interface, ip models.IPv4) (bool, error) {
     addrs, err := iface.Addrs()
     if err != nil {
         return false, fmt.Errorf("Unable to get interface addresses %s: %v", iface.Name, err)
@@ -34,8 +35,8 @@ func IsLocal(iface *net.Interface, ip net.IP) (bool, error) {
         ipnet, ok := addr.(*net.IPNet)
         if !ok { continue }
 
-        if ipnet.IP.To4() != nil && ip.To4() != nil {
-            if ipnet.Contains(ip) {
+        if ipnet.IP.To4() != nil {
+            if ipnet.Contains(ip.ToNetIP()) {
                 return true, nil
             }
         }
