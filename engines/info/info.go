@@ -85,7 +85,7 @@ func (ni *networkInfo) parseArgs(args []string) {
 	parser := argparser.NewArgParser(flags)
 	parser.ParseFlags(args)
 
-    ni.ifaceList = make([]net.Interface, 1)
+    ni.ifaceList = make([]net.Interface, 0)
 
 	for _, flag := range flags {
 		switch flag.ID {
@@ -103,7 +103,7 @@ func (ni *networkInfo) parseArgs(args []string) {
 
 
 func (ni *networkInfo) execute() {
-    for idx:= range ni.ifaceList {
+    for idx := range ni.ifaceList {
 		ni.current = &ni.ifaceList[idx]
         
 		ni.setState()
@@ -244,7 +244,7 @@ func (ni *networkInfo) setBroadcast() {
 
 
 func (ni *networkInfo) displayInfo(index int) {
-    fmt.Printf("# %d Interface: %s - State: %s\n", index, ni.current.Name, ni.state)
+    fmt.Printf("# %d Interface: %s - State: %s\n", index + 1, ni.current.Name, ni.state)
     fmt.Println("  - Type.......:", ni.ifType)
     fmt.Println("  - MAC........:", ni.mac)
     fmt.Println("  - IP.........:", ni.ip)
