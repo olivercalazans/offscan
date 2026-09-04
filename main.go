@@ -24,10 +24,12 @@ import (
 	"offscan/engines/arppoison"
 	"offscan/engines/beacon"
 	"offscan/engines/deauth"
+	"offscan/engines/fwd"
 	"offscan/engines/hostdisc"
+	"offscan/engines/ifmode"
+	"offscan/engines/info"
 	"offscan/engines/l2disc"
 	"offscan/engines/pixiedust"
-	"offscan/engines/system"
 	"offscan/engines/wifimap"
 	"offscan/internal/argparser"
 	"offscan/internal/utils"
@@ -46,10 +48,12 @@ func main() {
 		"arp"    : { Run: arppoison.Run, Helper: arppoison.DisplayHelp },
 		"beacon" : { Run: beacon.Run,    Helper: beacon.DisplayHelp    },
 		"deauth" : { Run: deauth.Run,    Helper: deauth.DisplayHelp    },
+		"fwd"    : { Run: fwd.Run,       Helper: fwd.DisplayHelp       },
 		"hdisc"  : { Run: hostdisc.Run,  Helper: hostdisc.DisplayHelp  },
+		"ifmode" : { Run: ifmode.Run,    Helper: ifmode.DisplayHelp    },
+		"info"   : { Run: info.Run,      Helper: info.DisplayHelp      },
 		"l2disc" : { Run: l2disc.Run,    Helper: l2disc.DisplayHelp    },
 		"pixie"  : { Run: pixiedust.Run, Helper: pixiedust.DisplayHelp },
-		"sys"    : { Run: system.Run,    Helper: system.DisplayHelp    },
 		"wmap"   : { Run: wifimap.Run,   Helper: wifimap.DisplayHelp   },
 	}
 

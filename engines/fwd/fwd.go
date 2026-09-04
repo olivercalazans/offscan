@@ -15,39 +15,93 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package system
+package fwd
 
 import (
 	"bytes"
 	"fmt"
+	"offscan/internal/argparser"
 	"offscan/internal/utils"
 	"os"
 )
 
 
+const (
+	ipv4ForwardPath = "/proc/sys/net/ipv4/ip_forward"
+	enable = iota
+	disable
+)
 
-func (s *system) executeFwd() {
-	s.validateFwdFlags()
 
-	if s.enable  { enableIPv4Forwarding()  }
-	if s.disable { disableIPv4Forwarding() }
+
+func Run(args []string) {
+    var f forwarding
+	f.parseArgs(args)
+	f.execute()
 }
 
 
 
-func (s *system) validateFwdFlags() {
-	if s.enable && s.disable {
+func DisplayHelp() {
+	help := "\n# Forwarding. E.g., $ sudo ./offscan fwd <FLAGS>\n\n" +
+	"    -e, --enable  : (Option) Enable forwarding\n" +
+	"    -d, --disable : (Option) Disable forwarding\n"
+
+	fmt.Println(help)
+}
+
+
+
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{
+		{ID: enable,  Short: "e", Long: "enable"},
+		{ID: disable, Short: "d", Long: "disable"},
+	}
+}
+
+
+
+type forwarding struct {
+	enable, disable bool
+}
+
+
+
+func (f *forwarding) parseArgs(args []string) {
+    flags   := FlagSettings()
+	parser  := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+	args = nil
+
+	for _, flag := range flags {
+		switch flag.ID {
+		case enable  : f.enable  = flag.ValueBool
+		case disable : f.disable = flag.ValueBool
+		}
+	}
+}
+
+
+
+func (f *forwarding) execute() {
+	f.validateFwdFlags()
+
+	if f.enable  { enableIPv4Forwarding()  }
+	if f.disable { disableIPv4Forwarding() }
+}
+
+
+
+func (f *forwarding) validateFwdFlags() {
+	if f.enable && f.disable {
 		utils.Abort("Both enable and disable flags are provided, but only one can be used at a time")
 	}
 
-	if !s.enable && !s.disable {
+	if !f.enable && !f.disable {
 		utils.Abort("No action flag provided. It's necessary to use -e/--enable or -d/--disable")
 	}
 }
 
-
-
-const ipv4ForwardPath = "/proc/sys/net/ipv4/ip_forward"
 
 
 func isIPv4ForwardingEnabled() bool {
@@ -66,6 +120,7 @@ func enableIPv4Forwarding() {
     enabled := isIPv4ForwardingEnabled()
     if enabled {
 		fmt.Println("[i] Forwarding already enabled")
+		return
     }
 
     if err := os.WriteFile(ipv4ForwardPath, []byte{'1'}, 0644); err != nil {
@@ -79,6 +134,7 @@ func disableIPv4Forwarding() {
 	enabled := isIPv4ForwardingEnabled()
     if !enabled {
 		fmt.Println("[i] Forwarding already disabled")
+		return
     }
 
     if err := os.WriteFile(ipv4ForwardPath, []byte{'0'}, 0644); err != nil {

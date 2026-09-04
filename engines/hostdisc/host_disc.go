@@ -27,7 +27,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/models"
 	"offscan/internal/netroute"
@@ -83,8 +82,8 @@ func (hd *hostDiscovery) displayExecInfo() {
     if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
     
 	proto  := strings.Join(protoc, ", ")
-    first  := conv.U32ToIP(hd.ips.StartU32)
-    last   := conv.U32ToIP(hd.ips.EndU32)
+    first  := models.Uint32ToIPv4(hd.ips.StartU32)
+    last   := models.Uint32ToIPv4(hd.ips.EndU32)
     length := hd.ips.EndU32 - hd.ips.StartU32 + 1
 
     fmt.Printf("[i] Iface..: %s\n", hd.iface.Name)
@@ -128,7 +127,7 @@ func (hd *hostDiscovery) cidrForBPFFilter() string {
     }
     
 	networkAddr := hd.ips.StartU32 & mask
-    ip 			:= conv.U32ToIP(networkAddr)
+    ip 			:= models.Uint32ToIPv4(networkAddr)
     
 	return fmt.Sprintf("%s/%d", ip.String(), prefixLen)
 }
