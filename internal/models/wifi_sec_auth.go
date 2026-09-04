@@ -15,25 +15,43 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package wifimap
-
-import "offscan/internal/models"
+package models
 
 
-type wifiData struct {
-	ssid   models.SSID
-	bssid  models.BSSID
-	chnl   uint8
-	sec    models.WifiSec
-	std    models.WifiStd
-	wps    models.WPSInfo
-	time   models.Uptime
+
+type SecurityAuth uint8
+
+const (
+	AuthNone SecurityAuth = iota
+	AuthPSK
+	AuthMGT
+	AuthSAE
+	AuthOWE
+	AuthAPPeer
+)
+
+
+
+func (sa SecurityAuth) str() string {
+	switch sa {
+	case AuthPSK    : return "PSK"
+	case AuthMGT    : return "MGT"
+	case AuthSAE    : return "SAE"
+	case AuthOWE    : return "OWE"
+	case AuthAPPeer : return "AP-PEER"
+	default         : return ""
+	}
 }
 
 
 
-type maxLength struct {
-	ssid  int
-	sec   int
-	wps   int
+func (sa SecurityAuth) lenStr() int {
+	switch sa {
+	case AuthPSK    : return 3
+	case AuthMGT    : return 3
+	case AuthSAE    : return 3
+	case AuthOWE    : return 3
+	case AuthAPPeer : return 7
+	default         : return 0
+	}
 }

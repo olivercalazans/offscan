@@ -58,5 +58,5 @@ func (wm *wifiMapper) parseArgs(args []string) {
 		}
 	}
 
-	wm.wInfo = make(map[wifiData]struct{})
+	wm.wInfo = make(map[wifiData]struct{}, 75)
 }

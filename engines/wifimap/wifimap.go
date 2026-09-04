@@ -178,7 +178,7 @@ func (wm *wifiMapper) extractKeysAndMaxLen() []wifiData {
 func (wm *wifiMapper) getMaxLen(netData *wifiData) {
 	if netData.ssid.Len() > wm.maxLen.ssid { wm.maxLen.ssid = netData.ssid.Len() }
 	
-	lenSec := len(netData.sec)
+	lenSec := netData.sec.Len()
 	if lenSec > wm.maxLen.sec { wm.maxLen.sec = lenSec }
 
 	lenWPS := netData.wps.Len()
@@ -273,7 +273,7 @@ func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
 		netData.bssid.String(), 
 		netData.chnl, 
 		netData.std.String(),
-		wm.maxLen.sec, netData.sec,
+		wm.maxLen.sec, netData.sec.String(),
 		wm.maxLen.wps, netData.wps.String(), 
 		netData.time.String(),
 	)
