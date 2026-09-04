@@ -15,21 +15,34 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
+package models
 
-import (
-	"fmt"
-	"net"
-	"offscan/internal/utils"
-)
+import "fmt"
 
 
-func MustTo4(ip net.IP) net.IP {
-	ipv4 := ip.To4()
+type Uptime struct {
+    Days  uint16
+    Hours uint8
+}
 
-	if ipv4 == nil {
-		utils.Abort(fmt.Sprintf("Invalid addres for IPv4: %s", ip.String()))
-	}
 
-	return ipv4
+
+func (u *Uptime) isLessThanHour() bool {
+    return u.Hours == 255
+}
+
+
+
+func (u *Uptime) isUknown() bool {
+	return u.Days == 0 && u.Hours == 0
+}
+
+
+
+func (u *Uptime) String() string {
+	if u.isUknown()       { return "unknown" }
+    if u.isLessThanHour() { return "less than 1h" }
+	if u.Days > 0         { return fmt.Sprintf("%dd %02dh", u.Days, u.Hours) }
+    
+	return fmt.Sprintf("%dh", u.Hours)
 }

@@ -161,7 +161,7 @@ func (wm *wifiMapper) displayResults() {
 
 
 
-func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData) {
+func (wm *wifiMapper) extractKeysAndMaxLen() []wifiData {
 	keys := make([]wifiData, 0, len(wm.wInfo))
 	
 	for netData := range wm.wInfo {
@@ -176,29 +176,56 @@ func (wm *wifiMapper) extractKeysAndMaxLen() ([]wifiData) {
 
 
 func (wm *wifiMapper) getMaxLen(netData *wifiData) {
-	lenSSID := len(netData.ssid)
-	if lenSSID > wm.maxLen.ssid { wm.maxLen.ssid = lenSSID }
+	if netData.ssid.Len() > wm.maxLen.ssid { wm.maxLen.ssid = netData.ssid.Len() }
 	
-	lenSec := len(netData.sec)
+	lenSec := netData.sec.Len()
 	if lenSec > wm.maxLen.sec { wm.maxLen.sec = lenSec }
 
-	lenWPS := len(netData.wps)
+	lenWPS := netData.wps.Len()
 	if lenWPS > wm.maxLen.wps { wm.maxLen.wps = lenWPS }
 }
 
 
 
 func (wm *wifiMapper) sortWifiData(keys []wifiData) {
-	slices.SortFunc(keys, func(a, b wifiData) int {
-		if a.ssid != b.ssid {
-			if a.ssid < b.ssid {
-				return -1
-			}
-			return 1
-		}
+    slices.SortFunc(keys, func(a, b wifiData) int {
+        if a.ssid.IsHidden != b.ssid.IsHidden {
+            if a.ssid.IsHidden {
+                return -1
+            }
+            return 1
+        }
 
-		return int(a.chnl) - int(b.chnl)
-	})
+        if a.ssid.IsUnknown != b.ssid.IsUnknown {
+            if a.ssid.IsUnknown {
+                return -1
+            }
+            return 1
+        }
+
+        aLen := a.ssid.Len()
+        bLen := b.ssid.Len()
+
+        minLen := aLen
+        if bLen < minLen {
+            minLen = bLen
+        }
+
+        for i := 0; i < minLen; i++ {
+            if a.ssid.Data[i] < b.ssid.Data[i] {
+                return -1
+            }
+            if a.ssid.Data[i] > b.ssid.Data[i] {
+                return 1
+            }
+        }
+
+        if aLen != bLen {
+            return aLen - bLen
+        }
+
+        return int(a.chnl) - int(b.chnl)
+    })
 }
 
 
@@ -240,17 +267,15 @@ func (wm *wifiMapper) displayHeader() {
 
 
 func (wm *wifiMapper) displayWifiInfo(netData wifiData) {
-	bssidStr := net.HardwareAddr(netData.bssid[:]).String()
-
 	line := fmt.Sprintf(
 		"%-*s  %-17s  %-3d  %-8s  %-*s  %-*s  %s\n",
-		wm.maxLen.ssid, netData.ssid, 
-		bssidStr, 
+		wm.maxLen.ssid, netData.ssid.String(), 
+		netData.bssid.String(), 
 		netData.chnl, 
-		netData.std, 
-		wm.maxLen.sec, netData.sec,
-		wm.maxLen.wps, netData.wps, 
-		netData.time,
+		netData.std.String(),
+		wm.maxLen.sec, netData.sec.String(),
+		wm.maxLen.wps, netData.wps.String(), 
+		netData.time.String(),
 	)
 
 	fmt.Print(line)

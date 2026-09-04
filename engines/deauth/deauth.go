@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"offscan/internal/dot11build"
+	"offscan/internal/models"
 	"offscan/internal/sockets"
 	"offscan/internal/sysconf"
 	"offscan/internal/utils"
@@ -45,8 +46,8 @@ type deauthAttack struct {
     frmsSent   int
     seqNum     uint16
     socket     sockets.Layer2Socket
-    apMAC      net.HardwareAddr
-    targetMAC  net.HardwareAddr
+    apMAC      models.MAC
+    targetMAC  models.MAC
     delay      time.Duration
     timeStart  time.Time
 }
@@ -101,7 +102,7 @@ func (da *deauthAttack) sendEndlessly() {
 
 
 
-func (da *deauthAttack) sendFrame(srcMac, dstMac net.HardwareAddr) {
+func (da *deauthAttack) sendFrame(srcMac, dstMac models.MAC) {
     da.builder.SetSrcAddr(srcMac)
     da.builder.SetDstAddr(dstMac)
     da.builder.SetSeqCtrl(da.seqNum)

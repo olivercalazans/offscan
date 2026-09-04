@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"offscan/internal/models"
 	"offscan/internal/pktbuild"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
@@ -49,11 +50,11 @@ type arpPoison struct {
 
 
 type addresses struct {
-	myMAC      net.HardwareAddr
-	targetMAC  net.HardwareAddr
-	targetIP   net.IP
-	apMAC	   net.HardwareAddr
-	apIP       net.IP
+	myMAC      models.MAC
+	targetMAC  models.MAC
+	targetIP   models.IPv4
+	apMAC	   models.BSSID
+	apIP       models.IPv4
 }
 
 

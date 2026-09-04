@@ -17,6 +17,8 @@
 
 package pktdissec
 
+import "offscan/internal/models"
+
 
 
 func (pd *PacketDissector) IsArpReply() bool {
@@ -55,8 +57,8 @@ func (pd *PacketDissector) checkArpOpcode() {
 
 
 
-func (pd *PacketDissector) GetArpSrcIP() ([4]byte, bool) {
-	var ip [4]byte
+func (pd *PacketDissector) GetArpSrcIP() (models.IPv4, bool) {
+	var ip models.IPv4
 
 	if pd.lenPkt < 32 {
 		return ip, false 
@@ -69,8 +71,8 @@ func (pd *PacketDissector) GetArpSrcIP() ([4]byte, bool) {
 
 
 
-func (pd *PacketDissector) GetArpSrcMAC() ([6]byte, bool) {
-	var mac [6]byte
+func (pd *PacketDissector) GetArpSrcMAC() (models.MAC, bool) {
+	var mac models.MAC
 	
 	if pd.lenPkt < 28 {
 		return mac, false

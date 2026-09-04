@@ -39,12 +39,12 @@ func NewPacketDissector() *PacketDissector {
 func (pd *PacketDissector) UpdatePkt(rawPkt []byte) {
     pd.lenPkt = len(rawPkt)
     pd.pkt    = rawPkt
-    pd.flushFlags()
+    pd.resetFlags()
 }
 
 
 
-func (pd *PacketDissector) flushFlags() {
+func (pd *PacketDissector) resetFlags() {
     pd.isIPv4       = false
 	pd.isArpReply   = false
 	pd.isArpRequest = false

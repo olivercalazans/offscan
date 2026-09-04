@@ -15,21 +15,42 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netroute
-
-import (
-	"net"
-	"offscan/internal/models"
-)
+package models
 
 
 
-func GetHostName(ip models.IPv4) string {
-    names, err := net.LookupAddr(ip.String())
+type SSID struct {
+	Data       [32]byte
+	length     uint8
+	IsUnknown  bool
+	IsHidden   bool
+}
 
-	if err != nil || len(names) < 1 {
-        return "Unknown"
-    }
 
-    return names[0]
+
+func (s *SSID) AddSSID(bytes []byte) bool {
+	lenBytes := len(bytes)
+
+	if lenBytes > 32 || lenBytes < 1 { return false }
+
+	s.length = uint8(len(bytes))
+	copy(s.Data[:s.length], bytes)
+	
+	return true
+}
+
+
+
+func (s *SSID) Len() int {
+	return int(s.length)
+}
+
+
+
+func (s *SSID) String() string {
+    if s.IsUnknown { return "unknown"  }
+    if s.IsHidden  { return "<hidden>" }
+    if s.length == 0  { return "<empty>"  }
+
+    return string(s.Data[:s.length])
 }

@@ -20,35 +20,37 @@ package sysconf
 import (
 	"fmt"
 	"net"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 )
 
 
 
-func IPv4(iface *net.Interface) (net.IP, error) {
+func IfaceIPv4(iface *net.Interface) (models.IPv4, error) {
+    var ip models.IPv4
+
     addrs, err := iface.Addrs()
     if err != nil {
-        return nil, fmt.Errorf("Unable to get interface IPs: %w", err)
+        return ip, fmt.Errorf("failed to get addresses for %s: %w", iface.Name, err)
     }
 
     for _, addr := range addrs {
         ipNet, ok := addr.(*net.IPNet)
-     
         if !ok { continue }
-     
-        ip := ipNet.IP.To4()
-        if ip == nil { continue }
-     
-        return ip, nil
+
+        ip4 := ipNet.IP.To4()
+        if ip4 == nil { continue }
+
+        return models.NetIpToIPv4(ip4), nil
     }
-    
-    return nil, fmt.Errorf("No IPv4 address found on interface %s", iface.Name)
+
+    return ip, fmt.Errorf("no IPv4 address found on interface %s", iface.Name)
 }
 
 
 
-func MustIPv4(iface *net.Interface) net.IP {
-    ip, err := IPv4(iface)
+func MustIPv4(iface *net.Interface) models.IPv4 {
+    ip, err := IfaceIPv4(iface)
 
     if err != nil {
         utils.Abort(fmt.Sprintf("%v", err))

@@ -20,21 +20,18 @@ package netroute
 import (
 	"fmt"
 	"net"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 )
 
 
-func MustRouteIfaceForDstIP(dstIP net.IP) net.Interface {
-    dstIPv4 := dstIP.To4()
-    if dstIPv4 == nil {
-        utils.Abort(fmt.Sprintf("Destination IP is not IPv4: %s", dstIP))
-    }
 
-    dstAddr   := &net.UDPAddr{IP: dstIPv4, Port: 0}
+func MustRouteIfaceForDstIP(dstIP models.IPv4) net.Interface {
+    dstAddr   := &net.UDPAddr{IP: dstIP.ToNetIP(), Port: 0}
     conn, err := net.DialUDP("udp", nil, dstAddr)
    
     if err != nil {
-        utils.Abort(fmt.Sprintf("Failed to dial %s: %v", dstIPv4, err))
+        utils.Abort(fmt.Sprintf("Failed to dial %s: %v", dstIP.String(), err))
     }
     defer conn.Close()
 
@@ -48,7 +45,7 @@ func MustRouteIfaceForDstIP(dstIP net.IP) net.Interface {
 
     interfaces, err := net.Interfaces()
     if err != nil {
-        utils.Abort(fmt.Sprintf("failed to list interfaces: %v", err))
+        utils.Abort(fmt.Sprintf("Failed to list interfaces: %v", err))
     }
 
     for _, iface := range interfaces {
@@ -63,15 +60,14 @@ func MustRouteIfaceForDstIP(dstIP net.IP) net.Interface {
 
         for _, addr := range addrs {
             ipNet, ok := addr.(*net.IPNet)
-            if !ok {
-                continue
-            }
+            if !ok { continue }
+
             if ipNet.IP.Equal(localIP) {
                 return iface
             }
         }
     }
 
-    utils.Abort(fmt.Sprintf("no interface found with IP %s", localIP))
+    utils.Abort(fmt.Sprintf("No interface found with IP %s", localIP))
     return net.Interface{}
 }

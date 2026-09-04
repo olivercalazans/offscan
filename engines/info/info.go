@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package system
+package info
 
 import (
 	"fmt"
@@ -23,23 +23,42 @@ import (
 	"strconv"
 	"strings"
 
+	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/sysconf"
 )
 
 
 
-func (s *system) executeInfo() {
-    var ifaceList []net.Interface
+func Run(args []string) {
+    var ni networkInfo
+	
+    ni.parseArgs(args)
+    args = nil
 
-    if  s.iface == nil {
-        ifaceList = sysconf.MustAllIfaces()
-    } else {
-        ifaceList = append(ifaceList, conv.MustStrToIface(s.iface.Name))
+	ni.execute()
+}
+
+
+
+const iface = iota
+
+
+
+func DisplayHelp() {
+	help := "\n### INTERFACE INFO\n\n" +
+    "    E.g., $ sudo ./offscan info <FLAGS>\n\n" +
+	"    -i, --iface : (Optional) Display only the selected interface (Default: ALL)\n" 
+
+	fmt.Println(help)
+}
+
+
+
+func FlagSettings() []argparser.Flag {
+	return []argparser.Flag{ 
+        {ID: iface, Short: "i", Long: "iface", HasValue: true},
     }
-
-    info := networkInfo{ ifaceList: ifaceList }
-    info.execute()
 }
 
 
@@ -61,8 +80,30 @@ type networkInfo struct {
 
 
 
+func (ni *networkInfo) parseArgs(args []string) {
+    flags  := FlagSettings()
+	parser := argparser.NewArgParser(flags)
+	parser.ParseFlags(args)
+
+    ni.ifaceList = make([]net.Interface, 0)
+
+	for _, flag := range flags {
+		switch flag.ID {
+		case iface:
+            if  flag.ValueStr == "" {
+                ni.ifaceList = sysconf.MustAllIfaces()
+                return
+            }
+            
+            ni.ifaceList = append(ni.ifaceList, conv.MustStrToIface(flag.ValueStr))
+		}
+	}
+}
+
+
+
 func (ni *networkInfo) execute() {
-    for idx:= range ni.ifaceList {
+    for idx := range ni.ifaceList {
 		ni.current = &ni.ifaceList[idx]
         
 		ni.setState()
@@ -106,7 +147,7 @@ func (ni *networkInfo) setMAC() {
 
 
 func (ni *networkInfo) setIP() {
-    ip, err := sysconf.IPv4(ni.current)
+    ip, err := sysconf.IfaceIPv4(ni.current)
     
 	if err != nil {
         ni.ip = "None"
@@ -203,7 +244,7 @@ func (ni *networkInfo) setBroadcast() {
 
 
 func (ni *networkInfo) displayInfo(index int) {
-    fmt.Printf("# %d Interface: %s - State: %s\n", index, ni.current.Name, ni.state)
+    fmt.Printf("# %d Interface: %s - State: %s\n", index + 1, ni.current.Name, ni.state)
     fmt.Println("  - Type.......:", ni.ifType)
     fmt.Println("  - MAC........:", ni.mac)
     fmt.Println("  - IP.........:", ni.ip)

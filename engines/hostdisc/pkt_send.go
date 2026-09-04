@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/generators"
+	"offscan/internal/models"
 	"offscan/internal/pktbuild"
 	"offscan/internal/sockets"
 	"time"
@@ -39,8 +40,8 @@ type hostDiscProbes struct {
     tcp       *pktbuild.TcpPacket
     rand      *generators.RandomValues
     iface      net.Interface
-    dstIP      net.IP
-    myIP       net.IP
+    dstIP      models.IPv4
+    myIP       models.IPv4
     protocols  protocols
 }
 
@@ -48,7 +49,7 @@ type hostDiscProbes struct {
 
 func (hdp *hostDiscProbes) initProbeTools(
     iface      net.Interface, 
-    myIP       net.IP, 
+    myIP       models.IPv4, 
     protocols  protocols,
 ) {
     hdp.iface     = iface
@@ -111,13 +112,13 @@ func (hdp *hostDiscProbes) sendArpProbe() {
 
 
 func (hdp *hostDiscProbes) setArpReqStatic() {
-    myMAC     := hdp.iface.HardwareAddr
-	broadcast := net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+    myMAC     := models.MustMacFromSlice(hdp.iface.HardwareAddr)
+    broadcast := models.MAC{0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 	hdp.arp.EtherHdr.SetDstAddr(broadcast)
 	hdp.arp.EtherHdr.SetSrcAddr(myMAC)
 
-	nullMac := net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	nullMac := models.MAC{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	hdp.arp.SetRequestOpcode()
 	hdp.arp.SetSenderMAC(myMAC)
 	hdp.arp.SetSenderIP(hdp.myIP)

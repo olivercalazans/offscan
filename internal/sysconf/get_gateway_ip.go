@@ -18,9 +18,10 @@
 package sysconf
 
 import (
+	"errors"
 	"fmt"
 	"net"
-	"offscan/internal/conv"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 	"os"
 	"strconv"
@@ -29,11 +30,12 @@ import (
 
 
 
-func GatewayIP(iface *net.Interface) (net.IP, error) {
+func GatewayIP(iface *net.Interface) (models.IPv4, error) {
+    var ip models.IPv4
     data, err := os.ReadFile("/proc/net/route")
     
 	if err != nil {
-        return nil, err
+        return ip, err
     }
     
 	lines := strings.Split(string(data), "\n")
@@ -61,37 +63,39 @@ func GatewayIP(iface *net.Interface) (net.IP, error) {
 		return ip, nil
     }
 
-	return nil, fmt.Errorf("Gateway not found")
+	return ip, fmt.Errorf("Gateway not found")
 }
 
 
 
-func hexToIP(hex string) (net.IP, error) {
+func hexToIP(hex string) (models.IPv4, error) {
+    var ip models.IPv4
+    
     if len(hex) != 8 {
-        return nil, fmt.Errorf("Invalid hex length")
+        return ip, errors.New("invalid hex length: need 8 characters")
     }
 
-	b := make([]byte, 4)
     for i := range 4 {
-        val, err := strconv.ParseUint(hex[i*2:i*2+2], 16, 8)
-
-		if err != nil {
-            return nil, err
+        val, err := strconv.ParseUint(hex[i*2 : i*2+2], 16, 8)
+        
+        if err != nil {
+            return ip, err
         }
-        b[3-i] = byte(val)
+    
+        ip[i] = byte(val)
     }
-
-	return net.IPv4(b[0], b[1], b[2], b[3]), nil
+    
+    return ip, nil
 }
 
 
 
-func MustGatewayIP(iface *net.Interface) net.IP {
+func MustGatewayIP(iface *net.Interface) models.IPv4 {
     ip, err := GatewayIP(iface)
 
     if err != nil {
         utils.Abort(fmt.Sprintf("Unable to get Gateway IP. %v", err))
     }
 
-    return conv.MustTo4(ip)
+    return ip
 }

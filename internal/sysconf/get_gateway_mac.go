@@ -20,6 +20,7 @@ package sysconf
 import (
 	"fmt"
 	"net"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 	"os"
 	"strings"
@@ -27,44 +28,46 @@ import (
 
 
 
-func GatewayMAC(iface *net.Interface) (net.HardwareAddr, error) {
-    data, err := os.ReadFile("/proc/net/arp")
+func GatewayMAC(iface *net.Interface) (models.MAC, error) {
+	var emptyMAC models.MAC
 
+	data, err := os.ReadFile("/proc/net/arp")
 	if err != nil {
-        return nil, err
-    }
+		return emptyMAC, err
+	}
 
 	lines := strings.Split(string(data), "\n")
-    for _, line := range lines[1:] {
-        fields := strings.Fields(line)
+	for _, line := range lines[1:] {
+		fields := strings.Fields(line)
 
 		if len(fields) < 6 {
-            continue
-        }
+			continue
+		}
 
 		if fields[5] != iface.Name {
-            continue
-        }
+			continue
+		}
 
 		macStr := fields[3]
-        if macStr == "00:00:00:00:00:00" {
-            continue
-        }
+		if macStr == "00:00:00:00:00:00" {
+			continue
+		}
 
-		mac, err := net.ParseMAC(macStr)
-        if err != nil {
-            continue
-        }
+		mac, err := models.ParseMAC(macStr)
+		if err != nil {
+			continue
+		}
 
 		return mac, nil
-    }
+	}
 
-	return nil, fmt.Errorf("Gateway MAC not found")
+	return emptyMAC, fmt.Errorf("Gateway MAC not found")
 }
 
 
 
-func MustGatewayMAC(iface *net.Interface) net.HardwareAddr {
+
+func MustGatewayMAC(iface *net.Interface) models.MAC {
     mac, err := GatewayMAC(iface)
 
     if err != nil {

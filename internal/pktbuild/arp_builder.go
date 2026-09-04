@@ -19,8 +19,7 @@ package pktbuild
 
 import (
 	"encoding/binary"
-	"net"
-	"offscan/internal/conv"
+	"offscan/internal/models"
 )
 
 
@@ -94,28 +93,26 @@ func (ap *ArpPacket) SetReplyOpcode() {
 
 
 
-func (ap *ArpPacket) SetSenderMAC(mac net.HardwareAddr) {
-	copy(ap.arpHdr[8:14], mac)
+func (ap *ArpPacket) SetSenderMAC(mac models.MAC) {
+	copy(ap.arpHdr[8:14], mac[:])
 }
 
 
 
-func (ap *ArpPacket) SetSenderIP(ip net.IP) {
-	ipv4 := conv.MustTo4(ip)
-	copy(ap.arpHdr[14:18], ipv4)
+func (ap *ArpPacket) SetSenderIP(ip models.IPv4) {
+	copy(ap.arpHdr[14:18], ip[:])
 }
 
 
 
-func (ap *ArpPacket) SetTargetMAC(mac net.HardwareAddr) {
-	copy(ap.arpHdr[18:24], mac)
+func (ap *ArpPacket) SetTargetMAC(mac models.MAC) {
+	copy(ap.arpHdr[18:24], mac[:])
 }
 
 
 
-func (ap *ArpPacket) SetTargetIP(ip net.IP) {
-	ipv4 := conv.MustTo4(ip)
-	copy(ap.arpHdr[24:28], ipv4)
+func (ap *ArpPacket) SetTargetIP(ip models.IPv4) {
+	copy(ap.arpHdr[24:28], ip[:])
 }
 
 

@@ -20,7 +20,7 @@ package generators
 import (
 	"math"
 	"math/rand"
-	"net"
+	"offscan/internal/models"
 	"time"
 )
 
@@ -49,18 +49,13 @@ func (rv *RandomValues) RandomPort() uint16 {
 
 
 
-func (rv *RandomValues) randomU8Array() [6]byte {
-    var bytes [6]byte
+func (rv *RandomValues) RandomMac() models.MAC {
+    var bytes models.MAC
+
     rv.rng.Read(bytes[:])
     bytes[0] = (bytes[0] | 0x02) & 0xFE
+    
     return bytes
-}
-
-
-
-func (rv *RandomValues) RandomMac() net.HardwareAddr {
-	arr := rv.randomU8Array()
-    return net.HardwareAddr(arr[:])
 }
 
 

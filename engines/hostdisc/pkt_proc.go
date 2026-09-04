@@ -18,14 +18,14 @@
 package hostdisc
 
 import (
-	"encoding/binary"
+	"offscan/internal/models"
 	"offscan/internal/pktdissec"
 )
 
 
 type hostInfo struct {
-    ip   [4]byte
-    mac  [6]byte
+    ip   models.IPv4
+    mac  models.MAC
 }
 
 
@@ -77,7 +77,7 @@ func (hd *hostDiscovery) processArpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs[info] = ""
+    hd.activeIPs[info] = struct{}{}
 }
 
 
@@ -98,13 +98,13 @@ func (hd *hostDiscovery) processIpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs[info] = ""
+    hd.activeIPs[info] = struct{}{}
 }
 
 
 
-func (hd *hostDiscovery) isInRange(ip [4]byte) bool {
-    ipU32 := binary.BigEndian.Uint32(ip[:])
+func (hd *hostDiscovery) isInRange(ip models.IPv4) bool {
+    ipU32 := ip.Uint32()
     return ipU32 >= hd.ips.StartU32 && ipU32 <= hd.ips.EndU32
 }
 

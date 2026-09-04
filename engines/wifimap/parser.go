@@ -26,7 +26,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# WiFi Mapper. E.g., $ sudo ./offscan wmap <FLAGS>\n\n" +
+	help := "\n### WIFI MAPPER\n\n" + 
+	"    E.g., $ sudo ./offscan wmap <FLAGS>\n\n" +
 	"    -i, --iface <IFACE> : (Required) Interface to be used to sniff\n"
 
 	fmt.Println(help)
@@ -34,7 +35,7 @@ func DisplayHelp() {
 
 
 
-const iface uint8 = 1	
+const iface = iota
 
 
 
@@ -58,5 +59,5 @@ func (wm *wifiMapper) parseArgs(args []string) {
 		}
 	}
 
-	wm.wInfo = make(map[wifiData]struct{})
+	wm.wInfo = make(map[wifiData]struct{}, 75)
 }

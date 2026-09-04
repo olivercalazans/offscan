@@ -19,8 +19,8 @@ package l2disc
 
 import (
 	"fmt"
-	"net"
 	"offscan/internal/dot11dissec"
+	"offscan/internal/models"
 	"strings"
 )
 
@@ -31,7 +31,7 @@ type frameProcessor struct {
 	idx         uint
 	eventCh     chan dot11Info
 	missBuf     map[station]struct{}
-	netsBuf     map[[6]byte]beacon
+	netsBuf     map[models.MAC]beacon
 	stasBuf     map[station]struct{}
 }
 
@@ -39,7 +39,7 @@ type frameProcessor struct {
 
 func (fp *frameProcessor) init() {
 	fp.dissector = dot11dissec.NewDot11Dissector()
-	fp.netsBuf   = make(map[[6]byte]beacon)
+	fp.netsBuf   = make(map[models.MAC]beacon)
 	fp.stasBuf   = make(map[station]struct{})
 	fp.missBuf   = make(map[station]struct{})
 	fp.eventCh   = make(chan dot11Info, 1024)
@@ -160,15 +160,12 @@ func displayHeader() {
 func (fp *frameProcessor) displayStation(netInfo *beacon, sta *station) {
 	fp.idx++
 
-	mac   := net.HardwareAddr(sta.staMac[:])
-	bssid := net.HardwareAddr(sta.bssid[:])
-
 	fmt.Printf(
 		"%d. %s  %s  %-3d  %s\n",
 		fp.idx,
-		mac.String(),
-		bssid.String(), 
+		sta.staMac.String(),
+		sta.bssid.String(), 
 		netInfo.chnl,
-		netInfo.ssid,
+		netInfo.ssid.String(),
 	)
 }

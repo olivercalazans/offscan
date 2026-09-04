@@ -15,12 +15,43 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package conv
-
-import "net"
+package models
 
 
 
-func U32ToIP(n uint32) net.IP {
-    return net.IPv4(byte(n>>24), byte(n>>16), byte(n>>8), byte(n))
+type SecurityAuth uint8
+
+const (
+	AuthNone SecurityAuth = iota
+	AuthPSK
+	AuthMGT
+	AuthSAE
+	AuthOWE
+	AuthAPPeer
+)
+
+
+
+func (sa SecurityAuth) str() string {
+	switch sa {
+	case AuthPSK    : return "PSK"
+	case AuthMGT    : return "MGT"
+	case AuthSAE    : return "SAE"
+	case AuthOWE    : return "OWE"
+	case AuthAPPeer : return "AP-PEER"
+	default         : return ""
+	}
+}
+
+
+
+func (sa SecurityAuth) lenStr() int {
+	switch sa {
+	case AuthPSK    : return 3
+	case AuthMGT    : return 3
+	case AuthSAE    : return 3
+	case AuthOWE    : return 3
+	case AuthAPPeer : return 7
+	default         : return 0
+	}
 }

@@ -27,8 +27,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"offscan/internal/conv"
 	"offscan/internal/generators"
+	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
@@ -45,11 +45,11 @@ func Run(args []string) {
 
 
 type hostDiscovery struct {
-    activeIPs   map[hostInfo]string
+    activeIPs   map[hostInfo]struct{}
     dissector   pktdissec.PacketDissector
     ips         generators.Ipv4Iter
     iface       net.Interface
-    myIP        net.IP
+    myIP        models.IPv4
     protocols   protocols
     running     atomic.Bool
     sniffer     sniffer.Sniffer
@@ -70,7 +70,6 @@ func (hd *hostDiscovery) execute() {
     hd.startPacketProcessor()
     hd.sendProbes()
     hd.stopPacketProcessor()
-    hd.resolveNames()
     hd.displayResult()
 }
 
@@ -83,8 +82,8 @@ func (hd *hostDiscovery) displayExecInfo() {
     if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
     
 	proto  := strings.Join(protoc, ", ")
-    first  := conv.U32ToIP(hd.ips.StartU32)
-    last   := conv.U32ToIP(hd.ips.EndU32)
+    first  := models.Uint32ToIPv4(hd.ips.StartU32)
+    last   := models.Uint32ToIPv4(hd.ips.EndU32)
     length := hd.ips.EndU32 - hd.ips.StartU32 + 1
 
     fmt.Printf("[i] Iface..: %s\n", hd.iface.Name)
@@ -114,25 +113,21 @@ func (hd *hostDiscovery) getBpfFilter() string {
 
 func (hd *hostDiscovery) cidrForBPFFilter() string {
     xor := hd.ips.StartU32 ^ hd.ips.EndU32
-    var leadingZeros int
+    var leadingZeros int = 32
     
-	if xor == 0 {
-        leadingZeros = 32
-    } else {
+	if xor != 0 {
         leadingZeros = bits.LeadingZeros32(xor)
 	}
     
 	prefixLen := uint8(leadingZeros)
-    var mask uint32
+    var mask uint32 = 0
     
-	if prefixLen == 0 {
-        mask = 0
-    } else {
+	if prefixLen != 0 {
         mask = ^uint32(0) << (32 - prefixLen)
     }
     
 	networkAddr := hd.ips.StartU32 & mask
-    ip 			:= conv.U32ToIP(networkAddr)
+    ip 			:= models.Uint32ToIPv4(networkAddr)
     
 	return fmt.Sprintf("%s/%d", ip.String(), prefixLen)
 }
@@ -161,19 +156,10 @@ func (hd *hostDiscovery) sendProbes() {
 
 
 
-func (hd *hostDiscovery) resolveNames() {
-	for addrs := range hd.activeIPs {
-        ip   := net.IP(addrs.ip[:])
-        name := netroute.GetHostName(ip.String())        
-		
-        hd.activeIPs[addrs] = name
-    }
-}
-
-
-
 func (hd *hostDiscovery) displayResult() {
-	if len(hd.activeIPs) < 1 {
+    hosts := hd.resolveNames()
+
+	if len(hosts) < 1 {
 		fmt.Println("No host detected")
 		return
 	}
@@ -181,15 +167,23 @@ func (hd *hostDiscovery) displayResult() {
 	fmt.Println("")
 
 	for _, info := range hd.getSortedActiveIPs() {
-		hostname := hd.activeIPs[info]
-
-		ip  := net.IP(info.ip[:])
-		mac := net.HardwareAddr(info.mac[:])
-
-		fmt.Printf("# %-15s  %s  %s\n", ip.String(), mac.String(), hostname)
+		hostname := hosts[info]
+		fmt.Printf("# %-15s  %s  %s\n", info.ip.String(), info.mac.String(), hostname)
 	}
 }
 
+
+
+func (hd *hostDiscovery) resolveNames() map[hostInfo]string {
+    hosts:= make(map[hostInfo]string, len(hd.activeIPs))
+
+	for addrs := range hd.activeIPs {
+        name         := netroute.GetHostName(addrs.ip)        		
+        hosts[addrs]  = name
+    }
+
+    return hosts
+}
 
 
 
@@ -201,7 +195,7 @@ func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
 	}
 
 	sort.Slice(keys, func(i, j int) bool {
-		for idx := 0; idx < 4; idx++ {
+		for idx := range 4 {
 			if keys[i].ip[idx] != keys[j].ip[idx] {
 				return keys[i].ip[idx] < keys[j].ip[idx]
 			}
@@ -209,5 +203,6 @@ func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
 		return false
 	})
 
+    hd.activeIPs = nil
 	return keys
 }

@@ -17,15 +17,17 @@
 
 package wifimap
 
+import "offscan/internal/models"
+
 
 type wifiData struct {
-	ssid   string
-	bssid  [6]byte
+	ssid   models.SSID
+	bssid  models.BSSID
 	chnl   uint8
-	sec    string
-	std    string
-	wps    string
-	time   string  
+	sec    models.WifiSec
+	std    models.WifiStd
+	wps    models.WPSInfo
+	time   models.Uptime
 }
 
 

@@ -23,15 +23,18 @@ import (
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/generators"
+	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
+	"offscan/internal/utils"
 	"strings"
 )
 
 
 
 func DisplayHelp() {
-	help := "\n# Host Discovery. E.g., $ sudo ./offscan hdisc <FLAGS>\n\n" +
+	help := "\n### HOST DISCOVERY\n\n" + 
+	        "    E.g., $ sudo ./offscan hdisc <FLAGS>\n\n" +
 	        "    -i, --iface <IFACE> : (Optional) Network interface to send packets (default: system default)\n" +
 	        "    -r, --range <RANGE> : (Optional) IP range to scan. (*IP or IP*IP or IP*)\n" +
             "                         > *IP   - From the beginning of the subnet until the specified IP\n" +
@@ -47,11 +50,11 @@ func DisplayHelp() {
 
 
 const (
-	iface   uint8 = 1
-	ipRange uint8 = 2
-	arp     uint8 = 3
-	icmp    uint8 = 4
-	tcp     uint8 = 5
+	iface = iota
+	ipRange
+	arp
+	icmp
+	tcp
 )
 
 
@@ -83,7 +86,7 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 		}
 	}
 
-	hd.activeIPs  = make(map[hostInfo]string)
+	hd.activeIPs  = make(map[hostInfo]struct{})
 	cidr         := sysconf.MustCIDR(&hd.iface)
 	hd.ips        = generators.NewIpv4Iter(cidr, rangeIP)
 	hd.myIP       = sysconf.MustIPv4(&hd.iface)
@@ -134,8 +137,14 @@ func (hd *hostDiscovery) protoFlags(
 
     if rangeIP != "" {
         for _, ip := range strings.Split(rangeIP, "*") {
-            ipv4    := conv.MustStrToIPv4(ip)
-            isLocal  = isLocal && netroute.IsLocal(&hd.iface, ipv4)
+            ipv4 := models.MustStrToIPv4(ip)
+			
+			value, err := netroute.IsLocal(&hd.iface, ipv4)
+			if err != nil {
+				utils.Abort(err.Error())
+			}
+
+            isLocal  = isLocal && value
         }
     }
 

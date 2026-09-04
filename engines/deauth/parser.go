@@ -22,6 +22,7 @@ import (
 	"offscan/internal/argparser"
 	"offscan/internal/conv"
 	"offscan/internal/dot11build"
+	"offscan/internal/models"
 	"offscan/internal/sockets"
 	"time"
 )
@@ -29,7 +30,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# Deauthentication Attack. E.g., $ sudo ./offscan deauth <FLAGS>\n\n" +
+	help := "\n### DEAUTHENTICATION ATTACK\n\n" + 
+			"    E.g., $ sudo ./offscan deauth <FLAGS>\n\n" +
 		    "    -b, --bssid <BSSID> : (Required) BSSID/AP MAC\n"+
 	        "    -c, --channel <INT> : (Required) Channel\n" +
 	        "    -i, --iface <IFACE> : (Required) Network interface to send frames\n" +
@@ -42,11 +44,11 @@ func DisplayHelp() {
 
 
 const (
-	iface     uint8 = 1
-	targetMac uint8 = 2
-	bssid     uint8 = 3
-	channel   uint8 = 4
-	delay     uint8 = 5
+	iface = iota
+	targetMac
+	bssid
+	channel
+	delay
 )
 
 
@@ -72,8 +74,8 @@ func (da *deauthAttack) parseArgs(args []string) {
 	for _, f := range flags {
 		switch f.ID {
 		case iface     : da.iface     = conv.MustStrToIface(f.ValueStr)
-		case targetMac : da.targetMAC = conv.MustStrToMac(f.ValueStr)
-		case bssid     : da.apMAC     = conv.MustStrToMac(f.ValueStr)
+		case targetMac : da.targetMAC = models.MustParseMAC(f.ValueStr)
+		case bssid     : da.apMAC     = models.MustParseMAC(f.ValueStr)
 		case delay     : da.delay     = parseDelay(f.ValueStr)
 		case channel   : da.channel   = conv.MustStrToInt(f.ValueStr)
 		}

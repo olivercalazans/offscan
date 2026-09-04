@@ -30,7 +30,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# Layer 2 Host Discovery. E.g., $ sudo ./offscan l2disc <FLAGS>\n\n" +
+	help := "\n### LAYER 2 HOST DISCOVERY\n\n" + 
+			"    E.g., $ sudo ./offscan l2disc <FLAGS>\n\n" +
 	        "    -i, --iface <IFACE> : (Required) Define a network interface to sniff frames\n" +
 	        "    -t, --time <RANGE>  : (Optional) Time in seconds to sniff each channel (Default 1s)\n"
 
@@ -40,9 +41,9 @@ func DisplayHelp() {
 
 
 const (
-	iface      uint8 = 1
-	sniffTime  uint8 = 2
-	retrys     uint8 = 3
+	iface = iota
+	sniffTime
+	retrys
 )
 
 

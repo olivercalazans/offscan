@@ -15,21 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package netroute
+package models
 
-import (
-	"net"
-	"offscan/internal/models"
+type WifiStd uint8
+
+
+const (
+    StdUnknown WifiStd = iota
+    StdB_G    // 802.11b/g
+    StdN      // 802.11n
+    StdAC     // 802.11ac
+    StdAX     // 802.11ax
 )
 
 
 
-func GetHostName(ip models.IPv4) string {
-    names, err := net.LookupAddr(ip.String())
-
-	if err != nil || len(names) < 1 {
-        return "Unknown"
+func (s WifiStd) String() string {
+    switch s {
+    case StdB_G: return "802.11b/g"
+    case StdN:   return "802.11n"
+    case StdAC:  return "802.11ac"
+	case StdAX:  return "802.11ax"
+    default:     return "unknown"
     }
-
-    return names[0]
 }

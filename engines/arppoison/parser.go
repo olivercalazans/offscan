@@ -20,7 +20,7 @@ package arppoison
 import (
 	"fmt"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
+	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
 )
@@ -28,7 +28,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# ARP Poisoning. E.g.,: $ sudo ./offscan arp <FLAGS>\n\n" +
+	help := "\n### ARP POISONING\n\n" +
+			"    E.g.,: $ sudo ./offscan arp <FLAGS>\n\n" +
 	        "    --tip <IP>   : (Required) Target IP\n" +
 	        "    --tmac <MAC> : (Required) Target MAC\n"
 	
@@ -38,8 +39,8 @@ func DisplayHelp() {
 
 
 const (
-	targetIP   uint8 = 1
-	targetMAC  uint8 = 2
+	targetIP = iota
+	targetMAC
 )
 
 
@@ -63,13 +64,13 @@ func (ap *arpPoison) parseArgs(args []string) {
 
 	for _, flag := range flags {    
 		switch flag.ID {
-		case targetIP  : ap.addrs.targetIP  = conv.MustStrToIPv4(flag.ValueStr)
-		case targetMAC : ap.addrs.targetMAC = conv.MustStrToMac(flag.ValueStr)
+		case targetIP  : ap.addrs.targetIP  = models.MustStrToIPv4(flag.ValueStr)
+		case targetMAC : ap.addrs.targetMAC = models.MustParseMAC(flag.ValueStr)
 		}
 	}
 
 	ap.iface       = netroute.MustRouteIfaceForDstIP(ap.addrs.targetIP)
-	ap.addrs.myMAC = ap.iface.HardwareAddr
+	ap.addrs.myMAC = models.MustMacFromSlice(ap.iface.HardwareAddr)
 	ap.addrs.apMAC = sysconf.MustGatewayMAC(&ap.iface)
 	ap.addrs.apIP  = sysconf.MustGatewayIP(&ap.iface)
 }
