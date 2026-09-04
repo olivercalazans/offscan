@@ -30,7 +30,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# Deauthentication Attack. E.g., $ sudo ./offscan deauth <FLAGS>\n\n" +
+	help := "\n### DEAUTHENTICATION ATTACK\n\n" + 
+			"    E.g., $ sudo ./offscan deauth <FLAGS>\n\n" +
 		    "    -b, --bssid <BSSID> : (Required) BSSID/AP MAC\n"+
 	        "    -c, --channel <INT> : (Required) Channel\n" +
 	        "    -i, --iface <IFACE> : (Required) Network interface to send frames\n" +

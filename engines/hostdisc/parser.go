@@ -33,7 +33,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# Host Discovery. E.g., $ sudo ./offscan hdisc <FLAGS>\n\n" +
+	help := "\n### HOST DISCOVERY\n\n" + 
+	        "    E.g., $ sudo ./offscan hdisc <FLAGS>\n\n" +
 	        "    -i, --iface <IFACE> : (Optional) Network interface to send packets (default: system default)\n" +
 	        "    -r, --range <RANGE> : (Optional) IP range to scan. (*IP or IP*IP or IP*)\n" +
             "                         > *IP   - From the beginning of the subnet until the specified IP\n" +

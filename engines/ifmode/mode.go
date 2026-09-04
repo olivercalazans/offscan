@@ -49,7 +49,8 @@ const (
 
 
 func DisplayHelp() {
-	help := "\n# INTERFACE MODE. E.g., $ sudo ./offscan ifmode <FLAGS>\n\n" +
+	help := "\n### INTERFACE MODE\n\n" + 
+	"    E.g., $ sudo ./offscan ifmode <FLAGS>\n\n" +
 	"    -i, --iface : (Required) Interface\n" +
 	"        --man   : (Option)   Set interface on maneged mode\n" +
 	"        --mon   : (Option)   Set interface on monitor mode\n"

@@ -32,7 +32,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# Pixie Dust. E.g., $ sudo ./offscan pixie <FLAGS>\n\n" +
+	help := "\n### PIXIE DUST\n\n" + 
+			"    E.g., $ sudo ./offscan pixie <FLAGS>\n\n" +
 	        "    -1, --ehash1 <HASH>  : (Required) Enrollee Hash 1\n" +
 	        "    -2, --ehash2 <HASH>  : (Required) Enrollee Hash 2\n" +
 	        "    -e, --pke <HASH>     : (Required) Public Key Enrollee\n" +

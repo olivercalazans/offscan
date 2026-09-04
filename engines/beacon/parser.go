@@ -29,7 +29,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# Beacon Flooder. E.g.,: $ sudo ./offscan beacon <FLAGS>\n\n" +
+	help := "\n### BEACON FLOODER\n\n" +
+			"     E.g.,: $ sudo ./offscan beacon <FLAGS>\n\n" +
 	        "    -c, --channel <INT> : (Required) Channel\n" +
 	        "    -i, --iface <IFACE> : (Required) Network interface to send frames\n" +
 	        "    -s, --ssid <SSID>   : (Required) SSID/Network name\n"

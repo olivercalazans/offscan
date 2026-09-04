@@ -28,7 +28,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# ARP Poisoning. E.g.,: $ sudo ./offscan arp <FLAGS>\n\n" +
+	help := "\n### ARP POISONING\n\n" +
+			"    E.g.,: $ sudo ./offscan arp <FLAGS>\n\n" +
 	        "    --tip <IP>   : (Required) Target IP\n" +
 	        "    --tmac <MAC> : (Required) Target MAC\n"
 	

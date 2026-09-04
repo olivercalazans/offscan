@@ -26,7 +26,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n# WiFi Mapper. E.g., $ sudo ./offscan wmap <FLAGS>\n\n" +
+	help := "\n### WIFI MAPPER\n\n" + 
+	"    E.g., $ sudo ./offscan wmap <FLAGS>\n\n" +
 	"    -i, --iface <IFACE> : (Required) Interface to be used to sniff\n"
 
 	fmt.Println(help)

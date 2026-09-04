@@ -43,7 +43,8 @@ func Run(args []string) {
 
 
 func DisplayHelp() {
-	help := "\n# Forwarding. E.g., $ sudo ./offscan fwd <FLAGS>\n\n" +
+	help := "\n### FORWARDING\n\n" + 
+	"    E.g., $ sudo ./offscan fwd <FLAGS>\n\n" +
 	"    -e, --enable  : (Option) Enable forwarding\n" +
 	"    -d, --disable : (Option) Disable forwarding\n"
 

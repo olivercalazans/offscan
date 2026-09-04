@@ -46,7 +46,8 @@ const iface = iota
 
 
 func DisplayHelp() {
-	help := "\n# Interface info. E.g., $ sudo ./offscan info <FLAGS>\n\n" +
+	help := "\n### INTERFACE INFO\n\n" +
+    "    E.g., $ sudo ./offscan info <FLAGS>\n\n" +
 	"    -i, --iface : (Optional) Display only the selected interface (Default: ALL)\n" 
 
 	fmt.Println(help)
