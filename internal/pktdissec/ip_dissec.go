@@ -17,6 +17,8 @@
 
 package pktdissec
 
+import "offscan/internal/models"
+
 
 func (pd *PacketDissector) IsIPv4() bool {
     pd.isIPv4 = pd.lenPkt >= 34 && pd.getEtherType() == 0x0800
@@ -25,8 +27,8 @@ func (pd *PacketDissector) IsIPv4() bool {
 
 
 
-func (pd *PacketDissector) GetSrcIP() ([4]byte, bool) {
-    var ip [4]byte
+func (pd *PacketDissector) GetSrcIP() (models.IPv4, bool) {
+    var ip models.IPv4
 
     if pd.lenPkt < 30 || !pd.isIPv4 {
         return ip, false

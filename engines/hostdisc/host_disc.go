@@ -29,6 +29,7 @@ import (
 
 	"offscan/internal/conv"
 	"offscan/internal/generators"
+	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
@@ -49,7 +50,7 @@ type hostDiscovery struct {
     dissector   pktdissec.PacketDissector
     ips         generators.Ipv4Iter
     iface       net.Interface
-    myIP        net.IP
+    myIP        models.IPv4
     protocols   protocols
     running     atomic.Bool
     sniffer     sniffer.Sniffer
@@ -114,20 +115,16 @@ func (hd *hostDiscovery) getBpfFilter() string {
 
 func (hd *hostDiscovery) cidrForBPFFilter() string {
     xor := hd.ips.StartU32 ^ hd.ips.EndU32
-    var leadingZeros int
+    var leadingZeros int = 32
     
-	if xor == 0 {
-        leadingZeros = 32
-    } else {
+	if xor != 0 {
         leadingZeros = bits.LeadingZeros32(xor)
 	}
     
 	prefixLen := uint8(leadingZeros)
-    var mask uint32
+    var mask uint32 = 0
     
-	if prefixLen == 0 {
-        mask = 0
-    } else {
+	if prefixLen != 0 {
         mask = ^uint32(0) << (32 - prefixLen)
     }
     

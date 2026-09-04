@@ -52,9 +52,9 @@ type arpPoison struct {
 type addresses struct {
 	myMAC      models.MAC
 	targetMAC  models.MAC
-	targetIP   net.IP
+	targetIP   models.IPv4
 	apMAC	   models.BSSID
-	apIP       net.IP
+	apIP       models.IPv4
 }
 
 

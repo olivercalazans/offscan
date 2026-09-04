@@ -20,6 +20,7 @@ package sockets
 import (
 	"fmt"
 	"net"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 
 	"golang.org/x/sys/unix"
@@ -74,16 +75,10 @@ func bindL3SocketToDevice(fd int, iface *net.Interface) {
 
 
 
-func (s *Layer3Socket) SendTo(packet []byte, dst net.IP) {
-    dst4 := dst.To4()
-    
-    if dst4 == nil {
-        utils.Abort(fmt.Sprintf("The destination address is not a IPv4: %v", dst))
-    }
-
+func (s *Layer3Socket) SendTo(packet []byte, dst models.IPv4) {    
     addr := &unix.SockaddrInet4{
         Port: 0,
-        Addr: [4]byte{dst4[0], dst4[1], dst4[2], dst4[3]},
+        Addr: dst,
     }
 
     err := unix.Sendto(s.fd, packet, 0, addr)
@@ -97,9 +92,11 @@ func (s *Layer3Socket) SendTo(packet []byte, dst net.IP) {
 
 func (s *Layer3Socket) Close() error {
     if s.fd >= 0 {
-        err := unix.Close(s.fd)
-        s.fd = -1
+        err  := unix.Close(s.fd)
+        s.fd  = -1
+        
         return err
     }
+
     return nil
 }

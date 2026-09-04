@@ -20,7 +20,6 @@ package arppoison
 import (
 	"fmt"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
 	"offscan/internal/models"
 	"offscan/internal/netroute"
 	"offscan/internal/sysconf"
@@ -64,7 +63,7 @@ func (ap *arpPoison) parseArgs(args []string) {
 
 	for _, flag := range flags {    
 		switch flag.ID {
-		case targetIP  : ap.addrs.targetIP  = conv.MustStrToIPv4(flag.ValueStr)
+		case targetIP  : ap.addrs.targetIP  = models.MustParseIPv4(flag.ValueStr)
 		case targetMAC : ap.addrs.targetMAC = models.MustParseMAC(flag.ValueStr)
 		}
 	}

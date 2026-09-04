@@ -18,10 +18,8 @@
 package generators
 
 import (
-	"encoding/binary"
 	"fmt"
-	"net"
-	"offscan/internal/conv"
+	"offscan/internal/models"
 	"offscan/internal/utils"
 	"strconv"
 	"strings"
@@ -30,208 +28,190 @@ import (
 
 
 type Ipv4Iter struct {
-    current  uint32
-    end      uint32
-    total    uint64
-    StartU32 uint32
-    EndU32   uint32
+	current  uint32
+	end      uint32
+	total    uint64
+	StartU32 uint32
+	EndU32   uint32
 }
 
 
 
-func NewIpv4Iter(cidr string, rangeStr string) Ipv4Iter {
-    networkU32, broadcastU32 := parseCIDR(cidr)
+func NewIpv4Iter(cidr, rangeStr string) Ipv4Iter {
+	networkU32, broadcastU32 := parseCIDR(cidr)
 
-    usableStart   := networkU32 + 1
-    usableEnd     := broadcastU32 - 1
-    cidrHasUsable := usableStart <= usableEnd
+	usableStart   := networkU32 + 1
+	usableEnd     := broadcastU32 - 1
+	cidrHasUsable := usableStart <= usableEnd
 
-    var startRange, endRange uint32
-    
-    if rangeStr != "" {
-        s := strings.TrimSpace(rangeStr)
-        startRange, endRange  = parseRange(s, usableStart, usableEnd, cidrHasUsable)
-    
+	var startRange, endRange uint32
+
+	if rangeStr != "" {
+		s := strings.TrimSpace(rangeStr)
+		startRange, endRange = parseRange(s, usableStart, usableEnd, cidrHasUsable)
 	} else {
-        if cidrHasUsable {
-            startRange, endRange = usableStart, usableEnd
-        } else {
-            startRange, endRange = networkU32, networkU32
-        }
-    }
+		if cidrHasUsable {
+			startRange, endRange = usableStart, usableEnd
+		} else {
+			startRange, endRange = networkU32, networkU32
+		}
+	}
 
-    if startRange > endRange {
-        utils.Abort("Start IP cannot be greater than end IP")
-    }
+	if startRange > endRange {
+		utils.Abort("Start IP cannot be greater than end IP")
+	}
 
-    total := uint64(endRange - startRange + 1)
-    
-    return Ipv4Iter{
-        current:  startRange,
-        end:      endRange,
-        total:    total,
-        StartU32: startRange,
-        EndU32:   endRange,
-    }
+	total := uint64(endRange - startRange + 1)
+
+	return Ipv4Iter{
+		current  : startRange,
+		end      : endRange,
+		total    : total,
+		StartU32 : startRange,
+		EndU32   : endRange,
+	}
 }
 
 
 
 func parseCIDR(cidr string) (network, broadcast uint32) {
-    parts := strings.Split(cidr, "/")
-    
+	parts := strings.Split(cidr, "/")
 	if len(parts) != 2 {
-        utils.Abort(fmt.Sprintf("Invalid CIDR: %s", cidr))
-    }
+		utils.Abort(fmt.Sprintf("Invalid CIDR: %s", cidr))
+	}
 
-    ip := net.ParseIP(parts[0])
-    if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP in CIDR '%s'", cidr))
-    }
-    
-	ip = ip.To4()
-    if ip == nil {
-        utils.Abort(fmt.Sprintf("CIDR '%s' is not IPv4", cidr))
-    }
+	ip, err := models.ParseIPv4(parts[0])
+	if err != nil {
+		utils.Abort(fmt.Sprintf("Invalid IP in CIDR '%s': %v", cidr, err))
+	}
 
-    prefix, err := strconv.Atoi(parts[1])
-    if err != nil || prefix < 0 || prefix > 32 {
-        utils.Abort(fmt.Sprintf("Invalid prefix in CIDR '%s'", cidr))
-    }
+	prefix, err := strconv.Atoi(parts[1])
+	if err != nil || prefix < 0 || prefix > 32 {
+		utils.Abort(fmt.Sprintf("Invalid prefix in CIDR '%s'", cidr))
+	}
 
-    ipU32 := binary.BigEndian.Uint32(ip)
+	ipU32 := ip.Uint32()
 
-    var mask uint32
-    if prefix == 0 {
-        mask = 0
-    } else {
-        mask = ^uint32(0) << (32 - uint(prefix))
-    }
+	var mask uint32 = 0
+	if prefix != 0 {
+		mask = ^uint32(0) << (32 - uint(prefix))
+	}
 
-    network   = ipU32 & mask
-    broadcast = network | ^mask
-    
-	return network, broadcast
+	network   = ipU32 & mask
+	broadcast = network | ^mask
+	
+    return network, broadcast
 }
 
 
 
 func parseRange(
-	r 			  string,  
-	usableStart   uint32, 
-	usableEnd     uint32, 
+	r             string,
+	usableStart   uint32,
+	usableEnd     uint32,
 	cidrHasUsable bool,
 ) (uint32, uint32) {
-    if strings.Contains(r, "*") {
-        return parseWildcardRange(r, usableStart, usableEnd, cidrHasUsable)
-    }
+	if strings.Contains(r, "*") {
+		return parseWildcardRange(r, usableStart, usableEnd, cidrHasUsable)
+	}
 
-	return parseSingleIPRange(r)
+    return parseSingleIPRange(r)
 }
 
 
 
 func parseSingleIPRange(ipStr string) (uint32, uint32) {
-    ip    := parseIPAddress(ipStr)
-	ipU32 := binary.BigEndian.Uint32(ip)
-    return ipU32, ipU32
+	ip := parseIPAddress(ipStr)
+	return ip.Uint32(), ip.Uint32()
 }
 
 
 
 func parseWildcardRange(
-	rangeStr      string, 
-	usableStart   uint32, 
-	usableEnd     uint32, 
+	rangeStr string,
+	usableStart uint32,
+	usableEnd uint32,
 	cidrHasUsable bool,
 ) (uint32, uint32) {
 	parts := strings.SplitN(rangeStr, "*", 2)
-    
 	if len(parts) != 2 {
-        utils.Abort(fmt.Sprintf("Invalid range format: %s", rangeStr))
-    }
+		utils.Abort(fmt.Sprintf("Invalid range format: %s", rangeStr))
+	}
 
 	startPart := strings.TrimSpace(parts[0])
-    endPart   := strings.TrimSpace(parts[1])
+	endPart   := strings.TrimSpace(parts[1])
 
-    var startIP *uint32
-    var startInCidr bool
+	var startIP *uint32
+	var startInCidr bool
 
 	if startPart != "" {
-        ip         := parseIPAddress(startPart)
-		ipU32      := binary.BigEndian.Uint32(ip)
-        startIP     = &ipU32
-        startInCidr = cidrHasUsable && ipU32 >= usableStart && ipU32 <= usableEnd
-    }
+		ip := parseIPAddress(startPart)
+		ipU32 := ip.Uint32()
+		startIP = &ipU32
+		startInCidr = cidrHasUsable && ipU32 >= usableStart && ipU32 <= usableEnd
+	}
 
 	var endIP *uint32
-    var endInCidr bool
+	var endInCidr bool
 
 	if endPart != "" {
-        ip       := parseIPAddress(endPart)
-		ipU32 	 := binary.BigEndian.Uint32(ip)
-        endIP     = &ipU32
-        endInCidr = cidrHasUsable && ipU32 >= usableStart && ipU32 <= usableEnd
-    }
+		ip := parseIPAddress(endPart)
+		ipU32 := ip.Uint32()
+		endIP = &ipU32
+		endInCidr = cidrHasUsable && ipU32 >= usableStart && ipU32 <= usableEnd
+	}
 
-    switch {
-    case startPart != "" && endPart != "":
-        return *startIP, *endIP
+	switch {
+	case startPart != "" && endPart != "":
+		return *startIP, *endIP
 
-    case startPart != "" && endPart == "":
-        if !startInCidr {
-    		ip := conv.U32ToIP(*startIP)
-		    utils.Abort(fmt.Sprintf("Start IP %s is outside CIDR range. When using 'IP*', the IP must be within the CIDR", ip.String()))
+	case startPart != "" && endPart == "":
+		if !startInCidr {
+			ip := models.Uint32ToIPv4(*startIP)
+			utils.Abort(fmt.Sprintf("Start IP %s is outside CIDR range. When using 'IP*', the IP must be within the CIDR", ip.String()))
 		}
-        
 		return *startIP, usableEnd
 
-    case startPart == "" && endPart != "":
-        if !endInCidr {
-            ip := conv.U32ToIP(*endIP)
-            utils.Abort(
-                fmt.Sprintf("End IP %s is outside CIDR range. When using '*IP', the IP must be within the CIDR", ip.String()),
-            )
-        }
-        
+	case startPart == "" && endPart != "":
+		if !endInCidr {
+			ip := models.Uint32ToIPv4(*endIP)
+			utils.Abort(fmt.Sprintf("End IP %s is outside CIDR range. When using '*IP', the IP must be within the CIDR", ip.String()))
+		}
 		return usableStart, *endIP
 
-    case startPart == "" && endPart == "":
-        if cidrHasUsable {
-            return usableStart, usableEnd
-        }
-        return usableStart, usableStart
+	case startPart == "" && endPart == "":
+		if cidrHasUsable {
+			return usableStart, usableEnd
+		}
+		return usableStart, usableStart
 
-    default:
-        utils.Abort("Unexpected wildcard parsing")
-        return 0, 0
-    }
+	default:
+		utils.Abort("Unexpected wildcard parsing")
+		return 0, 0
+	}
 }
 
 
 
-func parseIPAddress(ipStr string) net.IP {
-    ip := net.ParseIP(ipStr)
-    if ip == nil {
-        utils.Abort(fmt.Sprintf("Invalid IP address '%s'", ipStr))
-    }
+func parseIPAddress(ipStr string) models.IPv4 {
+	ip, err := models.ParseIPv4(ipStr)
 
-    ip4 := ip.To4()
-    if ip4 == nil {
-        utils.Abort(fmt.Sprintf("'%s' is not an IPv4 address", ipStr))
-    }
+    if err != nil {
+		utils.Abort(fmt.Sprintf("Invalid IP address '%s': %v", ipStr, err))
+	}
 
-    return ip4
+    return ip
 }
 
 
 
-func (it *Ipv4Iter) Next() (net.IP, bool) {
-    if it.current > it.end {
-        return nil, false
-    }
+func (it *Ipv4Iter) Next() (models.IPv4, bool) {
+	if it.current > it.end {
+		return models.IPv4{}, false
+	}
 
-    ip := conv.U32ToIP(it.current)
-    it.current++
+    ip := models.Uint32ToIPv4(it.current)
+	it.current++
+
     return ip, true
 }

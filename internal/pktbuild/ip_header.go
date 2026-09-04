@@ -19,8 +19,7 @@ package pktbuild
 
 import (
 	"encoding/binary"
-	"net"
-	"offscan/internal/conv"
+	"offscan/internal/models"
 )
 
 
@@ -125,14 +124,12 @@ func (iph *ipHeader) calcCksum() uint16 {
 
 
 
-func (iph *ipHeader) SetSrcIP(srcIP net.IP) {
-	ipv4 := conv.MustTo4(srcIP)
-	copy(iph.header[12:16], ipv4)
+func (iph *ipHeader) SetSrcIP(srcIP models.IPv4) {
+	copy(iph.header[12:16], srcIP[:])
 }
 
 
 
-func (iph *ipHeader) SetDstIP(dstIP net.IP) {
-	ipv4 := conv.MustTo4(dstIP)
-	copy(iph.header[16:20], ipv4)
+func (iph *ipHeader) SetDstIP(dstIP models.IPv4) {
+	copy(iph.header[16:20], dstIP[:])
 }

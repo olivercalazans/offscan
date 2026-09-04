@@ -40,8 +40,8 @@ type hostDiscProbes struct {
     tcp       *pktbuild.TcpPacket
     rand      *generators.RandomValues
     iface      net.Interface
-    dstIP      net.IP
-    myIP       net.IP
+    dstIP      models.IPv4
+    myIP       models.IPv4
     protocols  protocols
 }
 
@@ -49,7 +49,7 @@ type hostDiscProbes struct {
 
 func (hdp *hostDiscProbes) initProbeTools(
     iface      net.Interface, 
-    myIP       net.IP, 
+    myIP       models.IPv4, 
     protocols  protocols,
 ) {
     hdp.iface     = iface

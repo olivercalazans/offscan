@@ -106,7 +106,7 @@ func (ni *networkInfo) setMAC() {
 
 
 func (ni *networkInfo) setIP() {
-    ip, err := sysconf.IPv4(ni.current)
+    ip, err := sysconf.IfaceIPv4(ni.current)
     
 	if err != nil {
         ni.ip = "None"
