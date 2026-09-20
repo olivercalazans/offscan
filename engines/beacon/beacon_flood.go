@@ -52,6 +52,7 @@ type beaconFlood struct {
 
 
 func (bf *beaconFlood) execute() {
+    bf.initTools()
     sysconf.MustSetChannel(bf.iface, int(bf.channel))
     ctx   := utils.SignalContext()
     start := time.Now()
@@ -70,6 +71,15 @@ func (bf *beaconFlood) execute() {
             bf.sendQuartet()
         }
     }
+}
+
+
+
+func (bf *beaconFlood) initTools() {
+    bf.bcSent  = 0
+	bf.builder = dot11build.NewBeacon()
+	bf.socket  = sockets.NewL2Socket(&bf.iface)
+    bf.randGen = generators.NewRandomValues()
 }
 
 

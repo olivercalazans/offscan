@@ -19,9 +19,7 @@ package hostdisc
 
 import (
 	"fmt"
-	"net"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
 	"offscan/internal/generators"
 	"offscan/internal/models"
 	"offscan/internal/netroute"
@@ -36,10 +34,10 @@ func DisplayHelp() {
 	help := "\n### HOST DISCOVERY\n\n" + 
 	        "    E.g., $ sudo ./offscan hdisc <FLAGS>\n\n" +
 	        "    -i, --iface <IFACE> : (Optional) Network interface to send packets (default: system default)\n" +
-	        "    -r, --range <RANGE> : (Optional) IP range to scan. (*IP or IP*IP or IP*)\n" +
-            "                         > *IP   - From the beginning of the subnet until the specified IP\n" +
-            "                         > IP*IP - Between two specified IPs\n" +
-            "                         > IP*   - From a specified IP until the end of the subnet\n"+
+	        "    -r, --range <RANGE> : (Optional) IP range to scan. (+IP or IP+IP or IP+)\n" +
+            "                         > +IP   - From the beginning of the subnet until the specified IP\n" +
+            "                         > IP+IP - Between two specified IPs\n" +
+            "                         > IP+   - From a specified IP until the end of the subnet\n"+
 	        "        --arp           : (Optional) Use only/and ARP probes\n"+
 	        "        --icmp          : (Optional) Use only/and ICMP probes\n" +
 	        "        --tcp           : (Optional) Use only/and TCP probes\n"
@@ -49,104 +47,106 @@ func DisplayHelp() {
 
 
 
-const (
-	iface = iota
-	ipRange
-	arp
-	icmp
-	tcp
-)
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: iface,   Short: "i", Long: "iface", HasValue: true},
-		{ID: ipRange, Short: "r", Long: "range", HasValue: true},		
-		{ID: arp,     Long: "arp"},
-		{ID: icmp,    Long: "icmp"},
-		{ID: tcp,     Long: "tcp"},
-	}
+type hostDiscoveryParser struct {
+	engine  *hostDiscovery
+	parser  *argparser.ArgParser
 }
 
 
 
 func (hd *hostDiscovery) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	hdp := hostDiscoveryParser{}
+	
+	hdp.engine = hd
+	hdp.parser = argparser.NewArgParser(args)
+	
+	hdp.parseIface()
+	hdp.parseARP()
+	hdp.parseICMP()
+	hdp.parseTCP()
+	
+	rangeIP := hdp.parseRange()
+	cidr    := sysconf.MustCIDR(&hd.iface)
+	hd.ips   = generators.NewIpv4Iter(cidr, rangeIP)
+	
+	hd.validProtocols(rangeIP)
 
-	var rangeIP string
-
-	for _, flag := range flags {
-		switch flag.ID {
-		case iface   : hd.iface = parseIface(flag.ValueStr)
-		case ipRange : rangeIP  = flag.ValueStr
-		}
-	}
-
-	hd.activeIPs  = make(map[hostInfo]struct{})
-	cidr         := sysconf.MustCIDR(&hd.iface)
-	hd.ips        = generators.NewIpv4Iter(cidr, rangeIP)
-	hd.myIP       = sysconf.MustIPv4(&hd.iface)
-	hd.protoFlags(flags, rangeIP)	
+	hdp.parser.AbortIfHasError()
+	
+	hd.myIP      = sysconf.MustIPv4(&hd.iface)
+	hd.activeIPs = make(map[hostInfo]struct{})
 }
 
 
 
-func parseIface(str string) net.Interface {    
-    if str == "" {
-        return sysconf.MustDefaultInterface()
-    }
+func (hdp *hostDiscoveryParser) parseIface() {
+	arg := argparser.Argument{ Long: "--iface", Short: "-i", Required: false }
 
-    return conv.MustStrToIface(str)
+	iface, ok := hdp.parser.Iface(&arg)
+
+	if !ok {
+		iface = sysconf.MustDefaultInterface()
+		return
+	}
+	
+	hdp.engine.iface = iface
 }
 
 
 
-func (hd *hostDiscovery) protoFlags(
-	flags    []argparser.Flag,
-	rangeIP  string,
-) {
-	var arpFlag, icmpFlag, tcpFlag bool
+func (hdp *hostDiscoveryParser) parseRange() string {
+	arg := argparser.Argument{ Long: "--range", Short: "-r", Required: false }
 
-	for _, flag := range flags {
-		switch flag.ID {
-		case arp  : arpFlag  = flag.ValueBool
-		case icmp : icmpFlag = flag.ValueBool
-		case tcp  : tcpFlag  = flag.ValueBool 
+	str, _ := hdp.parser.String(&arg)
+	return str
+}
+
+
+
+func (hdp *hostDiscoveryParser) parseARP() {
+	args := argparser.Argument{ Long: "--arp", Short: "", Required: false }
+	hdp.engine.protocols.arp = hdp.parser.Bool(&args)
+}
+
+
+
+func (hdp *hostDiscoveryParser) parseICMP() {
+	args := argparser.Argument{ Long: "--icmp", Short: "", Required: false }
+	hdp.engine.protocols.icmp = hdp.parser.Bool(&args)
+}
+
+
+
+func (hdp *hostDiscoveryParser) parseTCP() {
+	args := argparser.Argument{ Long: "--tcp", Short: "", Required: false }
+	hdp.engine.protocols.tcp = hdp.parser.Bool(&args)
+}
+
+
+
+func (hd *hostDiscovery) validProtocols(rangeIP string) {
+    if !hd.protocols.arp && !hd.protocols.icmp && !hd.protocols.tcp {
+        hd.protocols.arp  = true
+        hd.protocols.icmp = true
+        hd.protocols.tcp  = true
+    }
+
+    if rangeIP == "" {
+		return
+    }
+
+	isLocal := true
+
+    for _, ip := range strings.Split(rangeIP, "+") {
+        ipv4 := models.MustStrToIPv4(ip)
+		
+		value, err := netroute.IsLocal(&hd.iface, ipv4)
+		if err != nil {
+			utils.Abort(err.Error())
 		}
-	}
-
-    prots := protocols{
-        arp  : true,
-        icmp : true,
-        tcp  : true,
+        
+		isLocal = isLocal && value
     }
 
-    if arpFlag || icmpFlag || tcpFlag {
-        prots.arp    = arpFlag
-        prots.icmp   = icmpFlag
-        prots.tcp    = tcpFlag
-		hd.protocols = prots
-        return
-    }
-    
-    isLocal := true
-
-    if rangeIP != "" {
-        for _, ip := range strings.Split(rangeIP, "*") {
-            ipv4 := models.MustStrToIPv4(ip)
-			
-			value, err := netroute.IsLocal(&hd.iface, ipv4)
-			if err != nil {
-				utils.Abort(err.Error())
-			}
-
-            isLocal  = isLocal && value
-        }
-    }
-
-    hd.protocols = prots
+	hd.protocols.arp = isLocal
 }

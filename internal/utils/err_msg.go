@@ -15,32 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package argparser
+package utils
 
-import (
-	"maps"
-	"os"
-	"slices"
-	"sort"
+
+const (
+	ParseErrMsg = "Error while parsing arguments"
+	ChnlErrMsg  = "Channel can not be zero or negative"
 )
-
-
-type CommandHandler struct {
-	Run    func(args []string)
-	Helper func()
-}
-
-
-
-func DisplayAllHelp(registry map[string]CommandHandler) {
-	cmds := slices.Collect(maps.Keys(registry))
-	sort.Strings(cmds)
-
-	for _, cmd := range cmds {
-		reg  := registry[cmd]
-		help := reg.Helper
-		help()
-	}
-
-	os.Exit(0)
-}

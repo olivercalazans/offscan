@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
 	"offscan/internal/sysconf"
 )
 
@@ -41,24 +40,12 @@ func Run(args []string) {
 
 
 
-const iface = iota
-
-
-
 func DisplayHelp() {
 	help := "\n### INTERFACE INFO\n\n" +
     "    E.g., $ sudo ./offscan info <FLAGS>\n\n" +
 	"    -i, --iface : (Optional) Display only the selected interface (Default: ALL)\n" 
 
 	fmt.Println(help)
-}
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{ 
-        {ID: iface, Short: "i", Long: "iface", HasValue: true},
-    }
 }
 
 
@@ -81,23 +68,18 @@ type networkInfo struct {
 
 
 func (ni *networkInfo) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
+    parser       := argparser.NewArgParser(args)
+    ni.ifaceList  = make([]net.Interface, 0)
 
-    ni.ifaceList = make([]net.Interface, 0)
+	arg := argparser.Argument{ Long: "--iface", Short: "-i", Required: false }
+	
+    if iface, ok := parser.Iface(&arg); ok {
+        ni.ifaceList = append(ni.ifaceList, iface)
+    } else {
+        ni.ifaceList = sysconf.MustAllIfaces()
+    }
 
-	for _, flag := range flags {
-		switch flag.ID {
-		case iface:
-            if  flag.ValueStr == "" {
-                ni.ifaceList = sysconf.MustAllIfaces()
-                return
-            }
-            
-            ni.ifaceList = append(ni.ifaceList, conv.MustStrToIface(flag.ValueStr))
-		}
-	}
+    parser.AbortIfHasError()
 }
 
 

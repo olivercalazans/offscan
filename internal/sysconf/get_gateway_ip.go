@@ -77,12 +77,12 @@ func hexToIP(hex string) (models.IPv4, error) {
 
     for i := range 4 {
         val, err := strconv.ParseUint(hex[i*2 : i*2+2], 16, 8)
-        
+
         if err != nil {
             return ip, err
         }
-    
-        ip[i] = byte(val)
+        
+        ip[3-i] = byte(val)
     }
     
     return ip, nil

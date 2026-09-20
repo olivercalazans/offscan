@@ -20,7 +20,6 @@ package wifimap
 import (
 	"fmt"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
 )
 
 
@@ -35,29 +34,33 @@ func DisplayHelp() {
 
 
 
-const iface = iota
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ ID: iface, Short: "i", Long: "iface", HasValue: true, Req: true },
-	}
+type wmParser struct {
+	engine  *wifiMapper
+	parser  *argparser.ArgParser
 }
 
 
 
 func (wm *wifiMapper) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	parser := wmParser{}
+	
+	parser.parser = argparser.NewArgParser(args)
+	parser.getIface()
+	parser.parser.AbortIfHasError()
+}
 
-	for _, flag := range flags {
-		switch flag.ID {
-		case iface : wm.iface = conv.MustStrToIface(flag.ValueStr)
-		}
-	}
 
+
+func (wmp *wmParser) getIface() {
+	arg := argparser.Argument{ Long: "--iface", Short: "-i", Required: true }
+
+	iface, _ := wmp.parser.Iface(&arg)
+	
+	wmp.engine.iface  = iface
+}
+
+
+
+func (wm *wifiMapper) memAlloc() {
 	wm.wInfo = make(map[wifiData]struct{}, 75)
 }

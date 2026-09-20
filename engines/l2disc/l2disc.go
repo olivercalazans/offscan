@@ -55,11 +55,18 @@ type layer2HostDiscovery struct{
 
 
 func (l2hd *layer2HostDiscovery) execute() {
+	l2hd.memAlloc()
 	l2hd.displayExecInfo()
 	l2hd.createCtx()
 	l2hd.startFrameProcessor()
 	l2hd.sniffEndlessly()
 	l2hd.stopFrameProcessor()
+}
+
+
+
+func (l2hd *layer2HostDiscovery) memAlloc() {
+	l2hd.errChnls = make(map[int]struct{})
 }
 
 

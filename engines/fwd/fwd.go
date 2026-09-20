@@ -53,15 +53,6 @@ func DisplayHelp() {
 
 
 
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: enable,  Short: "e", Long: "enable"},
-		{ID: disable, Short: "d", Long: "disable"},
-	}
-}
-
-
-
 type forwarding struct {
 	enable, disable bool
 }
@@ -69,17 +60,15 @@ type forwarding struct {
 
 
 func (f *forwarding) parseArgs(args []string) {
-    flags   := FlagSettings()
-	parser  := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	parser := argparser.NewArgParser(args)
 
-	for _, flag := range flags {
-		switch flag.ID {
-		case enable  : f.enable  = flag.ValueBool
-		case disable : f.disable = flag.ValueBool
-		}
-	}
+	args1    := argparser.Argument{ Long: "--enable", Short: "-e", Required: false }
+	f.enable  = parser.Bool(&args1)
+
+	args2     := argparser.Argument{ Long: "--disable", Short: "-d", Required: false }
+	f.disable  = parser.Bool(&args2)
+
+	parser.AbortIfHasError()
 }
 
 

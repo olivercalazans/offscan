@@ -18,16 +18,8 @@
 package pixiedust
 
 import (
-	"encoding/hex"
 	"fmt"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
-	"offscan/internal/utils"
-	"runtime"
-	"slices"
-	"strconv"
-	"strings"
-	"time"
 )
 
 
@@ -58,115 +50,33 @@ func DisplayHelp() {
 
 
 
-const (
-	jobs = iota
-	pke     
-	pkr     
-	eHash1  
-	eHash2  
-	authKey 
-	eNonce  
-	rNonce  
-	ebssid  
-	modes  
-	force  
-	dhSmall
-	m5encr 
-	m7encr 
-	start  
-	end    
-	cStart 
-	cEnd   
-)
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: jobs,    Short: "j", Long: "jobs",    HasValue: true},
-		{ID: pke ,    Short: "e", Long: "pke",     HasValue: true},
-		{ID: pkr ,    Short: "r", Long: "pkr",     HasValue: true},
-		{ID: eHash1,  Short: "1", Long: "ehash1",  HasValue: true},
-		{ID: eHash2,  Short: "2", Long: "ehash2",  HasValue: true},
-		{ID: authKey, Short: "a", Long: "authkey", HasValue: true},
-		{ID: eNonce,  Short: "n", Long: "enonce",  HasValue: true},
-		{ID: rNonce,  Short: "m", Long: "rnonce",  HasValue: true},
-		{ID: ebssid,  Short: "b", Long: "ebssid",  HasValue: true},
-		{ID: m5encr,  Short: "5", Long: "m5enc",   HasValue: true},
-		{ID: m7encr,  Short: "7", Long: "m7enc",   HasValue: true},
-		{ID: force,   Short: "f", Long: "force"},
-		{ID: dhSmall, Short: "S", Long: "dhsmall"},
-		{ID: modes,   Long: "mode",   HasValue: true},
-		{ID: start,   Long: "start",  HasValue: true},
-		{ID: end,     Long: "end",    HasValue: true},
-		{ID: cStart,  Long: "cstart", HasValue: true},
-		{ID: cEnd,    Long: "cend",   HasValue: true},
-	}
-}
-
-
-
 func (pda *pixieDustAttack) parseArgs(args []string) {
 	pda.setStatic()
+	pdp := pixieDustParser{}
 
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	pdp.engine = pda
+	pdp.parser = argparser.NewArgParser(args)
 
-
-	for _, flag := range flags {
-		switch flag.ID {
-		case pke:
-			pda.memAllocPKE()
-			pda.pke = strToHex(&flag, wpsPkeyLen)
-		
-		case pkr:
-			pda.memAllocPKR()
-			pda.pkr = strToHex(&flag, wpsPkeyLen)
-
-		case eHash1: 
-			pda.memAllocEHash1()
-			pda.eHash1 = strToHex(&flag, wpsHashLen)
-
-		case eHash2: 
-			pda.memAllocEHash2()
-			pda.eHash2 = strToHex(&flag, wpsHashLen)
-
-		case authKey: 
-			pda.memAllocAuthKey()
-			pda.authKey = strToHex(&flag, wpsHashLen)
-
-		case eNonce: 
-			pda.memAllocENonce()
-			pda.eNonce = strToHex(&flag, wpsNonceLen)
-
-		case rNonce: 
-			pda.memAllocRNonce()
-			pda.rNonce = strToHex(&flag, wpsNonceLen)
-
-		case ebssid: 
-			pda.memAllocEbssid()
-			pda.ebssid = strToHex(&flag, wpsBssidLen)
-			
-		case m5encr:
-			pda.memAllocM5()
-			pda.m5encr = hexStrToByteSliceMax(&flag, encSettingsLen)
-		
-		case m7encr:
-			pda.memAllocM7()
-			pda.m7encr = hexStrToByteSliceMax(&flag, encSettingsLen)
-		
-		case jobs	 : pda.setJobs(flag.ValueStr)
-		case modes	 : pda.validateModes(flag.ValueStr)
-		case force   : pda.force   = flag.ValueBool
-		case dhSmall : pda.dhSmall = flag.ValueBool
-		case start   : pda.start   = parseDate(flag.ValueStr)
-		case end     : pda.end     = parseDate(flag.ValueStr)
-		case cStart  : pda.cStart  = conv.StrToInt(flag.ValueStr)
-		case cEnd    : pda.cEnd    = conv.StrToInt(flag.ValueStr)
-		}
-	}
+	pdp.parsePKE()
+	pdp.parsePKR()
+	pdp.parseEHash1()
+	pdp.parseEHash2()
+	pdp.parseAuthKey()
+	pdp.parseENonce()
+	pdp.parseRNonce()
+	pdp.parseEBSSID()
+	pdp.parseM5Encr()
+	pdp.parseM7Encr()
+	pdp.parseJobs()
+	pdp.parseModes()
+	pdp.parseForce()
+	pdp.parseDHSmall()
+	pdp.parseStartDate()
+	pdp.parseEndDate()
+	pdp.parseCStartDate()
+	pdp.parseCEndDate()
+	
+	pdp.parser.AbortIfHasError()
 }
 
 
@@ -180,229 +90,246 @@ func (pda *pixieDustAttack) setStatic() {
 
 
 
-func (pda *pixieDustAttack) setJobs(str string) {
-	if str == "" {
-		pda.jobs = getCoresNum()
+type pixieDustParser struct {
+	engine  *pixieDustAttack
+	parser  *argparser.ArgParser
+}
+
+
+
+func (pdp *pixieDustParser) parserHex(arg *argparser.Argument, lenHex int) ([]byte, bool) {
+	str, ok := pdp.parser.String(arg)
+
+	if !ok { return nil, true }
+
+	hex, err := strToHex(str, lenHex)
+	
+	if err != nil {
+		pdp.parser.AddError(arg, err)
+		return nil, false
 	}
 
-	num := conv.StrToInt(str)
-    if num < 0 {
-        utils.Abort(fmt.Sprintf("Bad number of jobs: %s", str))
-    }
-
-    pda.jobs = num
+	return hex, true
 }
 
 
 
-func getCoresNum() int {
-	cores := runtime.NumCPU()
-	if cores <= 0 { cores = 1 }
-	return cores
+func (pdp *pixieDustParser) parsePKE() {
+	arg := argparser.Argument{ Long: "--pke", Short: "-e", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsPkeyLen); ok {
+		pdp.engine.memAllocPKE()
+		pdp.engine.pke = hex
+	}
 }
 
 
 
-func strToHex(flag *argparser.Flag, mustLen int) []byte {
-    if flag.ValueStr == "" {
-        return nil
-    }
-    
-	buf := make([]byte, mustLen)
-    err := hexStrToByteSlice(flag.ValueStr, buf, mustLen)
-    
+func (pdp *pixieDustParser) parsePKR() {
+	arg := argparser.Argument{ Long: "--pkr", Short: "-r", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsPkeyLen); ok {
+		pdp.engine.memAllocPKR()
+		pdp.engine.pkr = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseEHash1() {
+	arg := argparser.Argument{ Long: "--ehash1", Short: "-1", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsHashLen); ok {
+		pdp.engine.memAllocEHash1()
+		pdp.engine.eHash1 = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseEHash2() {
+	arg := argparser.Argument{ Long: "--ehash2", Short: "-2", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsHashLen); ok {
+		pdp.engine.memAllocEHash2()
+		pdp.engine.eHash2 = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseAuthKey() {
+	arg := argparser.Argument{ Long: "--authkey", Short: "-a", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsHashLen); ok {
+		pdp.engine.memAllocAuthKey()
+		pdp.engine.authKey = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseENonce() {
+	arg := argparser.Argument{ Long: "--enonce", Short: "-n", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsNonceLen); ok {
+		pdp.engine.memAllocENonce()
+		pdp.engine.eNonce = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseRNonce() {
+	arg := argparser.Argument{ Long: "--rnonce", Short: "-m", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsNonceLen); ok {
+		pdp.engine.memAllocRNonce()
+		pdp.engine.rNonce = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseEBSSID() {
+	arg := argparser.Argument{ Long: "--ebssid", Short: "-b", Required: false }
+
+	if hex, ok := pdp.parserHex(&arg, wpsBssidLen); ok {
+		pdp.engine.memAllocEbssid()
+		pdp.engine.ebssid = hex
+	}
+}
+
+
+
+func (pdp *pixieDustParser) parseM5Encr() {
+	arg := argparser.Argument{ Long: "--m5enc", Short: "-5", Required: false }
+
+	str, ok := pdp.parser.String(&arg)
+
+	if !ok { return }
+
+	hex, err := hexStrToByteSliceMax(str, wpsBssidLen)
+	
 	if err != nil {
-        flagName := argparser.GetInlineFlags(flag)
-        utils.Abort(fmt.Sprintf("%s %v", flagName, err))
-    }
-    
-	return buf
-}
-
-
-
-func hexStrToByteSlice(str string, buf []byte, mustLen int) error {
-    clean := removeSeparetors(str)
-
-    if len(clean) != mustLen * 2 {
-        return fmt.Errorf("Invalid length: expected %d hex chars, got %d", mustLen*2, len(clean))
-    }
-
-    _, err := hex.Decode(buf, []byte(clean))
-    return err
-}
-
-
-
-func removeSeparetors(str string) string {
-	return strings.Map(func(r rune) rune {
-        if r == ':' || r == '-' || r == ' ' {
-            return -1 
-        }
-        return r
-    }, str)
-}
-
-
-
-func hexStrToByteSliceMax(flag *argparser.Flag, maxLen int) []byte {
-    if flag.ValueStr == "" {
-        return nil
-    }
-    
-	clean := removeSeparetors(flag.ValueStr)
-    if len(clean)%2 != 0 {
-        utils.Abort("Odd length hex string")
-    }
-    
-	byteLen := len(clean) / 2
-    if byteLen > maxLen {
-        utils.Abort(fmt.Sprintf("Hex string too long: max %d bytes, got %d", maxLen, byteLen))
-    }
-    
-	buf := make([]byte, byteLen)
-    if _, err := hex.Decode(buf, []byte(clean)); err != nil {
-        utils.Abort(fmt.Sprintf("Invalid hex string: %v", err))
-    }
-    
-	return buf
-}
-
-
-
-func parseDate(str string) int64 {
-	if str == "" { return -1 }
-	date := conv.MustStrToInt(str)
-	return int64(date)
-}
-
-
-
-func (pda *pixieDustAttack) validateModes(str string) {
-	pda.modes = make([]uint8, 0)
-
-	if str == "" {
-		pda.auto  = true
-		pda.modes = []uint8{}
+		pdp.parser.AddError(&arg, err)
 		return
 	}
 
-	modesStr := strings.Split(str, ",")
-	len      := len(modesStr)
-
-	if len > 5 {
-		utils.Abort("More than 5 modes selected")
-	}
-
-	for _, s := range modesStr {
-		mode, err := strconv.ParseInt(s, 10, 8)
-
-		if err != nil {
-			utils.Abort(fmt.Sprintf("Bad char for mode: %s", s))
-		}
-		
-		if mode > 5 || mode < 0 {
-			utils.Abort(fmt.Sprintf("Bad number for mode: %s. Use 0-5 for modes", s))
-		}
-
-		modeU8 := uint8(mode)
-
-		if slices.Contains(pda.modes, modeU8) {
-			utils.Abort(fmt.Sprintf("Duplicated number mode: %s", s))
-		}
-		
-		pda.modes = append(pda.modes, modeU8)
-	}
+	pdp.engine.memAllocM5()
+	pdp.engine.m5encr = hex
 }
 
 
 
-func (pda *pixieDustAttack) validDHSmallFlag() {
-    if pda.dhSmall && pda.pkr != nil {
-        utils.Abort("Options -S/--dhsmall and -r/--pkr are mutually exclusive")
-    }
+func (pdp *pixieDustParser) parseM7Encr() {
+	arg := argparser.Argument{ Long: "--m7enc", Short: "-7", Required: false }
 
-    if !pda.dhSmall && pda.pkr == nil {
-        utils.Abort("Either -S/--dhsmall or -r/--pkr must be specified")
-    }
-}
+	str, ok := pdp.parser.String(&arg)
 
+	if !ok { return }
 
-
-func (pda *pixieDustAttack) setSmallKeys() {
-	if pda.pkr != nil && pda.checkSmallDHKeys() {
-		pda.dhSmall = true
-	}
-}
-
-
-
-func (pda *pixieDustAttack) validRequiredFlags() {
-	b1 := pda.pke == nil || pda.eHash1 == nil || pda.eHash2 == nil || pda.eNonce == nil
-	b2 := pda.dhSmall || pda.isRTL819x
-	b3 := pda.ebssid != nil && pda.rNonce != nil
+	hex, err := hexStrToByteSliceMax(str, wpsBssidLen)
 	
-	miss := b1 || (pda.authKey == nil && !(b2 && b3))
+	if err != nil {
+		pdp.parser.AddError(&arg, err)
+		return
+	}
 
-	if miss {
-		utils.Abort("Not all required arguments have been supplied")
+	pdp.engine.memAllocM7()
+	pdp.engine.m7encr = hex
+}
+
+
+
+func (pdp *pixieDustParser) parseJobs() {
+	arg := argparser.Argument{ Long: "--jobs", Short: "-7", Required: false }
+
+	i, ok := pdp.parser.Int(&arg)
+
+	if !ok { 
+		pdp.engine.jobs = getCoresNum()
+	}
+
+	if i < 0 {
+		pdp.parser.AddError(&arg, fmt.Errorf("Bad number of jobs: %d", i))
+		return
 	}
 }
 
 
 
-func (pda *pixieDustAttack) validDates() {
-	if pda.force && (pda.start != -1 || pda.end != -1) {
-		utils.Abort("Cannot specify --start or --end with --force")
+func (pdp *pixieDustParser) parseModes() {
+	arg := argparser.Argument{ Long: "--modes", Short: "", Required: false }
+
+	str, ok := pdp.parser.String(&arg)
+
+	if !ok {
+		pdp.engine.auto  = true
+		pdp.engine.modes = []uint8{}
+		return
 	}
+
+	modes, err := validateModes(str)
+
+	if err != nil {
+		pdp.parser.AddError(&arg, err)
+		return
+	}
+
+	pdp.engine.modes = modes
 }
 
 
 
-func (pda *pixieDustAttack) setTimeRange() {
-    if !pda.isModeSelect(rtl819x) { return }
+func (pdp *pixieDustParser) parseForce() {
+	arg := argparser.Argument{ Long: "--force", Short: "-f", Required: false }
+	pdp.engine.force = pdp.parser.Bool(&arg)
+}
 
-	startArg := pda.start
-	endArg   := pda.end
 
-    now := time.Now().Unix()
-    pda.start = now + secPerDay
-    pda.end = now - secPerDay
 
-    if startArg != -1 {
-        if endArg != -1 {
-            if startArg == endArg {
-                utils.Abort("Starting and ending points must be different")
-            }
-            if endArg > startArg {
-                pda.start = endArg
-                pda.end   = startArg
-            } else {
-                pda.start = startArg
-                pda.end   = endArg
-            }
+func (pdp *pixieDustParser) parseDHSmall() {
+	arg := argparser.Argument{ Long: "--dhsmall", Short: "-S", Required: false }
+	pdp.engine.dhSmall = pdp.parser.Bool(&arg)
+}
 
-        } else {
-            if startArg >= pda.start {
-                utils.Abort("Bad starting point")
-            }
-            
-			pda.end = startArg
-        }
 
-    } else {
-        if endArg != -1 {
-            if endArg >= pda.start {
-                utils.Abort("Bad ending point")
-            }
-            
-			pda.end = endArg
-    
-		} else {
-            if pda.force {
-                pda.start += secPerDay
-                pda.end    = 0
-            }
-        }
-    }
+
+func (pdp *pixieDustParser) parseStartDate() {
+	arg := argparser.Argument{ Long: "--start", Short: "", Required: false }
+
+	str, _ := pdp.parser.String(&arg)
+
+	pdp.engine.start = parseDate(str)
+}
+
+
+
+func (pdp *pixieDustParser) parseEndDate() {
+	arg := argparser.Argument{ Long: "--end", Short: "", Required: false }
+
+	str, _ := pdp.parser.String(&arg)
+
+	pdp.engine.end = parseDate(str)
+}
+
+
+
+func (pdp *pixieDustParser) parseCStartDate() {
+	arg := argparser.Argument{ Long: "--cstart", Short: "", Required: false }
+
+	i, _ := pdp.parser.Int(&arg)
+
+	pdp.engine.cStart = i
+}
+
+
+
+func (pdp *pixieDustParser) parseCEndDate() {
+	arg := argparser.Argument{ Long: "--cend", Short: "", Required: false }
+
+	i, _ := pdp.parser.Int(&arg)
+
+	pdp.engine.cEnd = i
 }

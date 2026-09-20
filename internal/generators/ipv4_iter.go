@@ -27,6 +27,10 @@ import (
 
 
 
+const Signal = "+"
+
+
+
 type Ipv4Iter struct {
 	current  uint32
 	end      uint32
@@ -111,7 +115,7 @@ func parseRange(
 	usableEnd     uint32,
 	cidrHasUsable bool,
 ) (uint32, uint32) {
-	if strings.Contains(r, "*") {
+	if strings.Contains(r, Signal) {
 		return parseWildcardRange(r, usableStart, usableEnd, cidrHasUsable)
 	}
 
@@ -133,7 +137,7 @@ func parseWildcardRange(
 	usableEnd uint32,
 	cidrHasUsable bool,
 ) (uint32, uint32) {
-	parts := strings.SplitN(rangeStr, "*", 2)
+	parts := strings.SplitN(rangeStr, Signal, 2)
 	if len(parts) != 2 {
 		utils.Abort(fmt.Sprintf("Invalid range format: %s", rangeStr))
 	}
@@ -168,14 +172,14 @@ func parseWildcardRange(
 	case startPart != "" && endPart == "":
 		if !startInCidr {
 			ip := models.Uint32ToIPv4(*startIP)
-			utils.Abort(fmt.Sprintf("Start IP %s is outside CIDR range. When using 'IP*', the IP must be within the CIDR", ip.String()))
+			utils.Abort(fmt.Sprintf("Start IP %s is outside CIDR range. When using 'IP+', the IP must be within the CIDR", ip.String()))
 		}
 		return *startIP, usableEnd
 
 	case startPart == "" && endPart != "":
 		if !endInCidr {
 			ip := models.Uint32ToIPv4(*endIP)
-			utils.Abort(fmt.Sprintf("End IP %s is outside CIDR range. When using '*IP', the IP must be within the CIDR", ip.String()))
+			utils.Abort(fmt.Sprintf("End IP %s is outside CIDR range. When using '+IP', the IP must be within the CIDR", ip.String()))
 		}
 		return usableStart, *endIP
 

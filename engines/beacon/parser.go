@@ -20,10 +20,6 @@ package beacon
 import (
 	"fmt"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
-	"offscan/internal/dot11build"
-	"offscan/internal/generators"
-	"offscan/internal/sockets"
 )
 
 
@@ -40,40 +36,68 @@ func DisplayHelp() {
 
 
 
-const (
-	iface = iota
-	ssid
-	channel
-)
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: iface,   Short: "i", Long: "iface",   HasValue: true, Req: true},
-		{ID: ssid,    Short: "s", Long: "ssid",    HasValue: true, Req: true},
-		{ID: channel, Short: "c", Long: "channel", HasValue: true, Req: true},
-	}
+type beaconFloodParser struct {
+	engine  *beaconFlood
+	parser  *argparser.ArgParser
 }
 
 
 
 func (bf *beaconFlood) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	bfp := beaconFloodParser{}
+	
+	bfp.engine = bf
+	bfp.parser = argparser.NewArgParser(args)
 
-	for _, flag := range flags {    
-		switch flag.ID {
-		case iface   : bf.iface   = conv.MustStrToIface(flag.ValueStr)
-		case ssid    : bf.ssid    = flag.ValueStr
-		case channel : bf.channel = uint8(conv.MustStrToInt(flag.ValueStr))
-		}
+	bfp.parseIface()
+	bfp.parseSSID()
+	bfp.parseChannel()
+	bfp.parser.AbortIfHasError()
+}
+
+
+
+func (bfp *beaconFloodParser) parseIface() {
+	arg := argparser.Argument{
+		Long: "--iface", Short: "-i", Required: true,
 	}
 
-	bf.bcSent  = 0
-	bf.builder = dot11build.NewBeacon()
-	bf.socket  = sockets.NewL2Socket(&bf.iface)
-    bf.randGen = generators.NewRandomValues()
+	iface, _ := bfp.parser.Iface(&arg)
+	bfp.engine.iface = iface
+}
+
+
+
+func (bfp *beaconFloodParser) parseSSID() {
+	arg := argparser.Argument{
+		Long: "--ssid", Short: "-s", Required: true,
+	}
+
+	ssid, _ := bfp.parser.String(&arg)
+
+	if len(ssid) > 32 {
+		err := fmt.Errorf("SSID bigger than 32 chars")
+		bfp.parser.AddError(&arg, err)
+		return
+	}
+
+	bfp.engine.ssid = ssid
+}
+
+
+
+func (bfp *beaconFloodParser) parseChannel() {
+	arg := argparser.Argument{
+		Long: "--channel", Short: "-c", Required: true,
+	}
+
+	chnl, _ := bfp.parser.Int(&arg)
+
+	if chnl < 1 {
+		err := fmt.Errorf("Channel can not be zero or negative")
+		bfp.parser.AddError(&arg, err)
+		return
+	}
+
+	bfp.engine.channel = uint8(chnl)
 }
