@@ -38,39 +38,44 @@ func DisplayHelp() {
 
 
 
-const (
-	targetIP = iota
-	targetMAC
-)
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: targetIP,  Long: "tip",  HasValue: true, Req: true},
-		{ID: targetMAC, Long: "tmac", HasValue: true, Req: true},
-	}
+type arpPoisonParser struct {
+	engine  *arpPoison
+	parser  *argparser.ArgParser
 }
 
 
 
 func (ap *arpPoison) parseArgs(args []string) {
-	flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
-	
-	ap.addrs = addresses{}
+	ap.addrs  = addresses{}
+	app      := arpPoisonParser{}
 
-	for _, flag := range flags {    
-		switch flag.ID {
-		case targetIP  : ap.addrs.targetIP  = models.MustStrToIPv4(flag.ValueStr)
-		case targetMAC : ap.addrs.targetMAC = models.MustParseMAC(flag.ValueStr)
-		}
-	}
+	app.engine = ap
+	app.parser = argparser.NewArgParser(args)
+	
+	app.parseTargetMAC()
+	app.parseTargetIP()
+	app.parser.AbortIfHasError()
 
 	ap.iface       = netroute.MustRouteIfaceForDstIP(ap.addrs.targetIP)
 	ap.addrs.myMAC = models.MustMacFromSlice(ap.iface.HardwareAddr)
 	ap.addrs.apMAC = sysconf.MustGatewayMAC(&ap.iface)
 	ap.addrs.apIP  = sysconf.MustGatewayIP(&ap.iface)
+}
+
+
+
+func (app *arpPoisonParser) parseTargetIP() {
+	arg := argparser.Argument{ Long: "--tip", Short: "", Required: true }
+
+	ip, _ := app.parser.IP(&arg)
+	app.engine.addrs.targetIP = ip
+}
+
+
+
+func (app *arpPoisonParser) parseTargetMAC() {
+	arg := argparser.Argument{ Long: "--tmac", Short: "", Required: true }
+
+	mac, _ := app.parser.MAC(&arg)
+	app.engine.addrs.targetMAC = mac
 }

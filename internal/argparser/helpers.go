@@ -15,15 +15,17 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package utils
+package argparser
 
-import (
-	"fmt"
-	"os"
-)
+import "strings"
 
 
-func Abort(msg string) {
-    fmt.Fprintf(os.Stderr, "[ ERROR ] %s\n", msg)
-    os.Exit(1)
+
+func formatArg(arg *Argument) string {
+    var flags []string
+        
+    if arg.Short != "" { flags = append(flags, arg.Short) }
+    if arg.Long  != "" { flags = append(flags, arg.Long)  }
+    
+    return  strings.Join(flags, ", ")	
 }

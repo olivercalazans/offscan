@@ -19,11 +19,7 @@ package l2disc
 
 import (
 	"fmt"
-	"math"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
-	"offscan/internal/utils"
-	"strconv"
 	"time"
 )
 
@@ -33,68 +29,52 @@ func DisplayHelp() {
 	help := "\n### LAYER 2 HOST DISCOVERY\n\n" + 
 			"    E.g., $ sudo ./offscan l2disc <FLAGS>\n\n" +
 	        "    -i, --iface <IFACE> : (Required) Define a network interface to sniff frames\n" +
-	        "    -t, --time <RANGE>  : (Optional) Time in seconds to sniff each channel (Default 1s)\n"
+	        "    -d, --delay <FLOAT> : (Optional) Delay in seconds to sniff each channel (Default 1.5s)\n"
 
 	fmt.Println(help)
 }
 
 
 
-const (
-	iface = iota
-	sniffTime
-	retrys
-)
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ ID: iface,     Short: "i", Long: "iface", HasValue: true, Req: true },
-		{ ID: sniffTime, Short: "t", Long: "time",  HasValue: true },
-	}
-}
-
-
-
 func (l2hd *layer2HostDiscovery) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	l2hdp := layer2HostDiscoveryParser{}
 
-	for _, flag := range flags {
-		switch flag.ID {
-		case iface     : l2hd.iface = conv.MustStrToIface(flag.ValueStr)
-		case sniffTime : l2hd.calculateDuration(flag.ValueStr)
-		}
-	}
-
-	l2hd.errChnls = make(map[int]struct{})
-}
-
-
-
-func (l2hd *layer2HostDiscovery) calculateDuration(strTime string) {
-	sniffTime      := parseFloat(strTime)
-	nano           := math.Round(sniffTime * float64(time.Second))
-	l2hd.sniffTime  = time.Duration(nano)
-}
-
-
-
-func parseFloat(str string) float64 {
-	if str == "" { return 1 }
+	l2hdp.engine = l2hd
+	l2hdp.parser = argparser.NewArgParser(args)
 	
-	value, err := strconv.ParseFloat(str, 64)
+	l2hdp.parseIface()
+	l2hdp.parseDelay()
+	l2hdp.parser.AbortIfHasError()
+}
 
-	if err != nil {
-		utils.Abort(fmt.Sprintf("Invalid value for time duration: %v", err))
+
+
+type layer2HostDiscoveryParser struct {
+	engine  *layer2HostDiscovery
+	parser  *argparser.ArgParser
+}
+
+
+
+func (l2hdp *layer2HostDiscoveryParser) parseIface() {
+	arg := argparser.Argument{ Long: "--iface", Short: "-i", Required: true }
+
+	iface, _ 		   := l2hdp.parser.Iface(&arg)
+	l2hdp.engine.iface  = iface
+}
+
+
+
+func (l2hdp *layer2HostDiscoveryParser) parseDelay() {
+	arg := argparser.Argument{ Long: "--delay", Short: "-i", Required: false }
+	
+	var delay float64 = 1.5
+
+	if float, ok := l2hdp.parser.Float64(&arg); ok {
+		delay = float
 	}
 
-	if value <= 0 {
-		utils.Abort(fmt.Sprintf("Sniffing time can't be negative: %v", err))
-	}
+	nano := delay * float64(time.Second)
 
-	return value
+	l2hdp.engine.sniffTime = time.Duration(nano)
 }

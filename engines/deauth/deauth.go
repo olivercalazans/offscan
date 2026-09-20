@@ -55,11 +55,21 @@ type deauthAttack struct {
 
 
 func (da *deauthAttack) execute() {
+    da.initTools()
     sysconf.MustSetChannel(da.iface, da.channel)
     da.displayInfo()
     da.sendEndlessly()
     da.displayExecInfo()
     da.closeSocket()
+}
+
+
+
+func (da *deauthAttack) initTools() {
+    da.builder  = dot11build.NewDeauthFrame()
+	da.frmsSent = 0
+	da.seqNum   = 1
+	da.socket   = sockets.NewL2Socket(&da.iface)
 }
 
 

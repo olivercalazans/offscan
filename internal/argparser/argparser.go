@@ -18,202 +18,199 @@
 package argparser
 
 import (
-	"fmt"
+	"net"
+	"offscan/internal/models"
 	"offscan/internal/utils"
-	"slices"
-	"strings"
+	"strconv"
 )
 
 
-type Flag struct {
-    ID         uint8
-    ValueBool  bool
-    ValueStr   string
-    Short      string
-    Long       string
-    HasValue   bool
-    Req        bool
+type Argument struct {
+    Required  bool
+    Short     string
+    Long      string
 }
+
 
 
 type ArgParser struct {
-    flagSettins  []Flag
-    flagList     []string
-    args         []string
+    args           []string
+    duplicated     []string
+    missingFlags   []string
+    missingValues  []string
+    errors         []string
 }
 
 
 
-func NewArgParser(flags []Flag) *ArgParser {
-    return &ArgParser{ flagSettins : flags }
-}
-
-
-
-func (ap *ArgParser) ParseFlags(args []string) {
-    ap.args = args
-    ap.saveAllFlags()
-    ap.checkRequired()
-    ap.parseFlagsWithValue()
-    ap.parseBoolFlags()
-    ap.abortIfUnexpected()
-}
-
-
-
-func (ap *ArgParser) saveAllFlags() {
-    for i := range ap.flagSettins {
-        flag := &ap.flagSettins[i]
-        
-        if flag.Short != "" {
-            flag.Short  = fmt.Sprintf("-%s", flag.Short)
-            ap.flagList = append(ap.flagList, flag.Short)
-        }
-        
-        if flag.Long  != "" {
-            flag.Long   = fmt.Sprintf("--%s", flag.Long)
-            ap.flagList = append(ap.flagList, flag.Long)
-        }
-    }
-}
-
-
-
-func (ap *ArgParser) checkRequired() {
-    var missingFlags []string
-
-    for _, f := range ap.flagSettins {
-        if !f.Req { continue }
-
-        if !ap.hasFlag(&f) {
-            missingFlags = append(missingFlags, GetInlineFlags(&f))
-        }
-    }
-
-    if len(missingFlags) > 0 {
-        err   := strings.Join(missingFlags, "\n")
-        utils.Abort(fmt.Sprintf("Missing required flags:\n%s", err))
-    }
-}
-
-
-
-func (ap *ArgParser) hasFlag(flag *Flag) bool {
-    for _, a := range ap.args {
-        if flag.Short == a || flag.Long == a {
-            return true
-        }
-    }
-
-    return false
-}
-
-
-
-func GetInlineFlags(flag *Flag) string {
-    var flags []string
-        
-    if flag.Short != "" { flags = append(flags, flag.Short) }
-    if flag.Long  != "" { flags = append(flags, flag.Long)  }
+func NewArgParser(args []string) *ArgParser {
+    ap := &ArgParser{}
     
-    return  strings.Join(flags, ", ")
+    ap.args          = args
+    ap.duplicated    = make([]string, 0)
+    ap.missingFlags  = make([]string, 0)
+    ap.missingValues = make([]string, 0)
+
+    return ap
 }
 
 
 
-func (ap *ArgParser) parseFlagsWithValue() {
-    if len(ap.args) <= 0 { return }
+func (ap *ArgParser) AbortIfHasError() {
+    lenErr := len(ap.duplicated) + len(ap.missingFlags)
+    lenErr += len(ap.errors) + len(ap.missingValues)
+    lenErr += len(ap.args)
 
-    for i := range ap.flagSettins {
-        flag := &ap.flagSettins[i]
-		if !flag.HasValue { continue }
-		
-		short, long := ap.checkUsage(flag)
-        if !short && !long { continue }
-		
-        if short { flag.ValueStr = ap.processFlagAndValue(flag.Short) }
-        if long  { flag.ValueStr = ap.processFlagAndValue(flag.Long)  }
-	}
-}
-
-
-
-func (ap *ArgParser) checkUsage(flag *Flag) (bool, bool) {
-	var shortTimes, longTimes uint8 
-
-	for _, arg := range ap.args {
-		if arg == flag.Short { shortTimes++ } 
-		if arg == flag.Long  { longTimes++  }
-	}
-
-	if shortTimes + longTimes > 1 {
-        str := GetInlineFlags(flag)
-		utils.Abort(fmt.Sprintf("Flag used more than once: %s", str))
-	}
-
-	return shortTimes > 0, longTimes > 0
-}
-
-
-
-func (ap *ArgParser) processFlagAndValue(flag string) string {
-    index   := slices.Index(ap.args, flag)
-    value   := ap.validateValue(flag, index)
-    ap.args  = slices.Delete(ap.args, index, index + 2)
-    return value
-}
-
-
-
-func (ap *ArgParser) validateValue(flag string, flagIndex int) string {
-    valueIndex := flagIndex + 1
-
-    if valueIndex >= len(ap.args) {
-        utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
+    if lenErr == 0 {
+        return
     }
 
-    value := ap.args[valueIndex]
-
-    if strings.HasPrefix(value, "-") {
-        utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
-    }
-
-    for _, arg := range ap.flagList {
-        if arg == value {
-            utils.Abort(fmt.Sprintf("Missing value for flag: %s", flag))
-        }
-    }
-
-    return value
+    ap.displayMissingFlags()
+    ap.displayMissingValues()
+    ap.displayDuplicated()
+    ap.displayErrors()
+    ap.displayRemainingArgs()
+    
+    utils.Abort("Error while parsing arguments")
 }
 
 
 
-func (ap *ArgParser) parseBoolFlags() {
-    if len(ap.args) <= 0 { return }
-
-    for i := range ap.flagSettins {
-        flag := &ap.flagSettins[i]
-		if flag.HasValue { continue }
-		
-        short, long := ap.checkUsage(flag)
-        if !short && !long { continue }
-
-		var index int
-
-        if short { index = slices.Index(ap.args, flag.Short) }
-        if long  { index = slices.Index(ap.args, flag.Long)  }
-
-        ap.args        = slices.Delete(ap.args, index, index + 1)
-        flag.ValueBool = short || long
-	}
+func (ap *ArgParser) Bool(arg *Argument) bool {
+    _, ok := ap.verifyIfHasFlags(arg)
+    ap.removeFromTheList(arg)
+    return ok
 }
 
 
 
-func (ap *ArgParser) abortIfUnexpected() {
-    if len(ap.args) > 0 {
-        unknown := strings.Join(ap.args, ", ")
-        utils.Abort(fmt.Sprintf("Unknown flags: %s", unknown))
+func (ap *ArgParser) Float64(arg *Argument) (float64, bool) {
+    hasLong, ok := ap.verifyIfHasFlags(arg)
+
+    if !ok {
+        return 0, false
     }
+
+    str, hasValue := ap.getValue(arg, hasLong)
+
+    if !hasValue {
+        return 0, false
+    }
+
+	float, err := strconv.ParseFloat(str, 64)
+
+    if err != nil {
+        ap.AddError(arg, err)
+        return 0, false
+    }
+
+    return float, true
+}
+
+
+
+func (ap *ArgParser) Iface(arg *Argument) (net.Interface, bool) {
+    hasLong, ok := ap.verifyIfHasFlags(arg)
+
+    if !ok {
+        return net.Interface{}, false 
+    }
+
+    str, hasValue := ap.getValue(arg, hasLong)
+
+    if !hasValue {
+        return net.Interface{}, false
+    }
+
+    iface, err := net.InterfaceByName(str)
+
+    if err != nil {
+        ap.AddError(arg, err)
+        return net.Interface{}, false
+    }
+
+    return *iface, true
+}
+
+
+
+func (ap *ArgParser) Int(arg *Argument) (int, bool) {
+    hasLong, ok := ap.verifyIfHasFlags(arg)
+
+    if !ok { return 0, false }
+
+    str, hasValue := ap.getValue(arg, hasLong)
+
+    if !hasValue {
+        return 0, false
+    }
+
+    i, err := strconv.Atoi(str)
+
+    if err != nil {
+        ap.AddError(arg, err)
+        return 0, false
+    }
+
+    return i, true
+}
+
+
+
+func (ap *ArgParser) IP(arg *Argument) (models.IPv4, bool) {
+    hasLong, ok := ap.verifyIfHasFlags(arg)
+
+    if !ok {
+        return models.IPv4{}, false
+    }
+
+    str, hasValue := ap.getValue(arg, hasLong)
+
+    if !hasValue {
+        return models.IPv4{}, false
+    }
+
+    ip, err := models.StrToIPv4(str)
+
+    if err != nil {
+        ap.AddError(arg, err)
+        return models.IPv4{}, false
+    }
+
+    return ip, true
+}
+
+
+
+func (ap *ArgParser) MAC(arg *Argument) (models.MAC, bool) {
+    hasLong, ok := ap.verifyIfHasFlags(arg)
+
+    if !ok {
+        return models.MAC{}, false
+    }
+
+    str, hasValue := ap.getValue(arg, hasLong)
+    
+    if !hasValue {
+        return models.MAC{}, false
+    }
+
+    mac, err := models.ParseMAC(str)
+
+    if err != nil {
+        ap.AddError(arg, err)
+        return models.MAC{}, false
+    }
+
+    return mac, true
+}
+
+
+
+func (ap *ArgParser) String(arg *Argument) (string, bool) {
+    hasLong, ok := ap.verifyIfHasFlags(arg)
+
+    if !ok { return "", false }
+
+    return ap.getValue(arg, hasLong)
 }

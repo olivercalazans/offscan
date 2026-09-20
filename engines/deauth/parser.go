@@ -20,10 +20,6 @@ package deauth
 import (
 	"fmt"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
-	"offscan/internal/dot11build"
-	"offscan/internal/models"
-	"offscan/internal/sockets"
 	"time"
 )
 
@@ -43,57 +39,91 @@ func DisplayHelp() {
 
 
 
-const (
-	iface = iota
-	targetMac
-	bssid
-	channel
-	delay
-)
-
-
-
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: iface,     Short: "i", Long: "iface",   HasValue: true, Req: true},
-		{ID: targetMac, Short: "t", Long: "tmac",    HasValue: true, Req: true},		
-		{ID: bssid,     Short: "b", Long: "bssid",   HasValue: true, Req: true},		
-		{ID: channel,   Short: "c", Long: "channel", HasValue: true, Req: true},		
-		{ID: delay,     Short: "d", Long: "delay",   HasValue: true},
-	}
+type deauthAttackParser struct {
+	engine  *deauthAttack
+	parser  *argparser.ArgParser
 }
 
 
 
 func (da *deauthAttack) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
-	args = nil
+	dap := deauthAttackParser{}
 	
-	for _, f := range flags {
-		switch f.ID {
-		case iface     : da.iface     = conv.MustStrToIface(f.ValueStr)
-		case targetMac : da.targetMAC = models.MustParseMAC(f.ValueStr)
-		case bssid     : da.apMAC     = models.MustParseMAC(f.ValueStr)
-		case delay     : da.delay     = parseDelay(f.ValueStr)
-		case channel   : da.channel   = conv.MustStrToInt(f.ValueStr)
-		}
-	}
+	dap.engine = da
+	dap.parser = argparser.NewArgParser(args)
 
-	da.builder  = dot11build.NewDeauthFrame()
-	da.frmsSent = 0
-	da.seqNum   = 1
-	da.socket   = sockets.NewL2Socket(&da.iface)
+	dap.parseIface()
+	dap.parseTargetMAC()
+	dap.parseTargetBSSID()
+	dap.parseChannel()
+	dap.parseIface()
+	dap.parser.AbortIfHasError()
 }
 
 
 
-func parseDelay(str string) time.Duration {
-	var delay int = 30
+func (dap *deauthAttackParser) parseIface() {
+	arg := argparser.Argument{
+		Long: "--iface", Short: "-i", Required: true,
+	}
 
-	if str != "" { 
-		delay = conv.MustStrToInt(str)
+	iface, _ := dap.parser.Iface(&arg)
+	dap.engine.iface = iface
+}
+
+
+
+func (dap *deauthAttackParser) parseTargetMAC() {
+	arg := argparser.Argument{
+		Long: "--tmac", Short: "-t", Required: true,
+	}
+
+	mac, _ := dap.parser.MAC(&arg)
+	dap.engine.targetMAC = mac
+}
+
+
+
+func (dap *deauthAttackParser) parseTargetBSSID() {
+	arg := argparser.Argument{
+		Long: "--bssid", Short: "-b", Required: true,
+	}
+
+	bssid, _ := dap.parser.MAC(&arg)
+	dap.engine.apMAC = bssid 
+}
+
+
+
+func (dap *deauthAttackParser) parseChannel() {
+	arg := argparser.Argument{
+		Long: "--channel", Short: "-c", Required: true,
+	}
+
+	chnl, _ := dap.parser.Int(&arg)
+
+	if chnl < 1 {
+		err := fmt.Errorf("Channel can not be zero or negative")
+		dap.parser.AddError(&arg, err)
+		return
+	}
+
+	dap.engine.channel = chnl
+}
+
+
+
+func (dap *deauthAttackParser) parseDelay() time.Duration {
+	arg := argparser.Argument{
+		Long: "--delay", Short: "-d", Required: false,
+	}
+
+	var delay int = 30
+	
+	i, ok := dap.parser.Int(&arg)
+
+	if ok { 
+		delay = i
 	}
 
 	return time.Duration(delay) * time.Millisecond

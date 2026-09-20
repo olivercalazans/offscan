@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/argparser"
-	"offscan/internal/conv"
 	"offscan/internal/utils"
 	"os/exec"
 	"time"
@@ -31,20 +30,9 @@ import (
 
 func Run(args []string) {
     var im ifaceMode
-	
 	im.parseArgs(args)
-	args = nil
-
 	im.execute()
 }
-
-
-
-const (
-	iface = iota
-	mon
-	man
-)
 
 
 
@@ -60,16 +48,6 @@ func DisplayHelp() {
 
 
 
-func FlagSettings() []argparser.Flag {
-	return []argparser.Flag{
-		{ID: iface, Short: "i", Long: "iface", HasValue: true},	
-		{ID: mon,   Long: "mon"},
-		{ID: man,   Long: "man"},
-	}
-}
-
-
-
 type ifaceMode struct {
 	iface  net.Interface
 	mon    bool
@@ -79,17 +57,19 @@ type ifaceMode struct {
 
 
 func (im *ifaceMode) parseArgs(args []string) {
-    flags  := FlagSettings()
-	parser := argparser.NewArgParser(flags)
-	parser.ParseFlags(args)
+    parser := argparser.NewArgParser(args)
 
-	for _, flag := range flags {
-		switch flag.ID {
-		case iface : im.iface = conv.MustStrToIface(flag.ValueStr)
-		case mon   : im.mon   = flag.ValueBool
-		case man   : im.man   = flag.ValueBool
-		}
-	}
+	args1    := argparser.Argument{ Long: "--iface", Short: "-i", Required: true }
+	iface, _ := parser.Iface(&args1)
+	im.iface  = iface
+
+	args2  := argparser.Argument{ Long: "--mon", Short: "", Required: false }
+	im.mon  = parser.Bool(&args2)
+
+	args3  := argparser.Argument{ Long: "--man", Short: "", Required: false }
+	im.man  = parser.Bool(&args3)
+
+	parser.AbortIfHasError()
 }
 
 

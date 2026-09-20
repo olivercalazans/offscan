@@ -52,6 +52,7 @@ type wifiMapper struct {
 
 
 func (wm *wifiMapper) execute() {
+	wm.memAlloc()
 	wm.startBeaconProcessor()
 	wm.sniff2GChannels()
 	wm.sniff5GChannels()
