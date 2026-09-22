@@ -48,6 +48,8 @@ type deauthAttackParser struct {
 
 func (da *deauthAttack) parseArgs(args []string) {
 	dap := deauthAttackParser{}
+
+	fmt.Println(args)
 	
 	dap.engine = da
 	dap.parser = argparser.NewArgParser(args)
@@ -56,7 +58,7 @@ func (da *deauthAttack) parseArgs(args []string) {
 	dap.parseTargetMAC()
 	dap.parseTargetBSSID()
 	dap.parseChannel()
-	dap.parseIface()
+	dap.parseDelay()
 	dap.parser.AbortIfHasError()
 }
 
