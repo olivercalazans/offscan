@@ -62,12 +62,18 @@ func (wm *wifiMapper) execute() {
 
 
 
+func (wm *wifiMapper) memAlloc() {
+	wm.wInfo = make(map[wifiData]struct{}, 75)
+}
+
+
+
 func (wm *wifiMapper) startBeaconProcessor() {
 	wm.dissector = dot11dissec.NewDot11Dissector()
 	wm.sniffer   = sniffer.NewSniffer(wm.iface, getBPFFilter(), false, wm.Handler)
 	wm.sniffer.Start()
 
-	fmt.Printf("[+] Sniffing beacons\n")
+	fmt.Printf("[*] Sniffing beacons\n")
 }
 
 
@@ -139,7 +145,6 @@ func (wm *wifiMapper) sniffChannels(channels []int, freq string) {
 
 func (wm *wifiMapper) stopBeaconProcessor() {
 	wm.sniffer.Stop()
-	fmt.Println("[-] Sniffer stopped")
 	wm.wg.Wait()
 }
 

@@ -20,7 +20,7 @@ package pixiedust
 import (
 	"encoding/hex"
 	"fmt"
-	"offscan/internal/conv"
+	"offscan/internal/utils"
 	"runtime"
 	"slices"
 	"strconv"
@@ -105,7 +105,13 @@ func hexStrToByteSliceMax(str string, maxLen int) ([]byte, error) {
 
 func parseDate(str string) int64 {
 	if str == "" { return -1 }
-	date := conv.MustStrToInt(str)
+	
+	date, err := strconv.Atoi(str)
+
+	if err != nil {
+		utils.Abort(fmt.Sprintf("Invalid value for int: %s", str))
+	}
+
 	return int64(date)
 }
 

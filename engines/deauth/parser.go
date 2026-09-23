@@ -56,7 +56,7 @@ func (da *deauthAttack) parseArgs(args []string) {
 	dap.parseTargetMAC()
 	dap.parseTargetBSSID()
 	dap.parseChannel()
-	dap.parseIface()
+	dap.parseDelay()
 	dap.parser.AbortIfHasError()
 }
 

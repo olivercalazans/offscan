@@ -42,11 +42,13 @@ type wmParser struct {
 
 
 func (wm *wifiMapper) parseArgs(args []string) {
-	parser := wmParser{}
+	wmp := wmParser{}
+
+	wmp.engine = wm
+	wmp.parser = argparser.NewArgParser(args)
 	
-	parser.parser = argparser.NewArgParser(args)
-	parser.getIface()
-	parser.parser.AbortIfHasError()
+	wmp.getIface()
+	wmp.parser.AbortIfHasError()
 }
 
 
@@ -57,10 +59,4 @@ func (wmp *wmParser) getIface() {
 	iface, _ := wmp.parser.Iface(&arg)
 	
 	wmp.engine.iface  = iface
-}
-
-
-
-func (wm *wifiMapper) memAlloc() {
-	wm.wInfo = make(map[wifiData]struct{}, 75)
 }

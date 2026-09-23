@@ -85,7 +85,7 @@ func (hdp *hostDiscoveryParser) parseIface() {
 	iface, ok := hdp.parser.Iface(&arg)
 
 	if !ok {
-		iface = sysconf.MustDefaultInterface()
+		hdp.engine.iface = sysconf.MustDefaultInterface()
 		return
 	}
 	
@@ -137,7 +137,7 @@ func (hd *hostDiscovery) validProtocols(rangeIP string) {
 
 	isLocal := true
 
-    for _, ip := range strings.Split(rangeIP, "+") {
+    for ip := range strings.SplitSeq(rangeIP, "+") {
         ipv4 := models.MustStrToIPv4(ip)
 		
 		value, err := netroute.IsLocal(&hd.iface, ipv4)
