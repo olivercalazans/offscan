@@ -26,11 +26,7 @@ import (
 )
 
 
-const (
-	ipv4ForwardPath = "/proc/sys/net/ipv4/ip_forward"
-	enable = iota
-	disable
-)
+const ipv4ForwardPath = "/proc/sys/net/ipv4/ip_forward"
 
 
 
