@@ -48,8 +48,6 @@ type deauthAttackParser struct {
 
 func (da *deauthAttack) parseArgs(args []string) {
 	dap := deauthAttackParser{}
-
-	fmt.Println(args)
 	
 	dap.engine = da
 	dap.parser = argparser.NewArgParser(args)

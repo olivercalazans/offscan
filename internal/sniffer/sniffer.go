@@ -84,6 +84,7 @@ func (s *Sniffer) Start() {
 
 	s.wg.Add(1)
 	go s.captureLoop()
+	fmt.Printf("[+] Sniffer started\n")
 }
 
 
@@ -196,4 +197,6 @@ func (s *Sniffer) displayStats() {
 	if s.stats.Drops > 0 {
 		fmt.Printf("[!] Packets dropped = %d\n", s.stats.Drops)
 	}
+
+	fmt.Println("[-] Sniffer stopped")
 }
