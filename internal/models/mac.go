@@ -104,18 +104,6 @@ func fromHexChar(c byte) (byte, bool) {
 
 
 
-func MustParseMAC(str string) MAC {
-	mac, err := ParseMAC(str)
-
-	if err != nil {
-		utils.Abort(err.Error())
-	}
-
-	return mac
-}
-
-
-
 func MustMacFromSlice(slc []byte) MAC {
 	if len(slc) != 6 {
 		utils.Abort(fmt.Sprintf("MustMacFromSlice: invalid slice length %d (expected 6)", len(slc)))

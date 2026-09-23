@@ -217,7 +217,6 @@ func (ap *arpPoison) sendRequestedPoison() {
 
 
 
-
 func (ap *arpPoison) stopTools() {
 	ap.socket.Close()
 	ap.sniffer.Stop()
