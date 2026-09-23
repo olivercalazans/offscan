@@ -171,8 +171,9 @@ func (ap *arpPoison) sendPoison() {
 
 
 func (ap *arpPoison) sniffTargetsTraffic() {
-	ap.sniffer.Start()
 	ap.displayExecInfo()
+	ap.sniffer.Start()
+	<-ap.ctx.Done()
 }
 
 
@@ -183,7 +184,6 @@ func (ap *arpPoison) Handler(pkt []byte) {
 		return
 		
 	default:
-		
 		ap.pkts++
 		ap.dissec.UpdatePkt(pkt)
 		
@@ -197,7 +197,7 @@ func (ap *arpPoison) Handler(pkt []byte) {
 
 func (ap *arpPoison) displayExecInfo() {
 	fmt.Printf("[*] IFACE...: %s\n", ap.iface.Name)
-	fmt.Printf("[*] TARGET..: %s - %s\n", ap.addrs.targetMAC.String(), ap.addrs.targetIP.String())
+	fmt.Printf("[*] TARGET..: %s - %s\n\n", ap.addrs.targetMAC.String(), ap.addrs.targetIP.String())
 }
 
 
