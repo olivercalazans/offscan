@@ -45,7 +45,7 @@ func Run(args []string) {
 
 
 type hostDiscovery struct {
-    activeIPs   map[hostInfo]struct{}
+    activeIPs   models.Set[hostInfo]
     dissector   pktdissec.PacketDissector
     ips         generators.Ipv4Iter
     iface       net.Interface

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"offscan/internal/dot11dissec"
 	"offscan/internal/models"
-	"strings"
 )
 
 
@@ -96,23 +95,6 @@ func (fp *frameProcessor) addStation(staInfo station) {
     
 	fp.stasBuf[staInfo] = struct{}{}
     fp.displayStation(&netInfo, &staInfo)
-}
-
-
-
-func displayHeader() {
-	fmt.Printf(
-        "\n   %-17s  %-17s  %-3s  %s\n",
-		"STA MAC", "BSSID", "Ch", "SSID",
-	)
-
-	fmt.Printf(
-		"   %s  %s  %s  %s\n",
-		strings.Repeat("-", 17),
-		strings.Repeat("-", 17),
-		strings.Repeat("-", 3),
-		strings.Repeat("-", 4),
-	)
 }
 
 
