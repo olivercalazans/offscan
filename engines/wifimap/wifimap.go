@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"offscan/internal/dot11dissec"
+	"offscan/internal/models"
 	"offscan/internal/sniffer"
 	"offscan/internal/sysconf"
 	"slices"
@@ -40,11 +41,9 @@ func Run(args []string) {
 
 type wifiMapper struct {
 	iface       net.Interface
-	wInfo       map[wifiData]struct{}
+	wInfo       models.Set[wifiData]
 	sniffer    *sniffer.Sniffer
-	dataCh      chan map[wifiData]struct{}
 	wg          sync.WaitGroup
-	cancel      chan struct{}
 	maxLen      maxLength
 	dissector  *dot11dissec.Dot11Dissector
 }
@@ -63,7 +62,7 @@ func (wm *wifiMapper) execute() {
 
 
 func (wm *wifiMapper) memAlloc() {
-	wm.wInfo = make(map[wifiData]struct{}, 75)
+	wm.wInfo = models.NewSet[wifiData](75)
 }
 
 
@@ -103,7 +102,7 @@ func (wm *wifiMapper) updateInfo() {
 		time  : wm.dissector.GetTimestamp(),
 	}
 
-	wm.wInfo[info] = struct{}{}
+	wm.wInfo.Add(info)
 }
 
 
@@ -200,21 +199,13 @@ func (wm *wifiMapper) sortWifiData(keys []wifiData) {
             return 1
         }
 
-        aLen := a.ssid.Len()
-        bLen := b.ssid.Len()
+        aLen   := a.ssid.Len()
+        bLen   := b.ssid.Len()
+        minLen := min(aLen, bLen)
 
-        minLen := aLen
-        if bLen < minLen {
-            minLen = bLen
-        }
-
-        for i := 0; i < minLen; i++ {
-            if a.ssid.Data[i] < b.ssid.Data[i] {
-                return -1
-            }
-            if a.ssid.Data[i] > b.ssid.Data[i] {
-                return 1
-            }
+        for i := range minLen {
+            if a.ssid.Data[i] < b.ssid.Data[i] { return -1 }
+            if a.ssid.Data[i] > b.ssid.Data[i] { return  1 }
         }
 
         if aLen != bLen {

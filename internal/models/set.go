@@ -15,10 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-package utils
+package models
 
 
-const (
-	ParseErrMsg = "Error while parsing arguments"
-	ChnlErrMsg  = "Channel can not be zero or negative"
-)
+
+type Set[T comparable] map[T]struct{}
+
+
+
+func NewSet[T comparable](len int) Set[T] {
+	return make(Set[T], len)
+}
+
+
+
+func (s Set[T]) Add(item T) {
+	s[item] = struct{}{}
+}

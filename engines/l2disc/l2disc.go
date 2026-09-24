@@ -22,11 +22,13 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"offscan/internal/models"
 	"offscan/internal/sniffer"
 	"offscan/internal/sysconf"
 	"os"
 	"os/signal"
 	"slices"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -49,7 +51,7 @@ type layer2HostDiscovery struct{
 	wg          sync.WaitGroup
 	ctx         context.Context
 	cancel      context.CancelFunc
-	errChnls    map[int]struct{}
+	errChnls    models.Set[int]
 }
 
 
@@ -66,7 +68,7 @@ func (l2hd *layer2HostDiscovery) execute() {
 
 
 func (l2hd *layer2HostDiscovery) memAlloc() {
-	l2hd.errChnls = make(map[int]struct{})
+	l2hd.errChnls = models.NewSet[int](0)
 }
 
 
@@ -98,16 +100,33 @@ func (l2hd *layer2HostDiscovery) startFrameProcessor() {
 
 	l2hd.sniffer = sniffer.NewSniffer(l2hd.iface, getBPFFilter(), true, fp.Handler)
 	
-	fmt.Printf("[+] Sniffing 802.11 frames. Press CTRL + C to stop\n\n")
-	displayHeader()
-
+	fmt.Printf("[+] Sniffing 802.11 frames. Press CTRL + C to stop\n")
+	
 	l2hd.sniffer.Start() 
+	displayHeader()
 }
 
 
 
 func getBPFFilter() string {
 	return "(wlan type mgt and wlan subtype beacon) or wlan type data"
+}
+
+
+
+func displayHeader() {
+	fmt.Printf(
+        "\n   %-17s  %-17s  %-3s  %s\n",
+		"STA MAC", "BSSID", "Ch", "SSID",
+	)
+
+	fmt.Printf(
+		"   %s  %s  %s  %s\n",
+		strings.Repeat("-", 17),
+		strings.Repeat("-", 17),
+		strings.Repeat("-", 3),
+		strings.Repeat("-", 4),
+	)
 }
 
 
@@ -150,7 +169,7 @@ func (l2hd *layer2HostDiscovery) sniff(channels []int) {
         
 		ok := sysconf.TrySetChannel(l2hd.iface, chnl)
         if ok != nil {
-            l2hd.errChnls[chnl] = struct{}{}
+            l2hd.errChnls.Add(chnl)
             continue
         }
 
