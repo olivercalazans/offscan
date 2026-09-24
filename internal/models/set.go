@@ -32,3 +32,16 @@ func NewSet[T comparable](len int) Set[T] {
 func (s Set[T]) Add(item T) {
 	s[item] = struct{}{}
 }
+
+
+
+func (s Set[T]) Has(item T) bool {
+	_, existe := s[item]
+	return existe
+}
+
+
+
+func (s Set[T]) Remove(item T) {
+	delete(s, item)
+}

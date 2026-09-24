@@ -28,9 +28,9 @@ import (
 type frameProcessor struct {
 	dissector  *dot11dissec.Dot11Dissector
 	idx         uint
-	missBuf     map[station]struct{}
 	netsBuf     map[models.MAC]beacon
-	stasBuf     map[station]struct{}
+	missBuf     models.Set[station]
+	stasBuf     models.Set[station]
 }
 
 
@@ -38,8 +38,8 @@ type frameProcessor struct {
 func (fp *frameProcessor) init() {
 	fp.dissector = dot11dissec.NewDot11Dissector()
 	fp.netsBuf   = make(map[models.MAC]beacon)
-	fp.stasBuf   = make(map[station]struct{})
-	fp.missBuf   = make(map[station]struct{})
+	fp.stasBuf   = models.NewSet[station](0)
+	fp.missBuf   = models.NewSet[station](0)
 }
 
 
@@ -73,7 +73,7 @@ func (fp *frameProcessor) Handler(frame []byte) {
 func (fp *frameProcessor) associateStas(bssid [6]byte) {
 	for sta := range fp.missBuf {
         if sta.bssid == bssid {
-        	delete(fp.missBuf, sta)
+        	fp.missBuf.Remove(sta)
             fp.addStation(sta)
         }
     }
@@ -85,15 +85,15 @@ func (fp *frameProcessor) addStation(staInfo station) {
     netInfo, ok := fp.netsBuf[staInfo.bssid]
 
     if !ok {
-        fp.missBuf[staInfo] = struct{}{}
+        fp.missBuf.Add(staInfo)
         return
     }
 
-    if _, exists := fp.stasBuf[staInfo]; exists {
+    if fp.stasBuf.Has(staInfo) {
         return
     }
     
-	fp.stasBuf[staInfo] = struct{}{}
+	fp.stasBuf.Add(staInfo)
     fp.displayStation(&netInfo, &staInfo)
 }
 
