@@ -269,20 +269,24 @@ func decodeAKM(suite []byte) models.SecurityAuth {
 
 func (dd *Dot11Dissector) GetStandard() models.WifiStd {
     if !dd.IsBeacon {
-		return models.StdUnknown
-	}
+        return models.StdUnknown
+    }
 
-    if len(dd.heCap) > 0 && dd.heCap[0] == 35 {
+    // 802.11ax (Wi-Fi 6)
+    if len(dd.heCap) > 0 {
         return models.StdAX
     }
 
-    if len(dd.vhtCap) > 0 {
+    // 802.11ac (Wi-Fi 5)
+    if len(dd.vhtCap) > 0 || len(dd.vhtOps) > 0 {
         return models.StdAC
     }
 
-    if len(dd.htCap) > 0 {
+    // 802.11n (Wi-Fi 4)
+    if len(dd.htCap) > 0 || len(dd.htInfo) > 0 {
         return models.StdN
     }
 
+    // Fallback para 802.11b/g
     return models.StdB_G
 }
