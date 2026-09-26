@@ -22,19 +22,21 @@ import "encoding/binary"
 
 
 type Dot11Dissector struct {
-	frame       []byte
-	IsBeacon    bool
-	IsDataFrm   bool
-	timestamp   uint64
+	frame      []byte
+	IsBeacon   bool
+	IsDataFrm  bool
+	timestamp  uint64
     
-	ssidData    []byte // IE 0x00
-    dsParam     []byte // IE 0x03 (channel)
-    rsn         []byte // IE 0x30 (WPA2)
-    htCap       []byte // IE 0x2D (802.11n)
-    vhtCap      []byte // IE 0xBF (802.11ac)
-    heCap       []byte // IE 0xFF (802.11ax)
-    wpa1Data    []byte // IE 0xDD (Vendor Specific - WPA1)
-    wpsData     []byte // IE 0xDD (Vendor Specific - WPS)    
+	ssidData   []byte // IE 0x00
+    dsParam    []byte // IE 0x03 (channel)
+    rsn        []byte // IE 0x30 (WPA2)
+    htCap      []byte // IE 0x2D (802.11n)
+    vhtCap     []byte // IE 0xBF (802.11ac)
+    heCap      []byte // IE 0xFF (802.11ax)
+    htInfo     []byte // IE 0x3D (802.11ac)
+    vhtOps     []byte // IE 0xC0 (802.11n)
+    wpa1Data   []byte // IE 0xDD (Vendor Specific - WPA1)
+    wpsData    []byte // IE 0xDD (Vendor Specific - WPS)    
 }
 
 
@@ -67,6 +69,8 @@ func (dd *Dot11Dissector) reset() {
     dd.heCap 	  = nil
     dd.wpa1Data   = nil
     dd.wpsData    = nil
+    dd.htInfo     = nil
+    dd.vhtOps     = nil
 }
 
 
@@ -117,6 +121,8 @@ func (dd *Dot11Dissector) cacheIEs() {
         case 0x2D: dd.htCap    = data   // 802.11n
         case 0xBF: dd.vhtCap   = data   // 802.11ac
         case 0xFF: dd.heCap    = data   // 802.11ax
+        case 0x3d: dd.htInfo   = data   // 802.11n
+        case 0xc0: dd.vhtOps   = data   // 802.11ac
         case 0xDD: 						// Vendor Specific
             if len(data) >= 4 {
                 oui := data[0:3]

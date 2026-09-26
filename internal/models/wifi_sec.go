@@ -90,7 +90,6 @@ func (ws WifiSec) Len() int {
 
 
 
-
 func (ws WifiSec) wpaStrLen() int {
 
     if ws.Version == 1 {

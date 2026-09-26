@@ -24,7 +24,7 @@ import (
 
 
 const (
-	wpsVersionMask = 0xC0
+	wpsVersionMask = 0x03
 	wpsConfigMask  = 1 << (iota + 2)  // 1 << (0 + 2) = 0x04
 	wpsAPSetupLocked                  // 1 << (1 + 2) = 0x08
 	wpsStatePresent                   // 1 << (2 + 2) = 0x10
@@ -34,68 +34,68 @@ const (
 
 
 type WPSInfo struct {
-	bitmap uint8
+	bitmask uint8
 }
 
 
 
 func (wi *WPSInfo) SetVersion(v uint8) {
-	wi.bitmap &^= wpsVersionMask
-	wi.bitmap |=  (v << 2) & wpsVersionMask
+	wi.bitmask &^= wpsVersionMask
+	wi.bitmask  |= (v >> 4) & wpsVersionMask
 }
 
 
 
 func (wi WPSInfo) Version() uint8 {
-	return (wi.bitmap & wpsVersionMask) >> 6
+	return (wi.bitmask & wpsVersionMask)
 }
 
 
 
 func (wi *WPSInfo) SetConfig(configured bool) {
-	if configured { wi.bitmap |= wpsConfigMask }
+	if configured { wi.bitmask |= wpsConfigMask }
 }
 
 
 
 func (wi WPSInfo) isConfigured() bool {
-	return (wi.bitmap & wpsConfigMask) == wpsConfigMask
+	return (wi.bitmask & wpsConfigMask) == wpsConfigMask
 }
 
 
 
 func (wi *WPSInfo) SetAPSetupLock(locked bool) {
-	if locked { wi.bitmap |= wpsAPSetupLocked }
+	if locked { wi.bitmask |= wpsAPSetupLocked }
 }
 
 
 
 func (wi WPSInfo) isLocked() bool {
-	return (wi.bitmap & wpsAPSetupLocked) == wpsAPSetupLocked
+	return (wi.bitmask & wpsAPSetupLocked) == wpsAPSetupLocked
 }
 
 
 
 func (wi *WPSInfo) SetStatePresence() {
-	wi.bitmap |= wpsStatePresent
+	wi.bitmask |= wpsStatePresent
 }
 
 
 
 func (wi WPSInfo) isStatePresent() bool {
-	return (wi.bitmap & wpsStatePresent) == wpsStatePresent
+	return (wi.bitmask & wpsStatePresent) == wpsStatePresent
 }
 
 
 
 func (wi *WPSInfo) SetRegistrar(selected bool) {
-	if selected { wi.bitmap |= wpsSelectedRegistrar }
+	if selected { wi.bitmask |= wpsSelectedRegistrar }
 }
 
 
 
 func (wi WPSInfo) selectedRegistrar() bool {
-	return (wi.bitmap & wpsSelectedRegistrar) == wpsSelectedRegistrar
+	return (wi.bitmask & wpsSelectedRegistrar) == wpsSelectedRegistrar
 }
 
 
@@ -138,7 +138,7 @@ func (wi WPSInfo) formatVersion() string {
 
 func (wi WPSInfo) Len() int {
 	if wi.isLocked() {
-        return 7
+        return 6
     }
    
 	total := 3  // 0.0 or 1.0 or 2.0
