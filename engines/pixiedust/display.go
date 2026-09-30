@@ -61,8 +61,8 @@ func (pda *pixieDustAttack) displayPIN() {
 
     var pin string
 
-    if pda.firstHalf  > -1 { pin += fmt.Sprintf("%d", pda.firstHalf)  } else { pin += "????" }
-    if pda.secondHalf > -1 { pin += fmt.Sprintf("%d", pda.secondHalf) } else { pin += "????" }
+    if pda.firstHalf  > -1 { pin += fmt.Sprintf("%04d", pda.firstHalf)  } else { pin += "????" }
+    if pda.secondHalf > -1 { pin += fmt.Sprintf("%04d", pda.secondHalf) } else { pin += "????" }
 
     if !pda.pinFound() {
         fmt.Println("[!] Only the first half was found")
