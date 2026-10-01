@@ -25,16 +25,6 @@ import (
 
 
 
-const (
-    attrVersion           = 0x104A 
-    attrWPSState          = 0x1044
-    attrAPSetupLocked     = 0x1057
-    attrSelectedRegistrar = 0x1053
-    attrVendorExtension   = 0x1049
-)
-
-
-
 func (dd *Dot11Dissector) GetWPS() models.WPSInfo {
 	if len(dd.wpsData) == 0 {
 		return models.WPSInfo{}

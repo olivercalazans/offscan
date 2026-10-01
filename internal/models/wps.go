@@ -23,7 +23,7 @@ import (
 )
 
 
-const (
+const ( // WPS STATE
 	wpsVersionMask = 0x03
 	wpsConfigMask  = 1 << (iota + 2)  // 1 << (0 + 2) = 0x04
 	wpsAPSetupLocked                  // 1 << (1 + 2) = 0x08
@@ -31,10 +31,22 @@ const (
 	wpsSelectedRegistrar              // 1 << (3 + 2) = 0x20
 )
 
+const ( // PRESENCE FLAGS
+	passwordID = iota
+	configMethods
+	rfBands
+	devType
+	serialNumber
+	manufacturer
+	modelName
+	deviceName
+)
+
 
 
 type WPSInfo struct {
-	bitmask uint8
+	bitmask   uint8  // Version (2 bits), ConfigMask (1), Lock (1), State (1), Registrar (1)
+	presence  uint8
 }
 
 
@@ -100,7 +112,7 @@ func (wi WPSInfo) selectedRegistrar() bool {
 
 
 
-func (wi WPSInfo) String() string {
+func (wi WPSInfo) MinimalString() string {
     if wi.Version() == 0 && !wi.isStatePresent() && !wi.isLocked() {
         return "0.0"
     }
