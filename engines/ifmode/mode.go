@@ -20,20 +20,21 @@ package ifmode
 import (
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	"offscan/internal/argparser"
 	"offscan/internal/utils"
-	"os/exec"
-	"time"
 )
 
 
-
 func Run(args []string) {
-    var im ifaceMode
+	var im ifaceMode
 	im.parseArgs(args)
 	im.execute()
 }
-
 
 
 func DisplayHelp() {
@@ -49,24 +50,24 @@ func DisplayHelp() {
 
 
 type ifaceMode struct {
-	iface  net.Interface
-	mon    bool
-	man    bool
+	iface net.Interface
+	mon   bool
+	man   bool
 }
 
 
 
 func (im *ifaceMode) parseArgs(args []string) {
-    parser := argparser.NewArgParser(args)
+	parser := argparser.NewArgParser(args)
 
-	args1    := argparser.Argument{ Long: "--iface", Short: "-i", Required: true }
+	args1    := argparser.Argument{Long: "--iface", Short: "-i", Required: true}
 	iface, _ := parser.Iface(&args1)
 	im.iface  = iface
 
-	args2  := argparser.Argument{ Long: "--mon", Short: "", Required: false }
+	args2  := argparser.Argument{Long: "--mon", Short: "", Required: false}
 	im.mon  = parser.Bool(&args2)
 
-	args3  := argparser.Argument{ Long: "--man", Short: "", Required: false }
+	args3  := argparser.Argument{Long: "--man", Short: "", Required: false}
 	im.man  = parser.Bool(&args3)
 
 	parser.AbortIfHasError()
@@ -77,94 +78,65 @@ func (im *ifaceMode) parseArgs(args []string) {
 func (im *ifaceMode) execute() {
 	im.validateModeFlags()
 
-	if im.mon { im.setMonitorMode() }
-	if im.man { im.setManagedMode() }
+	if im.mon {
+		im.switchMode(nl80211IftypeMonitor, "monitor")
+	}
+	if im.man {
+		im.switchMode(nl80211IftypeManaged, "managed")
+	}
 }
 
 
 
 func (im *ifaceMode) validateModeFlags() {
-	if !im.mon && !im.man {
-		utils.Abort("It's necessary to select a mode: --mon or --man")
-	}
-
-	if im.mon && im.man {
-		utils.Abort("Select only one mode: --mon or --man")
-	}
+	if !im.mon && !im.man { utils.Abort("It's necessary to select a mode: --mon or --man") }
+	if im.mon && im.man   { utils.Abort("Select only one mode: --mon or --man") }
 }
 
 
 
-func handler(cmd *exec.Cmd) *string {
-    err := cmd.Run()
-    
+func (im *ifaceMode) switchMode(iftype uint32, label string) {
+	wiphy, err := phyIndex(im.iface.Name)
 	if err != nil {
-        msg := fmt.Sprintf("%s", err)
-        return &msg
-    }
-    
-	time.Sleep(1e8)
-    return nil
-}
+		utils.Abort(fmt.Sprintf("Unable to resolve phy for %s: %v", im.iface.Name, err))
+	}
 
+	dev, err := newNL80211()
+	if err != nil {
+		utils.Abort(fmt.Sprintf("Unable to open nl80211 socket: %v", err))
+	}
+	defer dev.close()
 
+	if err := setLinkUp(im.iface.Index, false); err != nil {
+		utils.Abort(fmt.Sprintf("Unable to set interface %s down: %v", im.iface.Name, err))
+	}
 
-func (im *ifaceMode) setIfaceDown() {
-	cmd := exec.Command("sudo", "ip", "link", "set", im.iface.Name, "down")
+	if err := dev.deleteInterface(im.iface.Index); err != nil {
+		utils.Abort(fmt.Sprintf("Unable to delete interface %s: %v", im.iface.Name, err))
+	}
 	
-	if err := handler(cmd); err != nil {
-		utils.Abort(
-			fmt.Sprintf("Unable to set interface %s down: %v", im.iface.Name, err))
+	if err := dev.createInterface(wiphy, im.iface.Name, iftype); err != nil {
+		utils.Abort(fmt.Sprintf(
+			"Unable to create interface %s on %s mode: %v", im.iface.Name, label, err,
+		))
+	}
+
+	if link, err := net.InterfaceByName(im.iface.Name); err == nil {
+		if err := setLinkUp(link.Index, true); err != nil {
+			utils.Abort(fmt.Sprintf("Unable to set interface %s up: %v", im.iface.Name, err))
+		}
 	}
 }
 
 
 
-func (im *ifaceMode) setIfaceUp() {
-	cmd := exec.Command("sudo", "ip", "link", "set", im.iface.Name, "up")
+func phyIndex(iface string) (int, error) {
+	path := filepath.Join("/sys/class/net", iface, "phy80211", "index")
+	data, err := os.ReadFile(path)
 	
-	if err := handler(cmd); err != nil {
-		utils.Abort(
-			fmt.Sprintf("Unable to set interface %s up: %v", im.iface.Name, err))
+	if err != nil {
+		return 0, err
 	}
-}
-
-
-
-func (im *ifaceMode) delIface() {
-	cmd := exec.Command("sudo", "iw", "dev", im.iface.Name, "del")
 	
-	if err := handler(cmd); err != nil {
-		utils.Abort(
-			fmt.Sprintf("Unable to delete interface %s: %v", im.iface.Name, err))
-	}
-}
-
-
-
-func (im *ifaceMode) createIface(mode string) {
-	cmd := exec.Command("sudo", "iw", "phy", "phy0", "interface", "add", im.iface.Name, "type", mode)
-	
-	if err := handler(cmd); err != nil {
-		utils.Abort(
-			fmt.Sprintf("Unable to create interface %s on %s mode: %v", im.iface.Name, mode, err))
-	}
-}
-
-
-
-func (im *ifaceMode) setMonitorMode() {
-	im.setIfaceDown()
-	im.delIface()
-	im.createIface("monitor")
-	im.setIfaceUp()	
-}
-
-
-
-func (im *ifaceMode) setManagedMode() {
-	im.setIfaceDown()
-	im.delIface()
-	im.createIface("managed")
-	im.setIfaceUp()	
+	return strconv.Atoi(strings.TrimSpace(string(data)))
 }
