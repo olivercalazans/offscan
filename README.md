@@ -40,21 +40,28 @@
 
 ## Dependencies
 
+- Network interface capable of monitor mode and packet injection
+- Linux operating system
+- Go (version 1.25.0 or higher)
+- libpcap-dev
+
 This project uses **Go modules** to manage its dependencies.  
-If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/) to install the **latest version**.
+If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/) to install the latest version.
 
-All Go dependencies are managed automatically via the `go.mod` file – no manual installation required.  
-You can find them listed in the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file.
+All Go dependencies are managed automatically via the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file – no manual installation required.
 
-However, because OffScan relies on `libpcap` for low-level network operations and `iw` command, **you must install both** on your system before compiling.
+However, because OffScan relies on `libpcap` for low-level network operations, **you must install it** on your system before compiling:
 ```bash
-sudo apt install libpcap-dev iw
+sudo apt install libpcap-dev
 ```
+
 
 <br>
 
 > [!WARNING]
-> The code is primarily designed for Linux systems. While it can run on Windows via WSL (Windows Subsystem for Linux), network interface limitations in WSL may restrict functionality and cause unreliable behavior.
+>
+> The code is primarily designed for native Linux systems. It will not function properly inside **containers (e.g., Docker)** or via **WSL (Windows Subsystem for Linux)**. This is because containerized and virtualized environments restrict low-level access to the wireless network interface, which is required for monitor mode and packet injection.
+
 
 <br>
 
