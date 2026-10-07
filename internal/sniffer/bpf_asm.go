@@ -18,8 +18,7 @@
 // bpf_asm.go provides small constructors for classic BPF (cBPF)
 // instructions. Each constructor returns a unix.SockFilter ready to be
 // assembled into a program and attached to a socket via SO_ATTACH_FILTER.
-//
-// The constants mirror <linux/bpf_common.h> and <linux/filter.h>.
+
 package sniffer
 
 import "golang.org/x/sys/unix"
