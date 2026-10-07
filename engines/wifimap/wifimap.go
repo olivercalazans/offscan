@@ -28,6 +28,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 
@@ -77,8 +79,29 @@ func (wm *wifiMapper) startBeaconProcessor() {
 
 
 
-func getBPFFilter() string {
-	return "wlan type mgt subtype beacon"
+
+func getBPFFilter() []unix.SockFilter {
+	return []unix.SockFilter{
+		// 0-5: X = it_len  (little-endian uint16 at offset 2)
+		sniffer.LDB(3),      // A = it_len high byte
+		sniffer.LSH(8),      // A <<= 8
+		sniffer.TAX(),       // X = A
+		sniffer.LDB(2),      // A = it_len low byte
+		sniffer.ORX(),       // A = A | X
+		sniffer.TAX(),       // X = it_len
+
+		// 6: A = Frame Control byte 0 (at offset X)
+		sniffer.LDBInd(0),
+
+		// 7: keep only type + subtype bits
+		sniffer.AND(0xfc),
+		
+		// 8: mgmt beacon? -> accept (idx 9); otherwise reject (idx 10)
+		sniffer.JEQ(0x80, 0, 1),
+
+		sniffer.RET(sniffer.BPFAcceptAll),  // 9: accept
+		sniffer.RET(0),          		    // 10: reject
+	}
 }
 
 

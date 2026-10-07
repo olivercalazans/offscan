@@ -32,6 +32,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 
@@ -108,8 +110,30 @@ func (l2hd *layer2HostDiscovery) startFrameProcessor() {
 
 
 
-func getBPFFilter() string {
-	return "(wlan type mgt and wlan subtype beacon) or wlan type data"
+func getBPFFilter() []unix.SockFilter {
+		return []unix.SockFilter{
+		// --- radiotap prologue: X = it_len ---
+		sniffer.LDB(3),    // 0: A = it_len high byte
+		sniffer.LSH(8),    // 1: A <<= 8
+		sniffer.TAX(),     // 2: X = A
+		sniffer.LDB(2),    // 3: A = it_len low byte
+		sniffer.ORX(),     // 4: A = A | X (= it_len)
+		sniffer.ST(0),     // 5: M[0] = A (tcpdump artifact. harmless)
+		sniffer.TAX(),     // 6: X = it_len
+
+		// --- 802.11 Frame Control ---
+		sniffer.LDBInd(0),        // 7:  A = FC[0]
+		sniffer.JSET(0x0c, 2, 0), // 8:  not mgmt? -> data branch (idx 11)
+		sniffer.AND(0xfc),        // 9:  keep type + subtype
+		sniffer.JEQ(0x80, 3, 0),  // 10: beacon? -> accept (idx 14); else -> data branch
+
+		sniffer.LDBInd(0),        // 11: A = FC[0]
+		sniffer.AND(0x0c),        // 12: keep type only
+		sniffer.JEQ(0x08, 0, 1),  // 13: data? -> accept (idx 14); else reject (idx 15)
+
+		sniffer.RET(sniffer.BPFAcceptAll),  // 14: accept
+		sniffer.RET(0),                     // 15: reject
+	}
 }
 
 

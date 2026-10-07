@@ -32,6 +32,8 @@ import (
 	"offscan/internal/netroute"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
+
+	"golang.org/x/sys/unix"
 )
 
 
@@ -92,35 +94,65 @@ func (hd *hostDiscovery) displayExecInfo() {
 
 
 
-func (hd *hostDiscovery) getBpfFilter() string {
-    return fmt.Sprintf(
-        "(dst host %s and src net %s) or (arp[6:2] = 2)", 
-        hd.myIP.String(),
-        hd.cidrForBPFFilter(),
-    )
+func (hd *hostDiscovery) getBpfFilter() []unix.SockFilter {
+	myIP          := hd.myIP.Uint32()
+	mask, netAddr := cidrMaskAndNetwork(hd.ips.StartU32, hd.ips.EndU32)
+
+	return []unix.SockFilter{
+		// 0: load EtherType
+		sniffer.LDH(12),
+		// 1: not IPv4 -> jump to ARP/RARP branch (idx 7)
+		sniffer.JEQ(0x0800, 0, 5),
+
+		// 2-3: IPv4 dst == myIP? otherwise reject (idx 22)
+		sniffer.LDW(30),
+		sniffer.JEQ(myIP, 0, 18),
+
+		// 4-6: IPv4 src in network?
+		sniffer.LDW(26),
+		sniffer.AND(mask),
+		sniffer.JEQ(netAddr, 14, 15), // match -> accept (21); otherwise reject (22)
+
+		// 7-9: ARP and target protocol address == myIP?
+		sniffer.JEQ(0x0806, 0, 7),
+		sniffer.LDW(38),
+		sniffer.JEQ(myIP, 0, 3),
+
+		// 10-12: ARP sender protocol address in network?
+		sniffer.LDW(28),
+		sniffer.AND(mask),
+		sniffer.JEQ(netAddr, 8, 0), // match -> accept (21)
+
+		// 13-14: arp[6:2] == 2 (ARP reply)
+		sniffer.LDH(20),
+		sniffer.JEQ(2, 6, 7), // reply -> accept (21); otherwise reject (22)
+
+		// 15-17: RARP and target protocol address == myIP?
+		sniffer.JEQ(0x8035, 0, 6),
+		sniffer.LDW(38),
+		sniffer.JEQ(myIP, 0, 4),
+
+		// 18-20: RARP sender protocol address in network?
+		sniffer.LDW(28),
+		sniffer.AND(mask),
+		sniffer.JEQ(netAddr, 0, 1), // match -> accept (21); otherwise reject (22)
+
+		sniffer.RET(sniffer.BPFAcceptAll),  // 21: accept
+		sniffer.RET(0),                     // 22: reject
+	}
 }
 
 
 
-func (hd *hostDiscovery) cidrForBPFFilter() string {
-    xor := hd.ips.StartU32 ^ hd.ips.EndU32
-    var leadingZeros int = 32
-    
-	if xor != 0 {
-        leadingZeros = bits.LeadingZeros32(xor)
-	}
-    
-	prefixLen := uint8(leadingZeros)
-    var mask uint32 = 0
-    
-	if prefixLen != 0 {
-        mask = ^uint32(0) << (32 - prefixLen)
-    }
-    
-	networkAddr := hd.ips.StartU32 & mask
-    ip 			:= models.Uint32ToIPv4(networkAddr)
-    
-	return fmt.Sprintf("%s/%d", ip.String(), prefixLen)
+func cidrMaskAndNetwork(start, end uint32) (mask, network uint32) {
+	xor       := start ^ end
+	prefixLen := uint8(32)
+
+	if xor       != 0 { prefixLen = uint8(bits.LeadingZeros32(xor)) }
+	if prefixLen != 0 { mask      = ^uint32(0) << (32 - prefixLen)  }
+	
+    network = start & mask
+	return
 }
 
 

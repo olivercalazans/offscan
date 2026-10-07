@@ -112,17 +112,13 @@ func (s *Sniffer) disablePromiscuous() {
 
 
 func (s *Sniffer) attachFilter() error {
-	if s.filter == "" { return nil }
-	
-	bytecode, err := s.compileFilter()
-
-	if err != nil {
-		return fmt.Errorf("compile filter: %w", err)
+	if len(s.filter) == 0 {
+		return nil
 	}
 
 	prog := unix.SockFprog{
-		Len    : uint16(len(bytecode)),
-		Filter : &bytecode[0],
+		Len:    uint16(len(s.filter)),
+		Filter: &s.filter[0],
 	}
 
 	if err := unix.SetsockoptSockFprog(s.fd, unix.SOL_SOCKET, unix.SO_ATTACH_FILTER, &prog); err != nil {
