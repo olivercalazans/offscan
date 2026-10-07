@@ -40,20 +40,14 @@
 
 ## Dependencies
 
-- Network interface capable of monitor mode and packet injection
-- Linux operating system
-- Go (version 1.25.0 or higher)
-- libpcap-dev
+1. Network interface capable of monitor mode and packet injection
+2. Linux operating system
+3. Go (version 1.25.0 or higher)
 
 This project uses **Go modules** to manage its dependencies.  
 If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/) to install the latest version.
 
 All Go dependencies are managed automatically via the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file – no manual installation required.
-
-However, because OffScan relies on `libpcap` for low-level network operations, **you must install it** on your system before compiling:
-```bash
-sudo apt install libpcap-dev
-```
 
 
 <br>
