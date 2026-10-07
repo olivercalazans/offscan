@@ -31,6 +31,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 
@@ -87,8 +89,32 @@ func (ap *arpPoison) initSniffTools() {
 
 
 
-func (ap *arpPoison) getBPFFilter() string {
-	return fmt.Sprintf("host %s", ap.addrs.targetIP.String())
+
+func (ap *arpPoison) getBPFFilter() []unix.SockFilter {
+	ip := ap.addrs.targetIP.Uint32()
+
+	return []unix.SockFilter{
+		sniffer.LDH(12),              // 0:  load EtherType
+		sniffer.JEQ(0x0800, 0, 4),    // 1:  not IPv4 -> ARP/RARP branch
+
+		sniffer.LDW(26),              // 2-3: IPv4 src == target -> accept
+		sniffer.JEQ(ip, 8, 0),
+
+		sniffer.LDW(30),              // 4-5: IPv4 dst == target -> accept, else reject
+		sniffer.JEQ(ip, 6, 7),
+
+		sniffer.JEQ(0x0806, 1, 0),    // 6-7: ARP / RARP
+		sniffer.JEQ(0x8035, 0, 5),
+
+		sniffer.LDW(28),              // 8-9: ARP sender proto addr == target -> accept
+		sniffer.JEQ(ip, 2, 0),
+
+		sniffer.LDW(38),              // 10-11: ARP target proto addr == target -> accept, else reject
+		sniffer.JEQ(ip, 0, 1),
+
+		sniffer.RET(sniffer.BPFAcceptAll), // 12: accept
+		sniffer.RET(0),                    // 13: reject
+	}
 }
 
 

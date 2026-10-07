@@ -30,7 +30,7 @@ import (
 
 type Sniffer struct {
 	iface         net.Interface
-	filter        string
+	filter        []unix.SockFilter
 	promisc       bool
 	handler       func([]byte)
 	wg            sync.WaitGroup
@@ -45,7 +45,14 @@ type Sniffer struct {
 
 
 
-func NewSniffer(iface net.Interface, filter string, promisc bool, handler func([]byte)) *Sniffer {
+func NewSniffer(
+	iface   net.Interface, 
+	filter  []unix.SockFilter, 
+	promisc bool, 
+	handler func([]byte),
+
+) *Sniffer {
+
 	return &Sniffer{
 		iface		: iface,
 		filter		: filter,
