@@ -100,6 +100,10 @@ func (dd *Dot11Dissector) GetChannel() uint8 {
         return dd.dsParam[0]
     }
 
+    if len(dd.htInfo) > 0 {
+        return dd.htInfo[0]
+    }
+
     return 0
 }
 
