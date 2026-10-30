@@ -29,18 +29,20 @@ import (
 
 
 type Sniffer struct {
-	iface         net.Interface
-	filter        []unix.SockFilter
-	promisc       bool
-	handler       func([]byte)
-	wg            sync.WaitGroup
-	fd            int
-	epollFd       int
-	stopEventFd   int
-	stats         unix.TpacketStats
-	promiscMreq  *unix.PacketMreq
-	closed        bool
-	closeMu       sync.Mutex
+    iface   net.Interface
+    filter  []unix.SockFilter
+    wg      sync.WaitGroup
+
+    handler       func([]byte)
+    fd            int
+    epollFd       int
+    stopEventFd   int
+    promiscMreq  *unix.PacketMreq
+    closeMu       sync.Mutex
+    stats         unix.TpacketStats
+
+    promisc  bool
+    closed   bool
 }
 
 

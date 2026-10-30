@@ -28,9 +28,9 @@ import (
 
 
 type Beacon struct {
-    buffer     [150]byte
     offset     int
     secOffset  int
+    buffer     [150]byte
 }
 
 

@@ -26,9 +26,9 @@ const lenTcpHdr uint32 = 20
 
 
 type TcpPacket struct {
-    buffer   [40]byte
     tcpHdr  *[20]byte
     IPHdr    ipHeader
+    buffer   [40]byte
 }
 
 

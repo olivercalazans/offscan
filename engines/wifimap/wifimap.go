@@ -43,10 +43,10 @@ func Run(args []string) {
 
 type wifiMapper struct {
 	iface       net.Interface
-	wInfo       models.Set[wifiData]
-	sniffer    *sniffer.Sniffer
-	wg          sync.WaitGroup
 	maxLen      maxLength
+	wg          sync.WaitGroup
+	sniffer    *sniffer.Sniffer
+	wInfo       models.Set[wifiData]
 	dissector  *dot11dissec.Dot11Dissector
 }
 

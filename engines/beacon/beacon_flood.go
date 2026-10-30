@@ -40,13 +40,13 @@ func Run(args []string) {
 
 
 type beaconFlood struct {
+    builder   dot11build.Beacon
     iface     net.Interface
-    channel   uint8
+    socket    sockets.Layer2Socket
     ssid      string
     bcSent    int
-    socket    sockets.Layer2Socket
-    builder   dot11build.Beacon
     randGen  *generators.RandomValues
+    channel   uint8
 }
 
 

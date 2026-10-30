@@ -27,8 +27,8 @@ import (
 
 type nl80211 struct {
 	conn  *nlConn
-	famID uint16
-	ver   uint8
+	famID  uint16
+	ver    uint8
 }
 
 

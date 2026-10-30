@@ -25,9 +25,9 @@ import (
 
 
 type ArpPacket struct {
-	buffer     [42]byte
 	arpHdr    *[28]byte
 	EtherHdr   etherHeader
+	buffer     [42]byte
 }
 
 

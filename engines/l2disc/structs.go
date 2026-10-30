@@ -21,12 +21,12 @@ import "offscan/internal/models"
 
 
 type dot11Info struct {
-	isBeacon   bool
-	bssid      models.BSSID
 	ssid       models.SSID
-	chnl       uint8
-	isDataFrm  bool
+	bssid      models.BSSID
 	staMac     models.MAC
+	chnl       uint8
+	isBeacon   bool
+	isDataFrm  bool
 }
 
 

@@ -47,15 +47,15 @@ func Run(args []string) {
 
 
 type hostDiscovery struct {
-    activeIPs   models.Set[hostInfo]
+	sniffer     sniffer.Sniffer
+    iface       net.Interface
     dissector   pktdissec.PacketDissector
     ips         generators.Ipv4Iter
-    iface       net.Interface
-    myIP        models.IPv4
-    protocols   protocols
-    running     atomic.Bool
-    sniffer     sniffer.Sniffer
     wgPktProc   sync.WaitGroup
+    activeIPs   models.Set[hostInfo]
+    myIP        models.IPv4
+    running     atomic.Bool
+    protocols   protocols
 }
 
 
