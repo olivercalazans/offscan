@@ -6,7 +6,6 @@
 
 <br>
 
-
 <table align="center" style="width: 90%; border-collapse: collapse; margin-bottom: 20px;">
   <tr>
     <th style="width: 50%; text-align: center; padding: 10px; color: #58A6FF; font-size: 1.1em; border-bottom: 2px solid #30363D;">
@@ -33,29 +32,64 @@
       </ul>
     </td>
   </tr>
-
 </table>
 
 <br>
 
-## Dependencies
+## Requirements & Compatibility
 
-1. Network interface capable of monitor mode and packet injection
-2. Linux operating system
-3. Go (version 1.25.0 or higher)
+### Hardware Requirements
+- Wireless network interface supporting **Monitor Mode** and **Packet Injection** (e.g., Atheros AR9271, Realtek RTL8812AU, or equivalent chipset).
 
-This project uses **Go modules** to manage its dependencies.  
-If you don't have Go installed, follow the instructions on the [official Go website](https://go.dev/dl/) to install the latest version.
+### Software & Operating System
+- **Operating System:** Native Linux (Debian, Ubuntu, Kali, Arch, Raspberry Pi OS, etc.)
+- **Go Compiler:** Version 1.25.0 or higher ([official Go website](https://go.dev/dl/))
 
-All Go dependencies are managed automatically via the [`go.mod`](https://github.com/olivercalazans/offscan/blob/main/go.mod) file – no manual installation required.
-
+> [!WARNING]
+> **Linux Only:**
+>
+> OffScan interacts directly with low-level network sockets and wireless PHY drivers for monitor mode and raw 802.11 frame injection. Therefore, **it only works on Linux**. It will **not** function on Windows, macOS, WSL (Windows Subsystem for Linux), or standard virtualized network adapters.
 
 <br>
 
-> [!WARNING]
->
-> The code is primarily designed for native Linux systems. It will not function properly inside **containers (e.g., Docker)** or via **WSL (Windows Subsystem for Linux)**. This is because containerized and virtualized environments restrict low-level access to the wireless network interface, which is required for monitor mode and packet injection.
+## Installation & Build
 
+Clone the repository and compile the binary using Go:
+
+```bash
+# Clone the repository
+git clone [https://github.com/olivercalazans/offscan.git](https://github.com/olivercalazans/offscan.git)
+cd offscan
+
+# Option A: Build a fully static binary (Recommended for portability)
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o offscan main.go
+
+# Option B: Standard Go build
+go build -o offscan main.go
+
+# Run the CLI
+sudo ./offscan --help
+```
+
+<br>
+
+## Basic Usage
+```Bash
+# Display help and available commands
+sudo ./offscan --help
+
+# Activate monitor mode
+sudo ./offscan ifmode -i <IFACE> --mon
+
+# Example: Run a Wi-Fi AP scan
+sudo ./offscan wmap -i <IFACE>
+
+# Deactivate monitor mode
+sudo ./offscan ifmode -i <IFACE> --man
+
+# Example: Run a Deauthentication Attack
+sudo ./offscan deauth -i <IFACE> -b <BSSID> -t <TARGET_MAC> -c <CHANNEL>
+```
 
 <br>
 
