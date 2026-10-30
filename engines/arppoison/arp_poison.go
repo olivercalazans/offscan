@@ -38,15 +38,15 @@ import (
 
 
 type arpPoison struct {
-	iface     net.Interface
-	addrs     addresses
-	builder  *pktbuild.ArpPacket
-	socket    sockets.Layer2Socket
-	sniffer  *sniffer.Sniffer
-	ctx       context.Context
-	cancel    context.CancelFunc
-	dissec   *pktdissec.PacketDissector
-	pkts      uint
+    iface     net.Interface
+    socket    sockets.Layer2Socket
+    addrs     addresses
+    ctx       context.Context
+    builder  *pktbuild.ArpPacket
+    sniffer  *sniffer.Sniffer
+    dissec   *pktdissec.PacketDissector
+    cancel    context.CancelFunc
+    pkts      uint
 }
 
 
@@ -54,8 +54,8 @@ type arpPoison struct {
 type addresses struct {
 	myMAC      models.MAC
 	targetMAC  models.MAC
-	targetIP   models.IPv4
 	apMAC	   models.BSSID
+	targetIP   models.IPv4
 	apIP       models.IPv4
 }
 

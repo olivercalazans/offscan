@@ -28,8 +28,8 @@ import (
 
 
 type Layer2Socket struct {
-    fd   int
     addr unix.SockaddrLinklayer
+    fd   int
 }
 
 

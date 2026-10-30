@@ -22,15 +22,14 @@ import (
 )
 
 
+const lenIcmpHdr int = 8
+
+
 type IcmpPacket struct {
-	buffer    [28]byte
 	icmpHdr  *[8]byte
 	IPHdr     ipHeader
+	buffer    [28]byte
 }
-
-
-
-const lenIcmpHdr int = 8
 
 
 

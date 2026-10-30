@@ -33,13 +33,13 @@ const delay = 40 * time.Millisecond
 
 
 type hostDiscProbes struct {
+    iface      net.Interface
     l2sock     sockets.Layer2Socket
     l3sock     sockets.Layer3Socket
     arp       *pktbuild.ArpPacket
     icmp      *pktbuild.IcmpPacket
     tcp       *pktbuild.TcpPacket
     rand      *generators.RandomValues
-    iface      net.Interface
     dstIP      models.IPv4
     myIP       models.IPv4
     protocols  protocols

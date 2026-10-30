@@ -25,8 +25,8 @@ import (
 
 
 type hostInfo struct {
-    ip   models.IPv4
     mac  models.MAC
+    ip   models.IPv4
 }
 
 

@@ -41,15 +41,15 @@ func Run(args []string) {
 
 type deauthAttack struct {
     iface      net.Interface
-    channel    int
-    builder    dot11build.Deauth
-    frmsSent   int
-    seqNum     uint16
     socket     sockets.Layer2Socket
+    timeStart  time.Time
+    channel    int
+    frmsSent   int
+    delay      time.Duration
+    builder    dot11build.Deauth
     apMAC      models.MAC
     targetMAC  models.MAC
-    delay      time.Duration
-    timeStart  time.Time
+    seqNum     uint16
 }
 
 

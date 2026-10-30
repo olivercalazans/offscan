@@ -21,13 +21,13 @@ import "offscan/internal/models"
 
 
 type wifiData struct {
+	time   models.Uptime
 	ssid   models.SSID
 	bssid  models.BSSID
-	chnl   uint8
 	sec    models.WifiSec
 	std    models.WifiStd
 	wps    models.WPSInfo
-	time   models.Uptime
+	chnl   uint8
 }
 
 

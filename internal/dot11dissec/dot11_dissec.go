@@ -23,9 +23,6 @@ import "encoding/binary"
 
 type Dot11Dissector struct {
 	frame      []byte
-	IsBeacon   bool
-	IsDataFrm  bool
-	timestamp  uint64
     
 	ssidData   []byte // IE 0x00
     dsParam    []byte // IE 0x03 (channel)
@@ -36,7 +33,12 @@ type Dot11Dissector struct {
     htInfo     []byte // IE 0x3D (802.11ac)
     vhtOps     []byte // IE 0xC0 (802.11n)
     wpa1Data   []byte // IE 0xDD (Vendor Specific - WPA1)
-    wpsData    []byte // IE 0xDD (Vendor Specific - WPS)    
+    wpsData    []byte // IE 0xDD (Vendor Specific - WPS)
+
+    timestamp  uint64
+
+    IsBeacon   bool
+	IsDataFrm  bool
 }
 
 

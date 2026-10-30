@@ -48,10 +48,10 @@ func Run(args []string) {
 
 type layer2HostDiscovery struct{
 	iface       net.Interface
-	sniffTime   time.Duration
-	sniffer    *sniffer.Sniffer
 	wg          sync.WaitGroup
 	ctx         context.Context
+	sniffTime   time.Duration
+	sniffer    *sniffer.Sniffer
 	cancel      context.CancelFunc
 	errChnls    models.Set[int]
 }

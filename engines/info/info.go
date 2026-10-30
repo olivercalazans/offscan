@@ -52,7 +52,6 @@ func DisplayHelp() {
 
 type networkInfo struct {
     ifaceList   []net.Interface
-    current    *net.Interface
     state       string
     ifType      string
     mac         string
@@ -63,6 +62,7 @@ type networkInfo struct {
     gatewayMac  string
     gatewayIP   string
     broadcast   string
+    current    *net.Interface
 }
 
 

@@ -32,9 +32,9 @@ const Signal = "+"
 
 
 type Ipv4Iter struct {
+	total    uint64
 	current  uint32
 	end      uint32
-	total    uint64
 	StartU32 uint32
 	EndU32   uint32
 }
@@ -68,9 +68,9 @@ func NewIpv4Iter(cidr, rangeStr string) Ipv4Iter {
 	total := uint64(endRange - startRange + 1)
 
 	return Ipv4Iter{
+		total    : total,
 		current  : startRange,
 		end      : endRange,
-		total    : total,
 		StartU32 : startRange,
 		EndU32   : endRange,
 	}

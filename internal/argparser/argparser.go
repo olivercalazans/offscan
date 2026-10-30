@@ -26,9 +26,9 @@ import (
 
 
 type Argument struct {
-    Required  bool
     Short     string
     Long      string
+    Required  bool
 }
 
 
