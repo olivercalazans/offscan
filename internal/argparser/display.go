@@ -26,12 +26,11 @@ import (
 	"strings"
 )
 
-
+// alignment: 8 bytes
 type CommandHandler struct {
-	Run    func(args []string)
-	Helper func()
+    Run    func(args []string) // 8 bytes
+    Helper func()              // 8 bytes
 }
-
 
 
 func DisplayAllHelp(registry map[string]CommandHandler) {

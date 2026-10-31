@@ -39,17 +39,21 @@ func Run(args []string) {
 
 
 
+// alignment: 8 bytes
 type deauthAttack struct {
-    iface      net.Interface
-    socket     sockets.Layer2Socket
-    timeStart  time.Time
-    channel    int
-    frmsSent   int
-    delay      time.Duration
-    builder    dot11build.Deauth
-    apMAC      models.MAC
-    targetMAC  models.MAC
-    seqNum     uint16
+    timeStart  time.Time            // 24 bytes
+    iface      net.Interface        // 64 bytes
+
+    socket    sockets.Layer2Socket // 56 bytes
+    channel   int                  //  8 bytes
+    frmsSent  int                  //  8 bytes
+    delay     time.Duration        //  8 bytes
+    
+    builder    dot11build.Deauth  //  38 bytes (38 * 1 byte)
+    seqNum     uint16             //  2 bytes
+    apMAC      models.MAC         //  6 bytes
+    targetMAC  models.MAC         //  6 bytes
+    // padding: 2 bytes
 }
 
 

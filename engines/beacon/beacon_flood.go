@@ -39,14 +39,17 @@ func Run(args []string) {
 
 
 
+// alignment: 8 bytes
 type beaconFlood struct {
-    builder   dot11build.Beacon
-    iface     net.Interface
-    socket    sockets.Layer2Socket
-    ssid      string
-    bcSent    int
-    randGen  *generators.RandomValues
-    channel   uint8
+    randGen *generators.RandomValues //   8 bytes
+    ssid    string                   //  16 bytes
+    iface   net.Interface            //  64 bytes
+
+    socket  sockets.Layer2Socket     //  56 bytes
+    bcSent  int                      //   8 bytes
+    builder dot11build.Beacon        // 168 bytes (166 + padding: 2 bytes)
+    channel uint8                    //   1 byte
+    // padding: 7 bytes
 }
 
 

@@ -19,23 +19,25 @@ package l2disc
 
 import "offscan/internal/models"
 
-
+// alignment: 1 byte
 type dot11Info struct {
-	ssid       models.SSID
-	bssid      models.BSSID
-	staMac     models.MAC
-	chnl       uint8
-	isBeacon   bool
-	isDataFrm  bool
+    ssid      models.SSID  // 35 bytes (35 * byte)
+    bssid     models.BSSID //  6 bytes 
+    staMac    models.MAC   //  6 bytes 
+    chnl      uint8        //  1 byte
+    isBeacon  bool         //  1 byte
+    isDataFrm bool         //  1 byte
 }
 
 
+// alignment: 1 byte
 type beacon struct {
-	ssid  models.SSID
+	ssid  models.SSID // 35 bytes (35 * byte)
 	chnl  uint8
 }
 
 
+// alignment: 1 byte
 type station struct {
 	bssid   models.BSSID
 	staMac  models.MAC

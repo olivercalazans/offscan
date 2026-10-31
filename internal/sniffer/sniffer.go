@@ -27,22 +27,23 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-
+// alignment: 8 bytes
 type Sniffer struct {
-    iface   net.Interface
-    filter  []unix.SockFilter
-    wg      sync.WaitGroup
+    promiscMreq  *unix.PacketMreq    //  8 bytes
+    filter        []unix.SockFilter  // 24 bytes 
+    handler       func([]byte)       //  8 bytes
+    iface         net.Interface      // 64 bytes
 
-    handler       func([]byte)
-    fd            int
-    epollFd       int
-    stopEventFd   int
-    promiscMreq  *unix.PacketMreq
-    closeMu       sync.Mutex
-    stats         unix.TpacketStats
+    fd          int                //  8 bytes
+    epollFd     int                //  8 bytes
+    stopEventFd int                //  8 bytes
+    closeMu     sync.Mutex         //  8 bytes
+    stats       unix.TpacketStats  //  8 bytes
 
-    promisc  bool
-    closed   bool
+    wg          sync.WaitGroup       // 12 bytes
+    promisc     bool                 //  1 byte
+    closed      bool                 //  1 byte
+    // 2 bytes (padding)
 }
 
 

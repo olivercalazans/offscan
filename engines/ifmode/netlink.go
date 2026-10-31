@@ -24,11 +24,11 @@ import (
 	"syscall"
 )
 
-
-
+// alignment: 8 bytes
 type nlConn struct {
-	fd  int
-	seq uint32
+    fd  int    // 8 bytes
+    seq uint32 // 4 bytes
+    // padding: 4 bytes
 }
 
 

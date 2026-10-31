@@ -24,21 +24,23 @@ import (
 	"strconv"
 )
 
-
+// alignment: 8 bytes
 type Argument struct {
-    Short     string
-    Long      string
-    Required  bool
+    Short     string // 16 bytes
+    Long      string // 16 bytes
+    Required  bool   //  1 byte
+    // padding: 7 bytes
 }
 
 
-
+// alignment: 8 bytes
+// padding: 0
 type ArgParser struct {
-    args           []string
-    duplicated     []string
-    missingFlags   []string
-    missingValues  []string
-    errors         []string
+    args          []string // 24 bytes
+    duplicated    []string // 24 bytes
+    missingFlags  []string // 24 bytes
+    missingValues []string // 24 bytes
+    errors        []string // 24 bytes
 }
 
 

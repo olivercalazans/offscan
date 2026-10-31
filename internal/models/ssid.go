@@ -17,13 +17,12 @@
 
 package models
 
-
-
+// alignment: 1 byte
 type SSID struct {
-	Data       [32]byte
-	length     uint8
-	IsUnknown  bool
-	IsHidden   bool
+    Data       [32]byte  // 32 bytes (32 * 1 byte)
+    length     uint8     //  1 byte
+    IsUnknown  bool      //  1 byte
+    IsHidden   bool      //  1 byte
 }
 
 

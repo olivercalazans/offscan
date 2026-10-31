@@ -49,10 +49,12 @@ func DisplayHelp() {
 
 
 
+// alignment: 8 bytes
 type ifaceMode struct {
-	iface net.Interface
-	mon   bool
-	man   bool
+    iface net.Interface // 64 bytes
+    mon   bool          //  1 byte
+    man   bool          //  1 byte
+    // padding: 6 bytes
 }
 
 

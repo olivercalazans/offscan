@@ -22,14 +22,13 @@ import (
 	"offscan/internal/models"
 )
 
-
-
+// alignment: 8 bytes
 type ArpPacket struct {
-	arpHdr    *[28]byte
-	EtherHdr   etherHeader
-	buffer     [42]byte
+    arpHdr    *[28]byte     //  8 bytes
+    EtherHdr   etherHeader  //  8 bytes
+    buffer     [42]byte     // 42 bytes (42 * 1 byte)
+    // padding: 6 bytes
 }
-
 
 
 func NewArpPkt() *ArpPacket {

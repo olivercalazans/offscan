@@ -22,13 +22,12 @@ import (
 	"syscall"
 )
 
-
-
-
+// alignment: 8 bytes
 type nl80211 struct {
-	conn  *nlConn
-	famID  uint16
-	ver    uint8
+    conn   *nlConn  // 8 bytes
+    famID   uint16  // 2 bytes
+    ver     uint8   // 1 byte 
+    // padding: 5 bytes
 }
 
 

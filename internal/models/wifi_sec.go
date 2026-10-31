@@ -30,11 +30,12 @@ const (
 )
 
 
+// alignment: 1 byte
 type WifiSec struct {
-	Type     SecurityType
-	Version  uint8
-	Auth     SecurityAuth
-	Cipher   SecurityCipher
+    Type     SecurityType    // 1 byte
+    Auth     SecurityAuth    // 1 byte
+    Cipher   SecurityCipher  // 1 byte
+    Version  uint8           // 1 byte
 }
 
 

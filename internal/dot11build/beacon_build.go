@@ -25,12 +25,12 @@ import (
 	"time"
 )
 
-
-
+// alignment: 8 bytes
 type Beacon struct {
-    offset     int
-    secOffset  int
-    buffer     [150]byte
+    offset     int        //   8 bytes
+    secOffset  int        //   8 bytes
+    buffer     [150]byte  // 150 bytes (150 * 1 byte)
+    // padding: 2 bytes
 }
 
 

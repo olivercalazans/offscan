@@ -19,10 +19,11 @@ package models
 
 import "fmt"
 
-
+// alignment: 2 bytes
 type Uptime struct {
-    Days  uint16
-    Hours uint8
+    Days   uint16  // 2 bytes
+    Hours  uint8   // 1 byte
+    // padding: 1 byte
 }
 
 
