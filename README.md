@@ -58,7 +58,7 @@ Clone the repository and compile the binary using Go:
 
 ```bash
 # Clone the repository
-git clone [https://github.com/olivercalazans/offscan.git](https://github.com/olivercalazans/offscan.git)
+git clone https://github.com/olivercalazans/offscan.git
 cd offscan
 
 # Option A: Build a fully static binary (Recommended for portability)
