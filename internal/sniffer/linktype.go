@@ -37,12 +37,16 @@ const (
 // LinktypeOf reads /sys/class/net/<iface>/type, which holds the ARPHRD_* value.
 func LinktypeOf(iface net.Interface) (int, error) {
 	b, err := os.ReadFile(fmt.Sprintf("/sys/class/net/%s/type", iface.Name))
+
 	if err != nil {
 		return -1, fmt.Errorf("linktype: %w", err)
 	}
+	
 	n, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	
 	if err != nil {
 		return -1, fmt.Errorf("linktype: parse %q: %w", b, err)
 	}
+	
 	return n, nil
 }

@@ -24,14 +24,12 @@ import (
 	"time"
 )
 
-
-
+// alignment: 8 bytes
 type RandomValues struct {
-    rng      *rand.Rand
-    firstIP   uint32
-    lastIP    uint32
+    rng      *rand.Rand  // 8 bytes
+    firstIP   uint32     // 4 bytes
+    lastIP    uint32     // 4 bytes
 }
-
 
 
 func NewRandomValues() *RandomValues {

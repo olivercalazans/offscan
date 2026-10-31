@@ -41,13 +41,16 @@ func Run(args []string) {
 
 
 
+// alignment: 8 bytes
 type wifiMapper struct {
-	iface       net.Interface
-	maxLen      maxLength
-	wg          sync.WaitGroup
-	sniffer    *sniffer.Sniffer
-	wInfo       models.Set[wifiData]
-	dissector  *dot11dissec.Dot11Dissector
+    sniffer    *sniffer.Sniffer            //   8 bytes 
+    wInfo       models.Set[wifiData]       //   8 bytes
+    dissector  *dot11dissec.Dot11Dissector //   8 bytes 
+    iface       net.Interface              //  64 bytes
+
+    maxLen    maxLength       //  24 bytes
+    wg        sync.WaitGroup  //  12 bytes
+    // padding: 4 bytes
 }
 
 
@@ -208,15 +211,15 @@ func (wm *wifiMapper) getMaxLen(netData *wifiData) {
 
 func (wm *wifiMapper) sortWifiData(keys []wifiData) {
     slices.SortFunc(keys, func(a, b wifiData) int {
-        if a.ssid.IsHidden != b.ssid.IsHidden {
-            if a.ssid.IsHidden {
+        if a.ssid.IsHidden() != b.ssid.IsHidden() {
+            if a.ssid.IsHidden() {
                 return -1
             }
             return 1
         }
 
-        if a.ssid.IsUnknown != b.ssid.IsUnknown {
-            if a.ssid.IsUnknown {
+        if a.ssid.IsUnknown() != b.ssid.IsUnknown() {
+            if a.ssid.IsUnknown() {
                 return -1
             }
             return 1

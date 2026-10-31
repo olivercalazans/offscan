@@ -50,19 +50,20 @@ func DisplayHelp() {
 
 
 
+// alignment: 8 bytes
 type networkInfo struct {
-    ifaceList   []net.Interface
-    state       string
-    ifType      string
-    mac         string
-    ip          string
-    cidr        string
-    hostLen     string
-    mtu         string
-    gatewayMac  string
-    gatewayIP   string
-    broadcast   string
-    current    *net.Interface
+    ifaceList   []net.Interface // 24 bytes
+    current    *net.Interface   //  8 bytes
+    state       string          // 16 bytes
+    ifType      string          // 16 bytes
+    mac         string          // 16 bytes
+    ip          string          // 16 bytes
+    cidr        string          // 16 bytes
+    hostLen     string          // 16 bytes
+    mtu         string          // 16 bytes
+    gatewayMac  string          // 16 bytes
+    gatewayIP   string          // 16 bytes
+    broadcast   string          // 16 bytes
 }
 
 

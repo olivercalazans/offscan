@@ -25,10 +25,12 @@ import (
 const lenIcmpHdr int = 8
 
 
+// alignment: 8 bytes
 type IcmpPacket struct {
-	icmpHdr  *[8]byte
-	IPHdr     ipHeader
-	buffer    [28]byte
+    icmpHdr  *[8]byte   //  8 bytes
+    IPHdr     ipHeader  //  8 bytes
+    buffer    [28]byte  // 28 bytes (28 * 1 byte)
+    // padding: 4 bytes
 }
 
 

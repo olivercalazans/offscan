@@ -19,21 +19,22 @@ package wifimap
 
 import "offscan/internal/models"
 
-
+// alignment: 2 bytes
 type wifiData struct {
-	time   models.Uptime
-	ssid   models.SSID
-	bssid  models.BSSID
-	sec    models.WifiSec
-	std    models.WifiStd
-	wps    models.WPSInfo
-	chnl   uint8
+    time  models.Uptime  //  4 bytes
+    bssid models.BSSID   //  6 bytes
+    sec   models.WifiSec //  4 bytes
+    ssid  models.SSID    // 35 bytes
+    std   models.WifiStd //  1 byte 
+    wps   models.WPSInfo //  1 byte 
+    chnl  uint8          //  1 byte 
 }
 
 
 
+// alignment: 8 bytes
 type maxLength struct {
-	ssid  int
-	sec   int
-	wps   int
+    ssid int // 8 bytes
+    sec  int // 8 bytes
+    wps  int // 8 bytes
 }

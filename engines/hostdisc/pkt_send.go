@@ -32,17 +32,20 @@ import (
 const delay = 40 * time.Millisecond
 
 
+// alignment: 8 bytes
 type hostDiscProbes struct {
-    iface      net.Interface
-    l2sock     sockets.Layer2Socket
-    l3sock     sockets.Layer3Socket
-    arp       *pktbuild.ArpPacket
-    icmp      *pktbuild.IcmpPacket
-    tcp       *pktbuild.TcpPacket
-    rand      *generators.RandomValues
-    dstIP      models.IPv4
-    myIP       models.IPv4
-    protocols  protocols
+    arp    *pktbuild.ArpPacket       //  8 bytes
+    icmp   *pktbuild.IcmpPacket      //  8 bytes
+    tcp    *pktbuild.TcpPacket       //  8 bytes
+    rand   *generators.RandomValues  //  8 bytes
+    iface   net.Interface            // 64 bytes
+
+    l2sock    sockets.Layer2Socket   // 56 bytes
+    l3sock    sockets.Layer3Socket   //  8 bytes
+    dstIP     models.IPv4            //  4 bytes
+    myIP      models.IPv4            //  4 bytes
+    protocols protocols              //  3 bytes
+    // padding: 5 bytes
 }
 
 

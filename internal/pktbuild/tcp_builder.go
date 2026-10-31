@@ -25,10 +25,11 @@ import (
 const lenTcpHdr uint32 = 20
 
 
+// alignment: 8 bytes
 type TcpPacket struct {
-    tcpHdr  *[20]byte
-    IPHdr    ipHeader
-    buffer   [40]byte
+    tcpHdr  *[20]byte  // 8 bytes
+    IPHdr    ipHeader  // 8 bytes
+    buffer   [40]byte  // 40 bytes (40 * 1 byte)
 }
 
 

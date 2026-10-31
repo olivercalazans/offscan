@@ -45,22 +45,27 @@ func Run(args []string) {
 }
 
 
-
+// alignment: 8 bytes
 type hostDiscovery struct {
-	sniffer     sniffer.Sniffer
-    iface       net.Interface
-    dissector   pktdissec.PacketDissector
-    ips         generators.Ipv4Iter
-    wgPktProc   sync.WaitGroup
-    activeIPs   models.Set[hostInfo]
-    myIP        models.IPv4
-    running     atomic.Bool
-    protocols   protocols
+    activeIPs models.Set[hostInfo]      //   8 bytes
+    sniffer   sniffer.Sniffer           // 160 bytes
+    iface     net.Interface             //  64 bytes
+    dissector pktdissec.PacketDissector //  32 bytes
+
+    ips       generators.Ipv4Iter  //  24 bytes
+    wgPktProc sync.WaitGroup       //  12 bytes
+    myIP      models.IPv4          //   4 bytes
+    running   atomic.Bool          //   4 bytes
+    protocols protocols            //   3 bytes (3x bool)
+    // padding: 1 byte
 }
 
 
+// alignment: 1 byte
 type protocols struct {
-    arp, icmp, tcp bool
+    arp  bool // 1 byte
+    icmp bool // 1 byte
+    tcp  bool // 1 byte
 }
 
 

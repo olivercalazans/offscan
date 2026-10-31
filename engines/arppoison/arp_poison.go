@@ -35,28 +35,30 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-
-
+// alignment: 8 bytes
 type arpPoison struct {
-    iface     net.Interface
-    socket    sockets.Layer2Socket
-    addrs     addresses
-    ctx       context.Context
-    builder  *pktbuild.ArpPacket
-    sniffer  *sniffer.Sniffer
-    dissec   *pktdissec.PacketDissector
-    cancel    context.CancelFunc
-    pkts      uint
+    builder  *pktbuild.ArpPacket        //  8 bytes (ponteiro)
+    sniffer  *sniffer.Sniffer           //  8 bytes (ponteiro)
+    dissec   *pktdissec.PacketDissector //  8 bytes (ponteiro)
+    cancel    context.CancelFunc        //  8 bytes (ponteiro de func)
+    ctx       context.Context           // 16 bytes (interface: itab + data ptr)
+    iface     net.Interface             // 64 bytes (contém string e slice headers)
+    socket    sockets.Layer2Socket      // 56 bytes (escalar: struct unix + int)
+    pkts      uint                      //  8 bytes (escalar)
+    addrs     addresses                 // 26 bytes (escalar: arrays de bytes)
+    // padding: 6 bytes
 }
 
 
 
+// alignment: 1 byte
+// padding: 0
 type addresses struct {
-	myMAC      models.MAC
-	targetMAC  models.MAC
-	apMAC	   models.BSSID
-	targetIP   models.IPv4
-	apIP       models.IPv4
+    myMAC      models.MAC   // 6 bytes
+    targetMAC  models.MAC   // 6 bytes
+    apMAC      models.BSSID // 6 bytes
+    targetIP   models.IPv4  // 4 bytes
+    apIP       models.IPv4  // 4 bytes
 }
 
 

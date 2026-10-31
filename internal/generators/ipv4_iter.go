@@ -26,17 +26,16 @@ import (
 )
 
 
-
 const Signal = "+"
 
 
-
+// alignment: 8 bytes
 type Ipv4Iter struct {
-	total    uint64
-	current  uint32
-	end      uint32
-	StartU32 uint32
-	EndU32   uint32
+    total     uint64  // 8 bytes
+    current   uint32  // 4 bytes
+    end       uint32  // 4 bytes
+    StartU32  uint32  // 4 bytes
+    EndU32    uint32  // 4 bytes
 }
 
 

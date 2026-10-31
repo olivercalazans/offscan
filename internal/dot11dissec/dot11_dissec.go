@@ -19,26 +19,28 @@ package dot11dissec
 
 import "encoding/binary"
 
-
-
+// aligniment: 8 bytes
 type Dot11Dissector struct {
-	frame      []byte
-    
-	ssidData   []byte // IE 0x00
-    dsParam    []byte // IE 0x03 (channel)
-    rsn        []byte // IE 0x30 (WPA2)
-    htCap      []byte // IE 0x2D (802.11n)
-    vhtCap     []byte // IE 0xBF (802.11ac)
-    heCap      []byte // IE 0xFF (802.11ax)
-    htInfo     []byte // IE 0x3D (802.11ac)
-    vhtOps     []byte // IE 0xC0 (802.11n)
-    wpa1Data   []byte // IE 0xDD (Vendor Specific - WPA1)
-    wpsData    []byte // IE 0xDD (Vendor Specific - WPS)
+    // 24 bytes (ptr + len + cap)
+	frame     []byte
+	ssidData  []byte // IE 0x00
+    dsParam   []byte // IE 0x03 (channel)
+    rsn       []byte // IE 0x30 (WPA2)
+    htCap     []byte // IE 0x2D (802.11n)
+    vhtCap    []byte // IE 0xBF (802.11ac)
+    heCap     []byte // IE 0xFF (802.11ax)
+    htInfo    []byte // IE 0x3D (802.11ac)
+    vhtOps    []byte // IE 0xC0 (802.11n)
+    wpa1Data  []byte // IE 0xDD (Vendor Specific - WPA1)
+    wpsData   []byte // IE 0xDD (Vendor Specific - WPS)
 
+    // 8 bytes
     timestamp  uint64
 
+    // 1 byte
     IsBeacon   bool
 	IsDataFrm  bool
+    // padding: 6 bytes
 }
 
 

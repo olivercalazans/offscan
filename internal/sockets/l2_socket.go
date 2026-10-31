@@ -25,11 +25,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-
-
+// alignment: 8 bytes
 type Layer2Socket struct {
-    addr unix.SockaddrLinklayer
-    fd   int
+    addr unix.SockaddrLinklayer // 48 bytes
+    fd   int                    //  8 bytes
 }
 
 

@@ -23,15 +23,14 @@ import (
 	"offscan/internal/models"
 )
 
-
-
+// alignment: 8 bytes
 type frameProcessor struct {
-	dissector  *dot11dissec.Dot11Dissector
-	idx         uint
-	netsBuf     map[models.MAC]beacon
-	missBuf     models.Set[station]
-	stasBuf     models.Set[station]
-}
+    dissector  *dot11dissec.Dot11Dissector  // 8 bytes
+    netsBuf     map[models.MAC]beacon       // 8 bytes
+    missBuf     models.Set[station]         // 8 bytes
+    stasBuf     models.Set[station]         // 8 bytes
+    idx         uint                        // 8 bytes
+}	
 
 
 

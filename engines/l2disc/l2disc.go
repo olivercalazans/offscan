@@ -46,14 +46,17 @@ func Run(args []string) {
 
 
 
-type layer2HostDiscovery struct{
-	iface       net.Interface
-	wg          sync.WaitGroup
-	ctx         context.Context
-	sniffTime   time.Duration
-	sniffer    *sniffer.Sniffer
-	cancel      context.CancelFunc
-	errChnls    models.Set[int]
+// alignment: 8 bytes
+type layer2HostDiscovery struct {
+    sniffer   *sniffer.Sniffer     //   8 bytes
+    cancel     context.CancelFunc  //   8 bytes
+    errChnls   models.Set[int]     //   8 bytes
+    ctx        context.Context     //  16 bytes
+    iface      net.Interface       //  64 bytes
+
+    sniffTime time.Duration   //   8 bytes
+    wg        sync.WaitGroup  //  12 bytes
+    // padding: 4 bytes
 }
 
 

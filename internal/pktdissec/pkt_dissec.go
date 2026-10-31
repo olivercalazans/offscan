@@ -17,15 +17,15 @@
 
 package pktdissec
 
-
-
+// alignment: 8 bytes
 type PacketDissector struct {
-    pkt           []byte
-    lenPkt        int
-    isIPv4        bool
-    isArpReply    bool
-    isArpRequest  bool
-    isDHCP        bool
+    pkt           []byte  // 24 bytes
+    lenPkt        int     //  8 bytes
+    isIPv4        bool    //  1 byte
+    isArpReply    bool    //  1 byte
+    isArpRequest  bool    //  1 byte
+    isDHCP        bool    //  1 byte
+    // padding: 4 bytes
 }
 
 
