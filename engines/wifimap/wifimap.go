@@ -211,15 +211,15 @@ func (wm *wifiMapper) getMaxLen(netData *wifiData) {
 
 func (wm *wifiMapper) sortWifiData(keys []wifiData) {
     slices.SortFunc(keys, func(a, b wifiData) int {
-        if a.ssid.IsHidden != b.ssid.IsHidden {
-            if a.ssid.IsHidden {
+        if a.ssid.IsHidden() != b.ssid.IsHidden() {
+            if a.ssid.IsHidden() {
                 return -1
             }
             return 1
         }
 
-        if a.ssid.IsUnknown != b.ssid.IsUnknown {
-            if a.ssid.IsUnknown {
+        if a.ssid.IsUnknown() != b.ssid.IsUnknown() {
+            if a.ssid.IsUnknown() {
                 return -1
             }
             return 1

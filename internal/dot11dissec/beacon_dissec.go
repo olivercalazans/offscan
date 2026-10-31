@@ -76,12 +76,12 @@ func (dd *Dot11Dissector) GetSSID() models.SSID {
     var ssid models.SSID
 
     if !dd.IsBeacon {
-        ssid.IsUnknown = true
+        ssid.SetUnknown(true)
         return ssid
     }
 
     if len(dd.ssidData) == 0 {
-        ssid.IsHidden = true
+        ssid.SetHidden(true)
         return ssid
     }
 

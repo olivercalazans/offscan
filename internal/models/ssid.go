@@ -17,39 +17,84 @@
 
 package models
 
+
+const (
+    ssidLenMask     uint8 = 0x3F // 0011 1111
+    ssidHiddenMask  uint8 = 0x40 // 0100 0000
+    ssidUnknownMask uint8 = 0x80 // 1000 0000
+)
+
+
 // alignment: 1 byte
 type SSID struct {
-    Data       [32]byte  // 32 bytes (32 * 1 byte)
-    length     uint8     //  1 byte
-    IsUnknown  bool      //  1 byte
-    IsHidden   bool      //  1 byte
+    Data     [32]byte  // 32 bytes (32 * 1 byte)
+    bitmask  uint8     // 1 byte
 }
 
 
 
 func (s *SSID) AddSSID(bytes []byte) bool {
-	lenBytes := len(bytes)
+	length := len(bytes)
 
-	if lenBytes > 32 || lenBytes < 1 { return false }
+	if length > 32 || length < 1 { return false }
 
-	s.length = uint8(len(bytes))
-	copy(s.Data[:s.length], bytes)
+    s.setLen(length)
+	copy(s.Data[:length], bytes)
 	
 	return true
 }
 
 
 
+func (s *SSID) setLen(length int) {
+    s.bitmask = (s.bitmask &^ ssidLenMask) | (uint8(length) & ssidLenMask)
+}
+
+
+
 func (s *SSID) Len() int {
-	return int(s.length)
+    return int(s.bitmask & ssidLenMask)
+}
+
+
+func (s *SSID) IsHidden() bool {
+    return (s.bitmask & ssidHiddenMask) != 0
+}
+
+
+func (s *SSID) IsUnknown() bool {
+    return (s.bitmask & ssidUnknownMask) != 0
+}
+
+
+
+func (s *SSID) SetHidden(hidden bool) {
+    if hidden {
+        s.bitmask |= ssidHiddenMask
+    } else {
+        s.bitmask &^= ssidHiddenMask
+    }
+}
+
+
+
+func (s *SSID) SetUnknown(unknown bool) {
+    if unknown {
+        s.bitmask |= ssidUnknownMask
+    } else {
+        s.bitmask &^= ssidUnknownMask
+    }
 }
 
 
 
 func (s *SSID) String() string {
-    if s.IsUnknown { return "unknown"  }
-    if s.IsHidden  { return "<hidden>" }
-    if s.length == 0  { return "<empty>"  }
+    if s.IsUnknown() { return "unknown"  }
+    if s.IsHidden()  { return "<hidden>" }
 
-    return string(s.Data[:s.length])
+    length := s.Len()
+
+    if length == 0 { return "<empty>"  }
+
+    return string(s.Data[:length])
 }
