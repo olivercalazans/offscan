@@ -25,7 +25,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n### WIFI MAPPER\n\n" + 
+	help := "\n### WIFI MAPPER\n\n" +
+	"    > REQUIRES AN INTERFACE IN MONITOR MODE\n\n" +
 	"    E.g., $ sudo ./offscan wmap <FLAGS>\n\n" +
 	"    -i, --iface <IFACE> : (Required) Interface to be used to sniff\n"
 

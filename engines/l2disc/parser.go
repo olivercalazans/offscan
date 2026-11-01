@@ -26,7 +26,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n### LAYER 2 HOST DISCOVERY\n\n" + 
+	help := "\n### LAYER 2 HOST DISCOVERY\n\n" +
+			"    > REQUIRES AN INTERFACE IN MONITOR MODE\n\n" +
 			"    E.g., $ sudo ./offscan l2disc <FLAGS>\n\n" +
 	        "    -i, --iface <IFACE> : (Required) Define a network interface to sniff frames\n" +
 	        "    -d, --delay <FLOAT> : (Optional) Delay in seconds to sniff each channel (Default 1.5s)\n"
