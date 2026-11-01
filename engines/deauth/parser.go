@@ -26,7 +26,8 @@ import (
 
 
 func DisplayHelp() {
-	help := "\n### DEAUTHENTICATION ATTACK\n\n" + 
+	help := "\n### DEAUTHENTICATION ATTACK\n\n" +
+			"    > REQUIRES AN INTERFACE IN MONITOR MODE\n\n" +
 			"    E.g., $ sudo ./offscan deauth <FLAGS>\n\n" +
 		    "    -b, --bssid <BSSID> : (Required) BSSID/AP MAC\n"+
 	        "    -c, --channel <INT> : (Required) Channel\n" +

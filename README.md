@@ -91,6 +91,14 @@ sudo ./offscan ifmode -i <IFACE> --man
 sudo ./offscan deauth -i <IFACE> -b <BSSID> -t <TARGET_MAC> -c <CHANNEL>
 ```
 
+
+<br>
+
+## Acknowledgments & Credits
+* **[Aircrack-ng](https://www.aircrack-ng.org/):** Inspired the 802.11 monitor mode frame construction, raw packet injection mechanisms, and deauthentication logic.
+* **[Nmap](https://nmap.org/):** Inspired the Layer 2 (ARP) and Layer 3 host discovery algorithms and packet crafting design patterns.
+* **[Pixiewps](https://github.com/wiire-a/pixiewps):** Reference logic for the offline WPS Pixie Dust attack implementation.
+
 <br>
 
 ## Legal and ethical use warning

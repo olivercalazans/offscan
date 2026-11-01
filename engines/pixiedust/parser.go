@@ -29,9 +29,9 @@ func DisplayHelp() {
 	        "    -1, --ehash1 <HASH>  : (Required) Enrollee Hash 1\n" +
 	        "    -2, --ehash2 <HASH>  : (Required) Enrollee Hash 2\n" +
 	        "    -e, --pke <HASH>     : (Required) Public Key Enrollee\n" +
-	        "    -r, --pkr <HASH>     : (Optional) Public Key Registrar\n" +
-	        "    -a, --authkey <KEY>  : (Optional) Authentication Session Key\n" +
-	        "    -n, --enonce <HASH>  : (Optional) Enrollee Nonce\n" +
+	        "    -r, --pkr <HASH>     : (Required) Public Key Registrar\n" +
+	        "    -a, --authkey <KEY>  : (Required) Authentication Session Key\n" +
+	        "    -n, --enonce <HASH>  : (Required) Enrollee Nonce\n" +
 	        "    -m, --rnonce <HASH>  : (Optional) Registrar Nonce\n" +
 	        "    -b, --ebssid <BSSID> : (Optional) Enrollee MAC\n" +
 	        "        --mode <INT>     : (Optional) Attack mode (1-5, 0=auto)\n" +
