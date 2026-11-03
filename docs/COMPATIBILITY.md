@@ -11,10 +11,10 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 | Qualcomm Atheros AR9485 | Atheros AR9485 | ~2011/2012 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, packet injection, and handshake capture work flawlessly. |
 | Ralink RT5390 | Ralink RT5390 | ~2011 | i686 (32-bit) | 🟢 **PASSED** | Full Support | Fully functional under legacy 32-bit environments using native drivers. |
 | Intel Wireless 7265 | Intel 7265 (rev 61) | ~2014 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, frame injection, and handshake capture function properly on modern kernel 6.12. |
-| Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🔴 **FAILED** | None | Fails on Raspbian and Kali 2025.2 due to firmware lock (`DEL_INTERFACE: errno 524`). |
+| Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🟡 **PARTIAL** | Non-Monitor Only | Core scanning and raw packet manipulation fail, but generic internal utility features function. |
+| Broadcom BCM43228 | Broadcom BCM43228 | ~2012 | x86_64 | 🟡 **PARTIAL** | Non-Monitor Only | Sub-interface hooks fail under proprietary drivers; tool features not requiring monitor mode work. |
 
 <br>
-
 
 ## Detailed Test Environments & Hardware Reports
 
@@ -67,20 +67,44 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 
 ---
 
-### Environment 4: Single-Board Computer (SBC) Host
+### Environment 4: Raspberry PI Zero W (Single-Board Computer Host)
 - **OS Tested:** Raspbian GNU/Linux 13 (trixie) & Kali Linux 2025.2 (Final official release for this hardware architecture)
 - **Kernel Version:** 6.18.50+rpt-rpi-v6 (and equivalents)
 - **Architecture:** armv6l (32-bit ARM)
 - **CPU:** ARMv6-compatible processor rev 7 (v6l) (Raspberry Pi Zero W)
+- **Device Model**: Raspberry PI Zero W
 
 #### Tested Device: Broadcom CYW43438 (Integrated Wireless)
 - **Chipset:** Broadcom / Cypress CYW43438
 - **Hardware Release Year:** 2017 (via Raspberry Pi Zero W launch)
 - **Bands:** 2.4 GHz
 - **Driver:** `brcmfmac` (Native Linux Kernel Driver)
-- **Status:** 🔴 **FAILED**
+- **Status:** 🟡 **PARTIAL SUPPORT**
 
 ##### Technical Analysis & Failure Root Cause:
 - **Symptoms:** The script fails immediately on both Raspbian 13 and Kali Linux 2025.2 when attempting to switch the integrated wireless interface into monitor mode. Automated execution and tools like `airmon-ng` produce the exact kernel error: `DEL_INTERFACE: errno 524`.
 - **Root Cause:** Testing across both operating systems confirms that the stock firmware shipped for the `brcmfmac` driver explicitly locks down raw 802.11 frame manipulation. Since Kali Linux 2025.2 is the final official release for the Raspberry Pi Zero W, subsequent out-of-the-box system configurations will not solve this hardware-level restriction.
-- **Remediation Note:** To bypass this vendor lock, users must manually compile and flash a custom community-patched firmware (such as the *Nexmon* framework) to force hardware-level monitor mode support. Out-of-the-box deployment on this specific single-board computer is completely unsupported.
+- **Operational Scope:** While active over-the-air exploitation and raw capturing are blocked due to the firmware monitor mode constraint, all secondary features within the tool architecture—such as static `.pcap` log analysis, report generation, and network utilities that interact over regular client connections—remain completely operational on this host.
+- **Remediation Note:** To bypass this vendor lock for full monitor mode support, users must manually compile and flash a custom community-patched firmware (such as the *Nexmon* framework) to force hardware-level monitor mode support.
+
+---
+
+### Environment 5: HP ProBook 6460b (Legacy x86_64 Host)
+- **OS Tested:** Debian GNU/Linux 13 (trixie) (Live Session)
+- **Kernel Version:** 6.12.107-amd64
+- **Architecture:** x86_64
+- **CPU:** AMD A8-4500M APU with Radeon(tm) HD Graphics
+- **Device Model:** HP ProBook 6460b
+
+#### Tested Device: Broadcom Inc. BCM43228 (Internal PCIe)
+- **Chipset:** Broadcom Inc. and subsidiaries BCM43228 802.11a/b/g/n
+- **Hardware Release Year:** ~2012
+- **Bands:** Dual-band 2.4 GHz / 5 GHz (802.11a/b/g/n)
+- **Driver:** `wl` (Proprietary Broadcom STA Driver)
+- **Status:** 🟡 **PARTIAL SUPPORT**
+
+##### Technical Analysis & Failure Root Cause:
+- **Symptoms:** When initiating the custom scanning tool or running automated management tools like `airmon-ng`, the script crashes during the initialization phase yielding the specific driver exception: `[ERROR] Unable to delete interface wlo1: nl80211 DEL_INTERFACE: operation not supported`.
+- **Root Cause:** The standard proprietary Linux driver (`wl`) for the BCM43228 chipset is strictly tailored for station (managed) client use. It restricts configuration via the modern Linux `nl80211` / `mac80211` netlink architecture. The driver exposes a pseudo-monitor mode interface structure that refuses dynamic virtual interface teardown or sub-interface modifications required by professional automation scripts.
+- **Operational Scope:** The tool's core automation crashes only when interacting with the hardware layer to enforce raw sniffing states. Any modular components of the software that execute independently of monitor mode execute successfully without any disruption.
+- **Remediation Note:** Out-of-the-box deployment using the standard vendor driver fails to fulfill core testing tasks. Users require an external dedicated USB network interface card (NIC) containing open-source architecture components (such as *Atheros AR9271* or *MediaTek MT7612U*) to guarantee structural packet manipulation on this host environment.
