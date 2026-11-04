@@ -65,13 +65,17 @@ func (hd *hostDiscovery) waitForResponses(ctx context.Context, maxWait, idle tim
             return
         default:
         }
+
         if time.Now().After(deadline) {
             return
         }
+        
         last := hd.lastPkt.Load()
+        
         if last > 0 && time.Since(time.Unix(0, last)) > idle {
             return
         }
+        
         time.Sleep(50 * time.Millisecond)
     }
 }
@@ -129,5 +133,4 @@ func (hd *hostDiscovery) isInRange(ip models.IPv4) bool {
 
 func (hd *hostDiscovery) stopPacketProcessor() {
     hd.sniffer.Stop()
-    hd.wgPktProc.Wait()
 }

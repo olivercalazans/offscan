@@ -31,7 +31,7 @@ import (
 
 
 func (hd *hostDiscovery) initProbeTools() {
-    hd.limiter = rate.NewLimiter(rate.Limit(250), 10)
+    hd.limiter = rate.NewLimiter(rate.Limit(250), 25)
 
     hd.initArpPkt()
     hd.initL2Socket()
@@ -86,9 +86,7 @@ func (hd *hostDiscovery) sendArpProbe(ctx context.Context) error {
 
     hd.arp.SetTargetIP(hd.dstIP)
     pkt := hd.arp.Pkt()
-    hd.l2sock.Send(pkt)
-    
-    return nil
+    return hd.l2sock.Send(pkt)
 }
 
 
@@ -116,9 +114,7 @@ func (hd *hostDiscovery) sendIcmpProbe(ctx context.Context) error {
 
     hd.setIcmpPkt()
     pkt := hd.icmp.Pkt()    
-    hd.l3sock.SendTo(pkt, hd.dstIP)
-
-    return nil
+    return hd.l3sock.SendTo(pkt, hd.dstIP)
 }
 
 
@@ -137,9 +133,7 @@ func (hd *hostDiscovery) sendTcpProbe(ctx context.Context) error {
 
     hd.setTcpPkt()
     pkt := hd.tcp.Pkt()
-    hd.l3sock.SendTo(pkt, hd.dstIP)    
-
-    return nil
+    return hd.l3sock.SendTo(pkt, hd.dstIP)
 }
 
 

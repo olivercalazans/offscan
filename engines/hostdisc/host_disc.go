@@ -23,7 +23,6 @@ import (
 	"net"
 	"sort"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -52,9 +51,9 @@ func Run(args []string) {
 // alignment: 8 bytes
 type hostDiscovery struct {
     activeIPs   models.Set[hostInfo]       //   8 bytes
-    sniffer     sniffer.Sniffer            // 160 bytes
+    sniffer     sniffer.Sniffer            // 168 bytes
     iface       net.Interface              //  64 bytes
-    dissector   pktdissec.PacketDissector  //  32 bytes
+    dissector   pktdissec.PacketDissector  //  40 bytes
 	arp        *pktbuild.ArpPacket         //   8 bytes
     icmp       *pktbuild.IcmpPacket        //   8 bytes
     tcp        *pktbuild.TcpPacket         //   8 bytes
@@ -64,10 +63,8 @@ type hostDiscovery struct {
 	limiter    *rate.Limiter               //   8 bytes
 
     ips         generators.Ipv4Iter  // 24 bytes
-    wgPktProc   sync.WaitGroup       // 12 bytes
     myIP        models.IPv4          //  4 bytes
 	dstIP       models.IPv4          //  4 bytes
-    running     atomic.Bool          //  4 bytes
 	sendErrors  atomic.Uint64        //  8 bytes
 	lastPkt     atomic.Int64         //  8 bytes
     protocols   protocols            //  3 bytes (3x bool)
@@ -96,9 +93,9 @@ func (hd *hostDiscovery) execute() {
 
 func (hd *hostDiscovery) displayExecInfo() {
     var protoc []string
-    if hd.protocols.arp  { protoc = append(protoc, "ARP") }
+    if hd.protocols.arp  { protoc = append(protoc, "ARP")  }
     if hd.protocols.icmp { protoc = append(protoc, "ICMP") }
-    if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
+    if hd.protocols.tcp  { protoc = append(protoc, "TCP")  }
     
 	proto  := strings.Join(protoc, ", ")
     first  := models.Uint32ToIPv4(hd.ips.StartU32)
@@ -191,6 +188,7 @@ func (hd *hostDiscovery) sendProbes() {
 
         dstIP, hasIP := hd.ips.Next()
         if !hasIP { break }
+		
         hd.dstIP = dstIP
 
         if hd.protocols.arp  {
@@ -198,11 +196,13 @@ func (hd *hostDiscovery) sendProbes() {
                 hd.sendErrors.Add(1)
             }
         }
-        if hd.protocols.icmp {
+        
+		if hd.protocols.icmp {
             if err := hd.sendIcmpProbe(ctx); err != nil {
                 hd.sendErrors.Add(1)
             }
         }
+
         if hd.protocols.tcp  {
             if err := hd.sendTcpProbe(ctx); err != nil {
                 hd.sendErrors.Add(1)
