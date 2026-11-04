@@ -30,10 +30,14 @@ import (
 	"offscan/internal/generators"
 	"offscan/internal/models"
 	"offscan/internal/netroute"
+	"offscan/internal/pktbuild"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
+	"offscan/internal/sockets"
+	"offscan/internal/utils"
 
 	"golang.org/x/sys/unix"
+	"golang.org/x/time/rate"
 )
 
 
@@ -47,17 +51,27 @@ func Run(args []string) {
 
 // alignment: 8 bytes
 type hostDiscovery struct {
-    activeIPs models.Set[hostInfo]      //   8 bytes
-    sniffer   sniffer.Sniffer           // 160 bytes
-    iface     net.Interface             //  64 bytes
-    dissector pktdissec.PacketDissector //  32 bytes
+    activeIPs   models.Set[hostInfo]       //   8 bytes
+    sniffer     sniffer.Sniffer            // 160 bytes
+    iface       net.Interface              //  64 bytes
+    dissector   pktdissec.PacketDissector  //  32 bytes
+	arp        *pktbuild.ArpPacket         //   8 bytes
+    icmp       *pktbuild.IcmpPacket        //   8 bytes
+    tcp        *pktbuild.TcpPacket         //   8 bytes
+    rand       *generators.RandomValues    //   8 bytes
+	l2sock      sockets.Layer2Socket       //  56 bytes
+    l3sock      sockets.Layer3Socket       //   8 bytes
+	limiter    *rate.Limiter               //   8 bytes
 
-    ips       generators.Ipv4Iter  //  24 bytes
-    wgPktProc sync.WaitGroup       //  12 bytes
-    myIP      models.IPv4          //   4 bytes
-    running   atomic.Bool          //   4 bytes
-    protocols protocols            //   3 bytes (3x bool)
-    // padding: 1 byte
+    ips         generators.Ipv4Iter  // 24 bytes
+    wgPktProc   sync.WaitGroup       // 12 bytes
+    myIP        models.IPv4          //  4 bytes
+	dstIP       models.IPv4          //  4 bytes
+    running     atomic.Bool          //  4 bytes
+	sendErrors  atomic.Uint64        //  8 bytes
+	lastPkt     atomic.Int64         //  8 bytes
+    protocols   protocols            //  3 bytes (3x bool)
+    // padding: 5 byte
 }
 
 
@@ -163,23 +177,40 @@ func cidrMaskAndNetwork(start, end uint32) (mask, network uint32) {
 
 
 func (hd *hostDiscovery) sendProbes() {
-    hdp := hostDiscProbes{}
-    hdp.initProbeTools(hd.iface, hd.myIP, hd.protocols)
+    hd.initProbeTools()
+    defer hd.stopTools()
 
-	for {
+	ctx := utils.SignalContext()
+
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        default:
+        }
+
         dstIP, hasIP := hd.ips.Next()
-        
         if !hasIP { break }
+        hd.dstIP = dstIP
 
-        hdp.dstIP = dstIP
-
-        if hd.protocols.arp  { hdp.sendArpProbe()  }
-        if hd.protocols.icmp { hdp.sendIcmpProbe() }
-        if hd.protocols.tcp  { hdp.sendTcpProbe()  }
+        if hd.protocols.arp  {
+            if err := hd.sendArpProbe(ctx); err != nil {
+                hd.sendErrors.Add(1)
+            }
+        }
+        if hd.protocols.icmp {
+            if err := hd.sendIcmpProbe(ctx); err != nil {
+                hd.sendErrors.Add(1)
+            }
+        }
+        if hd.protocols.tcp  {
+            if err := hd.sendTcpProbe(ctx); err != nil {
+                hd.sendErrors.Add(1)
+            }
+        }
     }
 
-    hdp.stopTools()
-    time.Sleep(2 * time.Second)
+	hd.waitForResponses(ctx, 5 * time.Second, 1 * time.Second)
 }
 
 

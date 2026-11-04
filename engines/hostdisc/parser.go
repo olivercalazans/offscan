@@ -127,8 +127,6 @@ func (hdp *hostDiscoveryParser) parseTCP() {
 func (hd *hostDiscovery) validProtocols(rangeIP string) {
     if !hd.protocols.arp && !hd.protocols.icmp && !hd.protocols.tcp {
         hd.protocols.arp  = true
-        hd.protocols.icmp = true
-        hd.protocols.tcp  = true
     }
 
     if rangeIP == "" {
