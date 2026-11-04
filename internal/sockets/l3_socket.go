@@ -75,17 +75,13 @@ func bindL3SocketToDevice(fd int, iface *net.Interface) {
 
 
 
-func (s *Layer3Socket) SendTo(packet []byte, dst models.IPv4) {    
+func (s *Layer3Socket) SendTo(packet []byte, dst models.IPv4) error {    
     addr := &unix.SockaddrInet4{
         Port: 0,
         Addr: dst,
     }
 
-    err := unix.Sendto(s.fd, packet, 0, addr)
-    
-    if err != nil {
-        utils.Abort(fmt.Sprintf("Failed to send frame: %v", err))
-    }
+    return unix.Sendto(s.fd, packet, 0, addr)
 }
 
 

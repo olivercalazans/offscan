@@ -86,12 +86,8 @@ func htons(i uint16) uint16 {
 
 
 
-func (s *Layer2Socket) Send(frame []byte) {
-    err := unix.Sendto(s.fd, frame, 0, &s.addr)
-    
-    if err != nil {
-        utils.Abort(fmt.Sprintf("Failed to send frame: %v", err))
-    }
+func (s *Layer2Socket) Send(frame []byte) error {
+    return unix.Sendto(s.fd, frame, 0, &s.addr)
 }
 
 
