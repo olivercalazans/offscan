@@ -23,17 +23,20 @@ import (
 	"net"
 	"sort"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"offscan/internal/generators"
 	"offscan/internal/models"
 	"offscan/internal/netroute"
+	"offscan/internal/pktbuild"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
+	"offscan/internal/sockets"
+	"offscan/internal/utils"
 
 	"golang.org/x/sys/unix"
+	"golang.org/x/time/rate"
 )
 
 
@@ -47,17 +50,26 @@ func Run(args []string) {
 
 // alignment: 8 bytes
 type hostDiscovery struct {
-    activeIPs models.Set[hostInfo]      //   8 bytes
-    sniffer   sniffer.Sniffer           // 160 bytes
-    iface     net.Interface             //  64 bytes
-    dissector pktdissec.PacketDissector //  32 bytes
+    activeHosts  models.Set[hostInfo]       //   8 bytes
+    sniffer      sniffer.Sniffer            // 168 bytes
+    iface        net.Interface              //  64 bytes
+    dissector    pktdissec.PacketDissector  //  40 bytes
+	arp         *pktbuild.ArpPacket         //   8 bytes
+    icmp        *pktbuild.IcmpPacket        //   8 bytes
+    tcp         *pktbuild.TcpPacket         //   8 bytes
+    rand        *generators.RandomValues    //   8 bytes
+	l2sock       sockets.Layer2Socket       //  56 bytes
+    l3sock       sockets.Layer3Socket       //   8 bytes
+	limiter     *rate.Limiter               //   8 bytes
 
-    ips       generators.Ipv4Iter  //  24 bytes
-    wgPktProc sync.WaitGroup       //  12 bytes
-    myIP      models.IPv4          //   4 bytes
-    running   atomic.Bool          //   4 bytes
-    protocols protocols            //   3 bytes (3x bool)
-    // padding: 1 byte
+    ips         generators.Ipv4Iter  // 24 bytes
+    myIP        models.IPv4          //  4 bytes
+	dstIP       models.IPv4          //  4 bytes
+	sendErrors  atomic.Uint64        //  8 bytes
+	lastPkt     atomic.Int64         //  8 bytes
+    protocols   protocols            //  3 bytes (3x bool)
+	rounds      uint8                //  1 byte
+    // padding: 4 byte
 }
 
 
@@ -82,9 +94,9 @@ func (hd *hostDiscovery) execute() {
 
 func (hd *hostDiscovery) displayExecInfo() {
     var protoc []string
-    if hd.protocols.arp  { protoc = append(protoc, "ARP") }
+    if hd.protocols.arp  { protoc = append(protoc, "ARP")  }
     if hd.protocols.icmp { protoc = append(protoc, "ICMP") }
-    if hd.protocols.tcp  { protoc = append(protoc, "TCP") }
+    if hd.protocols.tcp  { protoc = append(protoc, "TCP")  }
     
 	proto  := strings.Join(protoc, ", ")
     first  := models.Uint32ToIPv4(hd.ips.StartU32)
@@ -163,23 +175,46 @@ func cidrMaskAndNetwork(start, end uint32) (mask, network uint32) {
 
 
 func (hd *hostDiscovery) sendProbes() {
-    hdp := hostDiscProbes{}
-    hdp.initProbeTools(hd.iface, hd.myIP, hd.protocols)
+    hd.initProbeTools()
+    defer hd.stopTools()
 
-	for {
-        dstIP, hasIP := hd.ips.Next()
-        
-        if !hasIP { break }
+    ctx := utils.SignalContext()
 
-        hdp.dstIP = dstIP
+    for pass := range hd.rounds {
+        if ctx.Err() != nil { return }
 
-        if hd.protocols.arp  { hdp.sendArpProbe()  }
-        if hd.protocols.icmp { hdp.sendIcmpProbe() }
-        if hd.protocols.tcp  { hdp.sendTcpProbe()  }
+        if pass > 0 {
+            backoff := time.Duration(pass) * 500 * time.Millisecond
+            select {
+            case <-time.After(backoff):
+            case <-ctx.Done():
+                return
+            }
+        }
+
+        hd.ips.Reset()
+
+        for {
+            if ctx.Err() != nil { return }
+
+            dstIP, hasIP := hd.ips.Next()
+            if !hasIP { break }
+            
+			hd.dstIP = dstIP
+
+			if hd.protocols.arp  { hd.sendArpProbe(ctx)  }
+            if hd.protocols.icmp { hd.sendIcmpProbe(ctx) }
+            if hd.protocols.tcp  { hd.sendTcpProbe(ctx)  }
+        }
+
+        if pass == 0 {
+            hd.waitForResponses(ctx, 3*time.Second, 1*time.Second)
+        } else {
+            hd.waitForResponses(ctx, 2*time.Second, 500*time.Millisecond)
+        }
     }
 
-    hdp.stopTools()
-    time.Sleep(2 * time.Second)
+	hd.waitForResponses(ctx, 10*time.Second, 2*time.Second)
 }
 
 
@@ -188,7 +223,7 @@ func (hd *hostDiscovery) displayResult() {
     hosts := hd.resolveNames()
 
 	if len(hosts) < 1 {
-		fmt.Println("No host detected")
+		fmt.Println("[!] No host detected")
 		return
 	}
 
@@ -198,14 +233,16 @@ func (hd *hostDiscovery) displayResult() {
 		hostname := hosts[info]
 		fmt.Printf("# %-15s  %s  %s\n", info.ip.String(), info.mac.String(), hostname)
 	}
+
+	fmt.Printf("\n[$] %d host(s) discovered\n", len(hd.activeHosts))
 }
 
 
 
 func (hd *hostDiscovery) resolveNames() map[hostInfo]string {
-    hosts:= make(map[hostInfo]string, len(hd.activeIPs))
+    hosts:= make(map[hostInfo]string, len(hd.activeHosts))
 
-	for addrs := range hd.activeIPs {
+	for addrs := range hd.activeHosts {
         name         := netroute.GetHostName(addrs.ip)        		
         hosts[addrs]  = name
     }
@@ -216,9 +253,9 @@ func (hd *hostDiscovery) resolveNames() map[hostInfo]string {
 
 
 func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
-	keys := make([]hostInfo, 0, len(hd.activeIPs))
+	keys := make([]hostInfo, 0, len(hd.activeHosts))
 
-	for k := range hd.activeIPs {
+	for k := range hd.activeHosts {
 		keys = append(keys, k)
 	}
 
@@ -231,6 +268,5 @@ func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
 		return false
 	})
 
-    hd.activeIPs = nil
 	return keys
 }

@@ -18,9 +18,11 @@
 package hostdisc
 
 import (
+	"context"
 	"offscan/internal/models"
 	"offscan/internal/pktdissec"
 	"offscan/internal/sniffer"
+	"time"
 )
 
 
@@ -40,6 +42,7 @@ func (hd *hostDiscovery) startPacketProcessor() {
 
 
 func (hd *hostDiscovery) Handler(pkt []byte) {
+    hd.lastPkt.Store(time.Now().UnixNano())
     hd.dissector.UpdatePkt(pkt)
 
     if hd.dissector.IsARP() && hd.dissector.IsArpReply() {
@@ -49,6 +52,33 @@ func (hd *hostDiscovery) Handler(pkt []byte) {
 
     if hd.dissector.IsIPv4() {
         hd.processIpPkt()
+    }
+}
+
+
+
+func (hd *hostDiscovery) waitForResponses(ctx context.Context, maxWait, idle time.Duration) {
+    hd.lastPkt.Store(time.Now().UnixNano())
+    deadline := time.Now().Add(maxWait)
+    
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        default:
+        }
+
+        if time.Now().After(deadline) {
+            return
+        }
+        
+        last := hd.lastPkt.Load()
+        
+        if last > 0 && time.Since(time.Unix(0, last)) > idle {
+            return
+        }
+        
+        time.Sleep(50 * time.Millisecond)
     }
 }
 
@@ -70,7 +100,7 @@ func (hd *hostDiscovery) processArpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs.Add(info)
+    hd.activeHosts.Add(info)
 }
 
 
@@ -91,7 +121,7 @@ func (hd *hostDiscovery) processIpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs.Add(info)
+    hd.activeHosts.Add(info)
 }
 
 
@@ -105,5 +135,4 @@ func (hd *hostDiscovery) isInRange(ip models.IPv4) bool {
 
 func (hd *hostDiscovery) stopPacketProcessor() {
     hd.sniffer.Stop()
-    hd.wgPktProc.Wait()
 }

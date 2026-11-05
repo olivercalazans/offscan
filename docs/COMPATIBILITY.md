@@ -11,6 +11,7 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 | Qualcomm Atheros AR9485 | Atheros AR9485 | ~2011/2012 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, packet injection, and handshake capture work flawlessly. |
 | Ralink RT5390 | Ralink RT5390 | ~2011 | i686 (32-bit) | 🟢 **PASSED** | Full Support | Fully functional under legacy 32-bit environments using native drivers. |
 | Intel Wireless 7265 | Intel 7265 (rev 61) | ~2014 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, frame injection, and handshake capture function properly on modern kernel 6.12. |
+| Intel Wireless 8260 | Intel Wireless 8260 (rev 3a) | ~2015 | x86_64 | 🟢 **PASSED** | Full Support | Tested on Xiaomi Mi Notebook Air 12.5; monitor mode and packet injection function flawlessly. |
 | Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🟡 **PARTIAL** | Non-Monitor Only | Core scanning and raw packet manipulation fail, but generic internal utility features function. |
 | Broadcom BCM43228 | Broadcom BCM43228 | ~2012 | x86_64 | 🟡 **PARTIAL** | Non-Monitor Only | Sub-interface hooks fail under proprietary drivers; tool features not requiring monitor mode work. |
 
@@ -30,7 +31,6 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 - **Bands:** 2.4 GHz (802.11b/g/n)
 - **Driver:** `ath9k` (Native Linux Kernel Driver)
 - **Status:** 🟢 **PASSED**
-- **Script Performance:** The tool performed all core automated tasks—including network sniffing, targeted deauthentication (deauth) attacks, and WPA/WPA2 handshake capturing—without any packet loss or interface freezes.
 - **Notes:** Even though this is a legacy internal laptop card, the mature, open-source nature of the `ath9k` driver in modern Linux kernels ensures highly stable raw frame manipulation.
 
 ---
@@ -47,7 +47,6 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 - **Bands:** 2.4 GHz (802.11b/g/n)
 - **Driver:** `rt2800pci` (Native Linux Kernel Driver)
 - **Status:** 🟢 **PASSED**
-- **Script Performance:** Fully functional. Despite running on a legacy 32-bit architecture, the script successfully initiated monitor mode and executed stable raw frame injection via the `rt2800pci` driver framework without kernel panics or interface hangs.
 
 ---
 
@@ -63,11 +62,26 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 - **Bands:** Dual-band 2.4 GHz / 5 GHz (802.11a/b/g/n/ac)
 - **Driver:** `iwlwifi` (Native Linux Kernel Driver)
 - **Status:** 🟢 **PASSED**
-- **Script Performance:** The tool performed all core automated tasks—including raw frame sniffing, targeted deauthentication frames injection, and handshake capturing—without encountering interface locks or driver drops.
 
 ---
 
-### Environment 4: Raspberry PI Zero W (Single-Board Computer Host)
+### Environment 4: Ultra-portable Intel x86_64 Host (Xiaomi Laptop)
+- **OS:** Debian GNU/Linux 13 (trixie)
+- **Kernel Version:** 6.12.113+deb13-amd64
+- **Architecture:** x86_64
+- **CPU:** Intel(R) Core(TM) m3-7Y30 CPU @ 1.00GHz
+- **Device Model:** Xiaomi Mi Notebook Air 12.5
+
+#### Tested Device: Intel Corporation Wireless 8260 (Internal PCIe)
+- **Chipset:** Intel Corporation Wireless 8260 (rev 3a)
+- **Hardware Release Year:** ~2015
+- **Bands:** Dual-band 2.4 GHz / 5 GHz (802.11a/b/g/n/ac)
+- **Driver:** `iwlwifi` (Native Linux Kernel Driver)
+- **Status:** 🟢 **PASSED**
+
+---
+
+### Environment 5: Raspberry PI Zero W (Single-Board Computer Host)
 - **OS Tested:** Raspbian GNU/Linux 13 (trixie) & Kali Linux 2025.2 (Final official release for this hardware architecture)
 - **Kernel Version:** 6.18.50+rpt-rpi-v6 (and equivalents)
 - **Architecture:** armv6l (32-bit ARM)
@@ -89,7 +103,7 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 
 ---
 
-### Environment 5: HP ProBook 6460b (Legacy x86_64 Host)
+### Environment 6: HP ProBook 6460b (Legacy x86_64 Host)
 - **OS Tested:** Debian GNU/Linux 13 (trixie) (Live Session)
 - **Kernel Version:** 6.12.107-amd64
 - **Architecture:** x86_64

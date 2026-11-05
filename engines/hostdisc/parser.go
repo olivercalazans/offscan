@@ -48,8 +48,10 @@ func DisplayHelp() {
 
 
 type hostDiscoveryParser struct {
-	engine  *hostDiscovery
-	parser  *argparser.ArgParser
+	engine  	  *hostDiscovery
+	parser        *argparser.ArgParser
+	icmpExplicit   bool
+	tcpExplicit    bool
 }
 
 
@@ -69,12 +71,13 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 	cidr    := sysconf.MustCIDR(&hd.iface)
 	hd.ips   = generators.NewIpv4Iter(cidr, rangeIP)
 	
-	hd.validProtocols(rangeIP)
+	hdp.validProtocols(rangeIP)
 
 	hdp.parser.AbortIfHasError()
 	
-	hd.myIP      = sysconf.MustIPv4(&hd.iface)
-	hd.activeIPs = models.NewSet[hostInfo](20)
+	hd.myIP        = sysconf.MustIPv4(&hd.iface)
+	hd.activeHosts = models.NewSet[hostInfo](20)
+	hd.rounds     = 2
 }
 
 
@@ -112,35 +115,52 @@ func (hdp *hostDiscoveryParser) parseARP() {
 
 func (hdp *hostDiscoveryParser) parseICMP() {
 	args := argparser.Argument{ Long: "--icmp", Short: "", Required: false }
-	hdp.engine.protocols.icmp = hdp.parser.Bool(&args)
+	
+	hdp.icmpExplicit 		  = hdp.parser.Bool(&args)
+	hdp.engine.protocols.icmp = hdp.icmpExplicit
 }
 
 
 
 func (hdp *hostDiscoveryParser) parseTCP() {
 	args := argparser.Argument{ Long: "--tcp", Short: "", Required: false }
-	hdp.engine.protocols.tcp = hdp.parser.Bool(&args)
+	
+	hdp.tcpExplicit          = hdp.parser.Bool(&args)
+	hdp.engine.protocols.tcp = hdp.tcpExplicit
 }
 
 
 
-func (hd *hostDiscovery) validProtocols(rangeIP string) {
+func (hdp *hostDiscoveryParser) validProtocols(rangeIP string) {
+    hd := hdp.engine
+
     if !hd.protocols.arp && !hd.protocols.icmp && !hd.protocols.tcp {
         hd.protocols.arp  = true
         hd.protocols.icmp = true
         hd.protocols.tcp  = true
     }
 
-    if rangeIP == "" {
-		return
+    isLocal := rangeIP == "" || hdp.isRangeLocal(rangeIP)
+
+    if !isLocal {
+        return
     }
 
+    hd.protocols.arp = true
+	
+    if !hdp.icmpExplicit { hd.protocols.icmp = false }
+    if !hdp.tcpExplicit  { hd.protocols.tcp  = false }
+}
+
+
+
+func (hdp *hostDiscoveryParser) isRangeLocal(rangeIP string) bool {
 	isLocal := true
 
     for ip := range strings.SplitSeq(rangeIP, "+") {
         ipv4 := models.MustStrToIPv4(ip)
 		
-		value, err := netroute.IsLocal(&hd.iface, ipv4)
+		value, err := netroute.IsLocal(&hdp.engine.iface, ipv4)
 		if err != nil {
 			utils.Abort(err.Error())
 		}
@@ -148,5 +168,5 @@ func (hd *hostDiscovery) validProtocols(rangeIP string) {
 		isLocal = isLocal && value
     }
 
-	hd.protocols.arp = isLocal
+	return isLocal
 }

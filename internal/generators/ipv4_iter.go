@@ -218,3 +218,9 @@ func (it *Ipv4Iter) Next() (models.IPv4, bool) {
 
     return ip, true
 }
+
+
+
+func (it *Ipv4Iter) Reset() {
+    it.current = it.StartU32
+}

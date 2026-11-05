@@ -69,7 +69,6 @@ func NewSniffer(
 
 
 
-
 func (s *Sniffer) Start() {
 	s.closeMu.Lock()
 	defer s.closeMu.Unlock()
