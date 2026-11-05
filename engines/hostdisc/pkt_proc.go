@@ -58,7 +58,9 @@ func (hd *hostDiscovery) Handler(pkt []byte) {
 
 
 func (hd *hostDiscovery) waitForResponses(ctx context.Context, maxWait, idle time.Duration) {
+    hd.lastPkt.Store(time.Now().UnixNano())
     deadline := time.Now().Add(maxWait)
+    
     for {
         select {
         case <-ctx.Done():
@@ -98,7 +100,7 @@ func (hd *hostDiscovery) processArpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs.Add(info)
+    hd.activeHosts.Add(info)
 }
 
 
@@ -119,7 +121,7 @@ func (hd *hostDiscovery) processIpPkt() {
         mac : srcMAC,
     }
 
-    hd.activeIPs.Add(info)
+    hd.activeHosts.Add(info)
 }
 
 

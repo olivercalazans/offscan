@@ -75,8 +75,9 @@ func (hd *hostDiscovery) parseArgs(args []string) {
 
 	hdp.parser.AbortIfHasError()
 	
-	hd.myIP      = sysconf.MustIPv4(&hd.iface)
-	hd.activeIPs = models.NewSet[hostInfo](20)
+	hd.myIP        = sysconf.MustIPv4(&hd.iface)
+	hd.activeHosts = models.NewSet[hostInfo](20)
+	hd.rounds     = 2
 }
 
 

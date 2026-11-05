@@ -79,14 +79,17 @@ func (hd *hostDiscovery) initL3Socket() {
 
 
 
-func (hd *hostDiscovery) sendArpProbe(ctx context.Context) error {
+func (hd *hostDiscovery) sendArpProbe(ctx context.Context) {
     if err := hd.limiter.Wait(ctx); err != nil {
-        return err
+        return
     }
 
     hd.arp.SetTargetIP(hd.dstIP)
     pkt := hd.arp.Pkt()
-    return hd.l2sock.Send(pkt)
+
+    if err := hd.l2sock.Send(pkt); err != nil {
+        hd.sendErrors.Add(1)
+    }
 }
 
 
@@ -107,14 +110,17 @@ func (hd *hostDiscovery) setArpReqStatic() {
 
 
 
-func (hd *hostDiscovery) sendIcmpProbe(ctx context.Context) error {
+func (hd *hostDiscovery) sendIcmpProbe(ctx context.Context) {
     if err := hd.limiter.Wait(ctx); err != nil {
-        return err
+        return
     }
 
     hd.setIcmpPkt()
-    pkt := hd.icmp.Pkt()    
-    return hd.l3sock.SendTo(pkt, hd.dstIP)
+    pkt := hd.icmp.Pkt()
+
+    if err := hd.l3sock.SendTo(pkt, hd.dstIP); err != nil {
+        hd.sendErrors.Add(1)
+    }
 }
 
 
@@ -126,14 +132,17 @@ func (hd *hostDiscovery) setIcmpPkt() {
 
 
 
-func (hd *hostDiscovery) sendTcpProbe(ctx context.Context) error {
+func (hd *hostDiscovery) sendTcpProbe(ctx context.Context) {
     if err := hd.limiter.Wait(ctx); err != nil {
-        return err
+        return
     }
 
     hd.setTcpPkt()
     pkt := hd.tcp.Pkt()
-    return hd.l3sock.SendTo(pkt, hd.dstIP)
+    
+    if err := hd.l3sock.SendTo(pkt, hd.dstIP); err != nil {
+        hd.sendErrors.Add(1)
+    }
 }
 
 

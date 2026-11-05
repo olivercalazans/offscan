@@ -50,17 +50,17 @@ func Run(args []string) {
 
 // alignment: 8 bytes
 type hostDiscovery struct {
-    activeIPs   models.Set[hostInfo]       //   8 bytes
-    sniffer     sniffer.Sniffer            // 168 bytes
-    iface       net.Interface              //  64 bytes
-    dissector   pktdissec.PacketDissector  //  40 bytes
-	arp        *pktbuild.ArpPacket         //   8 bytes
-    icmp       *pktbuild.IcmpPacket        //   8 bytes
-    tcp        *pktbuild.TcpPacket         //   8 bytes
-    rand       *generators.RandomValues    //   8 bytes
-	l2sock      sockets.Layer2Socket       //  56 bytes
-    l3sock      sockets.Layer3Socket       //   8 bytes
-	limiter    *rate.Limiter               //   8 bytes
+    activeHosts  models.Set[hostInfo]       //   8 bytes
+    sniffer      sniffer.Sniffer            // 168 bytes
+    iface        net.Interface              //  64 bytes
+    dissector    pktdissec.PacketDissector  //  40 bytes
+	arp         *pktbuild.ArpPacket         //   8 bytes
+    icmp        *pktbuild.IcmpPacket        //   8 bytes
+    tcp         *pktbuild.TcpPacket         //   8 bytes
+    rand        *generators.RandomValues    //   8 bytes
+	l2sock       sockets.Layer2Socket       //  56 bytes
+    l3sock       sockets.Layer3Socket       //   8 bytes
+	limiter     *rate.Limiter               //   8 bytes
 
     ips         generators.Ipv4Iter  // 24 bytes
     myIP        models.IPv4          //  4 bytes
@@ -68,7 +68,8 @@ type hostDiscovery struct {
 	sendErrors  atomic.Uint64        //  8 bytes
 	lastPkt     atomic.Int64         //  8 bytes
     protocols   protocols            //  3 bytes (3x bool)
-    // padding: 5 byte
+	rounds      uint8                //  1 byte
+    // padding: 4 byte
 }
 
 
@@ -177,40 +178,43 @@ func (hd *hostDiscovery) sendProbes() {
     hd.initProbeTools()
     defer hd.stopTools()
 
-	ctx := utils.SignalContext()
+    ctx := utils.SignalContext()
 
-    for {
-        select {
-        case <-ctx.Done():
-            return
-        default:
-        }
+    for pass := range hd.rounds {
+        if ctx.Err() != nil { return }
 
-        dstIP, hasIP := hd.ips.Next()
-        if !hasIP { break }
-		
-        hd.dstIP = dstIP
-
-        if hd.protocols.arp  {
-            if err := hd.sendArpProbe(ctx); err != nil {
-                hd.sendErrors.Add(1)
-            }
-        }
-        
-		if hd.protocols.icmp {
-            if err := hd.sendIcmpProbe(ctx); err != nil {
-                hd.sendErrors.Add(1)
+        if pass > 0 {
+            backoff := time.Duration(pass) * 500 * time.Millisecond
+            select {
+            case <-time.After(backoff):
+            case <-ctx.Done():
+                return
             }
         }
 
-        if hd.protocols.tcp  {
-            if err := hd.sendTcpProbe(ctx); err != nil {
-                hd.sendErrors.Add(1)
-            }
+        hd.ips.Reset()
+
+        for {
+            if ctx.Err() != nil { return }
+
+            dstIP, hasIP := hd.ips.Next()
+            if !hasIP { break }
+            
+			hd.dstIP = dstIP
+
+			if hd.protocols.arp  { hd.sendArpProbe(ctx)  }
+            if hd.protocols.icmp { hd.sendIcmpProbe(ctx) }
+            if hd.protocols.tcp  { hd.sendTcpProbe(ctx)  }
+        }
+
+        if pass == 0 {
+            hd.waitForResponses(ctx, 3*time.Second, 1*time.Second)
+        } else {
+            hd.waitForResponses(ctx, 2*time.Second, 500*time.Millisecond)
         }
     }
 
-	hd.waitForResponses(ctx, 5 * time.Second, 1 * time.Second)
+	hd.waitForResponses(ctx, 10*time.Second, 2*time.Second)
 }
 
 
@@ -219,7 +223,7 @@ func (hd *hostDiscovery) displayResult() {
     hosts := hd.resolveNames()
 
 	if len(hosts) < 1 {
-		fmt.Println("No host detected")
+		fmt.Println("[!] No host detected")
 		return
 	}
 
@@ -229,14 +233,16 @@ func (hd *hostDiscovery) displayResult() {
 		hostname := hosts[info]
 		fmt.Printf("# %-15s  %s  %s\n", info.ip.String(), info.mac.String(), hostname)
 	}
+
+	fmt.Printf("\n[$] %d host(s) discovered\n", len(hd.activeHosts))
 }
 
 
 
 func (hd *hostDiscovery) resolveNames() map[hostInfo]string {
-    hosts:= make(map[hostInfo]string, len(hd.activeIPs))
+    hosts:= make(map[hostInfo]string, len(hd.activeHosts))
 
-	for addrs := range hd.activeIPs {
+	for addrs := range hd.activeHosts {
         name         := netroute.GetHostName(addrs.ip)        		
         hosts[addrs]  = name
     }
@@ -247,9 +253,9 @@ func (hd *hostDiscovery) resolveNames() map[hostInfo]string {
 
 
 func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
-	keys := make([]hostInfo, 0, len(hd.activeIPs))
+	keys := make([]hostInfo, 0, len(hd.activeHosts))
 
-	for k := range hd.activeIPs {
+	for k := range hd.activeHosts {
 		keys = append(keys, k)
 	}
 
@@ -262,6 +268,5 @@ func (hd *hostDiscovery) getSortedActiveIPs() []hostInfo {
 		return false
 	})
 
-    hd.activeIPs = nil
 	return keys
 }
