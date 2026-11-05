@@ -12,6 +12,7 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 | Ralink RT5390 | Ralink RT5390 | ~2011 | i686 (32-bit) | 🟢 **PASSED** | Full Support | Fully functional under legacy 32-bit environments using native drivers. |
 | Intel Wireless 7265 | Intel 7265 (rev 61) | ~2014 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, frame injection, and handshake capture function properly on modern kernel 6.12. |
 | Intel Wireless 8260 | Intel Wireless 8260 (rev 3a) | ~2015 | x86_64 | 🟢 **PASSED** | Full Support | Tested on Xiaomi Mi Notebook Air 12.5; monitor mode and packet injection function flawlessly. |
+| Realtek RTL8852AE | Realtek RTL8852AE | ~2020/2021 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode and frame injection function flawlessly under modern kernels. |
 | Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🟡 **PARTIAL** | Non-Monitor Only | Core scanning and raw packet manipulation fail, but generic internal utility features function. |
 | Broadcom BCM43228 | Broadcom BCM43228 | ~2012 | x86_64 | 🟡 **PARTIAL** | Non-Monitor Only | Sub-interface hooks fail under proprietary drivers; tool features not requiring monitor mode work. |
 
@@ -122,3 +123,18 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 - **Root Cause:** The standard proprietary Linux driver (`wl`) for the BCM43228 chipset is strictly tailored for station (managed) client use. It restricts configuration via the modern Linux `nl80211` / `mac80211` netlink architecture. The driver exposes a pseudo-monitor mode interface structure that refuses dynamic virtual interface teardown or sub-interface modifications required by professional automation scripts.
 - **Operational Scope:** The tool's core automation crashes only when interacting with the hardware layer to enforce raw sniffing states. Any modular components of the software that execute independently of monitor mode execute successfully without any disruption.
 - **Remediation Note:** Out-of-the-box deployment using the standard vendor driver fails to fulfill core testing tasks. Users require an external dedicated USB network interface card (NIC) containing open-source architecture components (such as *Atheros AR9271* or *MediaTek MT7612U*) to guarantee structural packet manipulation on this host environment.
+
+---
+
+### Environment 7: High-Performance AMD x86_64 Host
+- **OS:** Debian GNU/Linux 13 (trixie)
+- **Kernel Version:** 6.12.107+deb13-amd64
+- **Architecture:** x86_64
+- **CPU:** AMD Ryzen 7 5700G with Radeon Graphics (16 threads, 8 cores)
+
+#### Tested Device: Realtek Semiconductor Co., Ltd. RTL8852AE 802.11ax PCIe Wireless Network Adapter
+- **Chipset:** Realtek RTL8852AE
+- **Hardware Release Year:** ~2020/2021
+- **Bands:** Dual-band 2.4 GHz / 5 GHz (802.11a/b/g/n/ac/ax Wi-Fi 6)
+- **Driver:** `rtw89_8852ae` (Native Linux Kernel Driver)
+- **Status:** 🟢 **PASSED**
