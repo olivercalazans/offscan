@@ -6,15 +6,16 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 
 ## Quick Compatibility Matrix
 
-| Device Name | Chipset / Source | Release Year | Architecture | Status | Core Functionality | Notes |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| Qualcomm Atheros AR9485 | Atheros AR9485 | ~2011/2012 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, packet injection, and handshake capture work flawlessly. |
-| Ralink RT5390 | Ralink RT5390 | ~2011 | i686 (32-bit) | 🟢 **PASSED** | Full Support | Fully functional under legacy 32-bit environments using native drivers. |
-| Intel Wireless 7265 | Intel 7265 (rev 61) | ~2014 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, frame injection, and handshake capture function properly on modern kernel 6.12. |
-| Intel Wireless 8260 | Intel Wireless 8260 (rev 3a) | ~2015 | x86_64 | 🟢 **PASSED** | Full Support | Tested on Xiaomi Mi Notebook Air 12.5; monitor mode and packet injection function flawlessly. |
-| Realtek RTL8852AE | Realtek RTL8852AE | ~2020/2021 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode and frame injection function flawlessly under modern kernels. |
-| Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🟡 **PARTIAL** | Non-Monitor Only | Core scanning and raw packet manipulation fail, but generic internal utility features function. |
-| Broadcom BCM43228 | Broadcom BCM43228 | ~2012 | x86_64 | 🟡 **PARTIAL** | Non-Monitor Only | Sub-interface hooks fail under proprietary drivers; tool features not requiring monitor mode work. |
+| Device Name | Chipset / Source | Release Year | Architecture | Status | Core Functionality |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| Qualcomm Atheros AR9485 | Atheros AR9485 | ~2011/2012 | x86_64 | 🟢 **PASSED** | Full Support |
+| Ralink RT5390 | Ralink RT5390 | ~2011 | i686 (32-bit) | 🟢 **PASSED** | Full Support |
+| Intel Centrino Advanced-N 6205 | Intel 6205 (rev 34) | ~2011 | x86_64 | 🟢 **PASSED** | Full Support |
+| Intel Wireless 7265 | Intel 7265 (rev 61) | ~2014 | x86_64 | 🟢 **PASSED** | Full Support |
+| Intel Wireless 8260 | Intel Wireless 8260 (rev 3a) | ~2015 | x86_64 | 🟢 **PASSED** | Full Support |
+| Realtek RTL8852AE | Realtek RTL8852AE | ~2020/2021 | x86_64 | 🟢 **PASSED** | Full Support |
+| Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🟡 **PARTIAL** | Non-Monitor Only |
+| Broadcom BCM43228 | Broadcom BCM43228 | ~2012 | x86_64 | 🟡 **PARTIAL** | Non-Monitor Only |
 
 <br>
 
@@ -137,4 +138,19 @@ This document records the exact hardware configurations tested with this Wi-Fi p
 - **Hardware Release Year:** ~2020/2021
 - **Bands:** Dual-band 2.4 GHz / 5 GHz (802.11a/b/g/n/ac/ax Wi-Fi 6)
 - **Driver:** `rtw89_8852ae` (Native Linux Kernel Driver)
+- **Status:** 🟢 **PASSED**
+
+---
+
+### Environment 8: Intel Core i5 x86_64 Host
+- **OS:** Ubuntu 22.04.5 LTS (Jammy Jellyfish)
+- **Kernel Version:** 6.8.0-138-generic
+- **Architecture:** x86_64
+- **CPU:** Intel(R) Core(TM) i5-3320M CPU @ 2.60GHz
+
+#### Tested Device: Intel Corporation Centrino Advanced-N 6205 (Internal PCIe)
+- **Chipset:** Intel Corporation Centrino Advanced-N 6205 [Taylor Peak] (rev 34)
+- **Hardware Release Year:** ~2011
+- **Bands:** Dual-band 2.4 GHz / 5 GHz (802.11a/b/g/n)
+- **Driver:** `iwlwifi` (Native Linux Kernel Driver)
 - **Status:** 🟢 **PASSED**
