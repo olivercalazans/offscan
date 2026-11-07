@@ -63,3 +63,34 @@ Scans from the start of the subnet up to `10.0.0.100` using ICMP and TCP probes:
 ```
 sudo ./offscan hdisc -i wlan0 -r +10.0.0.100 --icmp --tcp
 ```
+
+### 4. Output example
+
+> [!NOTE]
+>
+> For privacy and security reasons, actual hardware MAC addresses and hostnames have been replaced with generic placeholders.
+
+```bash
+oliver@sigma:~$ sudo offscan hdisc -r 192.168.110.1+192.168.110.254 --icmp
+
+OffScan - The offensive security and scanning tool for Wi-Fi
+Repository: https://github.com/olivercalazans/offscan
+
+[i] Iface..: wlp1s0
+[i] Range..: 192.168.110.1 - 192.168.110.254
+[i] Len IPs: 254
+[i] Proto..: ARP, ICMP
+[+] Sniffer started
+[$] Packets received = 420
+[-] Sniffer stopped
+
+# 192.168.110.8    02:00:00:00:00:01  Unknown
+# 192.168.110.30   02:00:00:00:00:02  sigma
+# 192.168.110.72   02:00:00:00:00:03  Unknown
+# 192.168.110.78   02:00:00:00:00:04  Unknown
+# 192.168.110.163  02:00:00:00:00:05  Unknown
+# 192.168.110.226  02:00:00:00:00:06  Unknown
+# 192.168.110.228  02:00:00:00:00:07  Unknown
+
+[$] 7 host(s) discovered
+```

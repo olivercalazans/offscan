@@ -50,20 +50,12 @@
 >
 > OffScan interacts directly with low-level network sockets and wireless PHY drivers for monitor mode and raw 802.11 frame injection. Therefore, **it only works on Linux**. It will **not** function on Windows, macOS, WSL (Windows Subsystem for Linux), or standard virtualized network adapters.
 
-### Verified Hardware Compatibility Matrix
-The following internal and external network adapters have been physically tested within the `offscan` ecosystem:
+### Verified Hardware Compatibility
 
-| Device Name | Chipset / Source | Release Year | Architecture | Status | Core Functionality | Notes |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| Qualcomm Atheros AR9485 | Atheros AR9485 | ~2011/2012 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, packet injection, and handshake capture work flawlessly. |
-| Ralink RT5390 | Ralink RT5390 | ~2011 | i686 (32-bit) | 🟢 **PASSED** | Full Support | Fully functional under legacy 32-bit environments using native drivers. |
-| Intel Wireless 7265 | Intel 7265 (rev 61) | ~2014 | x86_64 | 🟢 **PASSED** | Full Support | Monitor mode, frame injection, and handshake capture function properly on modern kernels. |
-| Broadcom CYW43438 | CYW43438 (RPi Zero W) | 2017 | armv6l | 🟡 **PARTIAL** | Non-Monitor Only | Active sniffing/injection fails due to firmware lock (`DEL_INTERFACE: errno 524`). Non-monitor tasks work. |
-| Broadcom BCM43228 | Broadcom BCM43228 | ~2012 | x86_64 | 🟡 **PARTIAL** | Non-Monitor Only | Sub-interface hooks fail under proprietary `wl` driver. Features not requiring monitor mode work perfectly. |
+Every adapter tested with `offscan` is documented in a dedicated compatibility file containing a quick compatibility matrix, host specifications, per-device reports (chipset, driver, verified functionality), and root-cause analysis for partial-support cases.
 
-*Note: For chipsets marked with partial support, an external dedicated USB network card (e.g., Atheros AR9271) is highly recommended to unlock the full testing capabilities of the tool.*
+**Full documentation:** [Compatibility doc](./docs/COMPATIBILITY.md)
 
-Full documentation: [Compatibility doc](./docs/COMPATIBILITY.md)
 
 <br>
 
