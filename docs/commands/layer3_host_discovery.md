@@ -64,7 +64,7 @@ Scans from the start of the subnet up to `10.0.0.100` using ICMP and TCP probes:
 sudo ./offscan hdisc -i wlan0 -r +10.0.0.100 --icmp --tcp
 ```
 
-### Output example
+### 4. Output example
 
 > [!NOTE]
 >
