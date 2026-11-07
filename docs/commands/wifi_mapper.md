@@ -45,12 +45,6 @@ sudo ./offscan wmap [FLAGS]
 
 To start mapping wireless Access Points on interface `wlp2s0`:
 
-```
-sudo ./offscan wmap -i wlp2s0
-
-```
-
-### Output example
 > [!NOTE]
 >
 > Real SSIDs and BSSIDs in the output have been obfuscated for privacy and security purposes.
