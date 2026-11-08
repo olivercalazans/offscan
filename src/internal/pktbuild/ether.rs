@@ -18,15 +18,19 @@
 use crate::internal::models::Mac;
 
 
+const LEN_ETHER_HDR: usize = 14;
+
+
+
 pub struct EtherHeader {
-    header: [u8; 14],
+    header: [u8; LEN_ETHER_HDR],
 }
 
 
 impl EtherHeader {
 
     pub fn new() -> Self {
-        Self { header: [0u8; 14] }
+        Self { header: [0u8; LEN_ETHER_HDR] }
     }
 
 
@@ -46,7 +50,7 @@ impl EtherHeader {
     }
 
 
-    pub fn as_bytes(&self) -> &[u8; 14] {
+    pub fn as_bytes(&self) -> &[u8; LEN_ETHER_HDR] {
         &self.header
     }
     

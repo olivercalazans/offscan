@@ -124,6 +124,7 @@ impl WpsInfo {
 }
 
 
+
 impl fmt::Display for WpsInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.version() == 0 && !self.is_state_present() && !self.is_locked() {
