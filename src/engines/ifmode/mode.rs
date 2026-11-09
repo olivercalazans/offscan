@@ -1,15 +1,19 @@
-// src/main.rs
-//
-// Equivalente Rust do pacote ifmode — sem libc (rustix + linux_raw).
-// Linux-only. Rode como root: sudo ./ifmode --mon  (ou --man)
-//
-// CORREÇÕES IMPORTANTES vs. versão anterior:
-//   - IFACE_INDEX removido: resolvido em runtime pelo nome em /sys.
-//   - Sanity check antes de derrubar/deletar: confirma que a interface é Wi-Fi.
-//   - SO_RCVTIMEO de 5s no socket netlink: evita recv bloqueante infinito.
-//   - Imports corrigidos: SocketType, netlink::SocketAddrNetlink.
-//   - Protocol::from_raw agora usa NonZeroU32 (exigência do rustix 1.1).
-//   - fs::read_to_string usa std::io::Result (não rustix::io::Errno).
+/*
+ * Copyright (C) 2025 Oliver R. Calazans Jeronimo
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org>.
+ */
 
 use rustix::fd::OwnedFd;
 use rustix::io;
@@ -22,29 +26,21 @@ use std::num::NonZeroU32;
 use std::process;
 use std::time::Duration;
 
-// ============================================================
-// Interface alvo (apenas o NOME é hardcoded — o índice é resolvido em runtime)
-// ============================================================
-const IFACE_NAME: &str = "wlp2s0";
-
-// ============================================================
-// Constantes (espelham consts.go)
-// ============================================================
 const NL80211_FAMILY_NAME: &str = "nl80211";
 
-const NL80211_CMD_NEW_INTERFACE: u8 = 7;
-const NL80211_CMD_DEL_INTERFACE: u8 = 8;
+const NL80211_CMD_NEW_INTERFACE : u8 = 7;
+const NL80211_CMD_DEL_INTERFACE : u8 = 8;
 
-const NL80211_ATTR_WIPHY: u16 = 1;
-const NL80211_ATTR_IFINDEX: u16 = 3;
-const NL80211_ATTR_IFNAME: u16 = 4;
-const NL80211_ATTR_IFTYPE: u16 = 5;
+const NL80211_ATTR_WIPHY   : u16 = 1;
+const NL80211_ATTR_IFINDEX : u16 = 3;
+const NL80211_ATTR_IFNAME  : u16 = 4;
+const NL80211_ATTR_IFTYPE  : u16 = 5;
 
-const NL80211_IFTYPE_MANAGED: u32 = 2;
-const NL80211_IFTYPE_MONITOR: u32 = 6;
+const NL80211_IFTYPE_MANAGED : u32 = 2;
+const NL80211_IFTYPE_MONITOR : u32 = 6;
 
-const RTM_NEWLINK: u16 = 16;
-const IFF_UP: u32 = 0x1;
+const RTM_NEWLINK : u16 = 16;
+const IFF_UP      : u32 = 0x1;
 
 const NLM_F_REQUEST: u16 = 0x01;
 const NLM_F_ACK: u16 = 0x04;
@@ -60,9 +56,7 @@ const NETLINK_GENERIC: u32 = 16;
 const NLMSG_ERROR: u16 = 0x2;
 const NLMSG_DONE: u16 = 0x3;
 
-// ============================================================
-// Helpers de atributos
-// ============================================================
+
 fn align4(n: usize) -> usize {
     (n + 3) & !3
 }
@@ -245,45 +239,6 @@ fn resolve_genl_family(name: &str) -> io::Result<u16> {
     }
 }
 
-// ============================================================
-// nl80211
-// ============================================================
-struct Nl80211 {
-    conn: NlConn,
-    fam_id: u16,
-    ver: u8,
-}
-
-impl Nl80211 {
-    fn new() -> io::Result<Self> {
-        let fam_id = resolve_genl_family(NL80211_FAMILY_NAME)?;
-        let conn = NlConn::new(NETLINK_GENERIC)?;
-        Ok(Nl80211 { conn, fam_id, ver: 1 })
-    }
-
-    fn exec(&mut self, cmd: u8, attrs: &[u8]) -> io::Result<()> {
-        let mut payload = genl_hdr(cmd, self.ver);
-        payload.extend_from_slice(attrs);
-        let seq = self
-            .conn
-            .send(self.fam_id, NLM_F_REQUEST | NLM_F_ACK, &payload)?;
-        self.conn.recv(seq, true)?;
-        Ok(())
-    }
-
-    fn delete_interface(&mut self, ifindex: i32) -> io::Result<()> {
-        let attrs = put_u32_attr(Vec::new(), NL80211_ATTR_IFINDEX, ifindex as u32);
-        self.exec(NL80211_CMD_DEL_INTERFACE, &attrs)
-    }
-
-    fn create_interface(&mut self, wiphy: i32, name: &str, iftype: u32) -> io::Result<()> {
-        let attrs = Vec::new();
-        let attrs = put_u32_attr(attrs, NL80211_ATTR_WIPHY, wiphy as u32);
-        let attrs = put_string_attr(attrs, NL80211_ATTR_IFNAME, name);
-        let attrs = put_u32_attr(attrs, NL80211_ATTR_IFTYPE, iftype);
-        self.exec(NL80211_CMD_NEW_INTERFACE, &attrs)
-    }
-}
 
 // ============================================================
 // rtnetlink: link up/down
@@ -396,73 +351,5 @@ fn switch_mode(iface: &str, iface_index: i32, iftype: u32, label: &str) {
             eprintln!("Unable to resolve new ifindex for {}: {}", iface, e);
             process::exit(1);
         }
-    }
-}
-
-// ============================================================
-// CLI + main
-// ============================================================
-fn display_help() {
-    println!("\n### INTERFACE MODE (Rust + rustix, sem libc)\n");
-    println!("    Interface alvo: {} (índice resolvido em runtime)", IFACE_NAME);
-    println!("    Uso: $ sudo ./ifmode --mon   (ou --man)\n");
-    println!("    --mon : Monitor mode");
-    println!("    --man : Managed mode\n");
-    println!("    IMPORTANTE: isso derruba e recria a interface.");
-    println!("    Não rode via SSH pela mesma interface. Use console local");
-    println!("    ou uma segunda interface Wi-Fi (dongle USB) como alvo.");
-}
-
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
-
-    let mut mon = false;
-    let mut man = false;
-
-    for a in &args[1..] {
-        match a.as_str() {
-            "--mon" => mon = true,
-            "--man" => man = true,
-            "-h" | "--help" => {
-                display_help();
-                return;
-            }
-            _ => {}
-        }
-    }
-
-    if !mon && !man {
-        eprintln!("It's necessary to select a mode: --mon or --man");
-        process::exit(1);
-    }
-    if mon && man {
-        eprintln!("Select only one mode: --mon or --man");
-        process::exit(1);
-    }
-
-    // Resolve o índice real em runtime (o kernel atribui, não é estável).
-    let iface_index = ifindex_from_name(IFACE_NAME).unwrap_or_else(|e| {
-        eprintln!("Unable to resolve ifindex for {}: {}", IFACE_NAME, e);
-        process::exit(1);
-    });
-
-    // Sanity check: garante que IFACE_NAME é Wi-Fi e o índice confere.
-    if let Err(e) = sanity_check(IFACE_NAME, iface_index) {
-        eprintln!("Sanity check failed: {}", e);
-        process::exit(1);
-    }
-
-    eprintln!(
-        "[*] Target: {} (ifindex {}) — switching to {} mode",
-        IFACE_NAME,
-        iface_index,
-        if mon { "monitor" } else { "managed" }
-    );
-
-    if mon {
-        switch_mode(IFACE_NAME, iface_index, NL80211_IFTYPE_MONITOR, "monitor");
-    }
-    if man {
-        switch_mode(IFACE_NAME, iface_index, NL80211_IFTYPE_MANAGED, "managed");
     }
 }

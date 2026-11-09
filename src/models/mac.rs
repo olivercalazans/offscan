@@ -33,7 +33,6 @@ impl<T> Address<T> {
     }
 
 
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         let parts: Vec<&str> = s.split(':').collect();
         if parts.len() != 6 {
@@ -48,7 +47,6 @@ impl<T> Address<T> {
 
         Ok(Self::new(bytes))
     }
-
     
 
     pub fn from_slice(slice: &[u8]) -> Self {
@@ -56,10 +54,10 @@ impl<T> Address<T> {
     }
 
 
-
     pub fn bytes(&self) -> &[u8; 6] {
         &self.bytes
     }
+
 }
 
 
@@ -81,5 +79,6 @@ pub enum MacAddr {}
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub enum BssidAddr {}
 
-pub type Mac   = Address<MacAddr>;
-pub type Bssid = Address<BssidAddr>;
+
+pub type MAC   = Address<MacAddr>;
+pub type BSSID = Address<BssidAddr>;

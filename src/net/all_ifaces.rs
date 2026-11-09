@@ -23,16 +23,8 @@ use std::process;
 
 #[derive(Debug, Clone)]
 pub struct NetworkInterface {
-    pub index: u32,
-    pub name: String,
-}
-
-
-pub fn must_all_ifaces() -> Vec<NetworkInterface> {
-    all_ifaces().unwrap_or_else(|err| {
-        eprintln!("Unable to get interface list: {}", err);
-        process::exit(1);
-    })
+    pub index :  u32,
+    pub name  : String,
 }
 
 
