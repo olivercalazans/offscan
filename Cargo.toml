@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 rustix = { version = "0.38", features = ["net", "event", "fs"] }
+rand = "0.8"
