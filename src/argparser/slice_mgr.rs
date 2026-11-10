@@ -15,71 +15,118 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-use super::{ArgParser, Argument};
+use std::fmt::Display;
+
+use crate::argparser::helpers::format_arg;
+use crate::argparser::argparser::{ArgParser, Argument};
 
 
 
 impl ArgParser {
-
-    pub(crate) fn get_value(&mut self, arg: &Argument, has_long: bool) -> Option<String> {
-        if has_long {
-            self.get_flag_value(arg.long)
-        } else {
-            self.get_flag_value(arg.short)
+    
+    pub(super) fn get_flag_index(&self, flag: &str) -> Option<usize> {
+        if flag.is_empty() {
+            return None;
         }
+
+        self.args.iter().position(|v| v == flag)
     }
 
 
 
-    pub(crate) fn verify_if_has_flags(&mut self, arg: &Argument) -> (bool, bool) {
-        let has_long = !arg.long.is_empty() && self.args.iter().any(|a| a == arg.long);
-        let has_short = !arg.short.is_empty() && self.args.iter().any(|a| a == arg.short);
+    pub(super) fn get_value_index(&self, index_flag: usize) -> Option<usize> {
+        let index_value = index_flag + 1;
 
-        if arg.required && !has_long && !has_short {
-            self.add_miss_req_flags_warn(arg);
-            return (false, false);
+        if index_value >= self.args.len() {
+            return None;
         }
 
-        if has_long && has_short {
-            self.add_duplicated_warn(arg);
-            self.remove_from_the_list(arg);
-            return (false, false);
+        let value = &self.args[index_value];
+
+        if value.starts_with('-') {
+            return None;
         }
 
-        let mut count = 0;
-
-        if has_long {
-            count = self.count(arg.long);
-        } else if has_short {
-            count = self.count(arg.short);
-        }
-
-        if count > 1 {
-            self.add_duplicated_warn(arg);
-            self.remove_from_the_list(arg);
-            return (false, false);
-        }
-
-        (has_long, has_long || has_short)
+        Some(index_value)
     }
 
 
 
-    pub(crate) fn get_flag_value(&mut self, flag: &str) -> Option<String> {
-        let index_flag = self.get_flag_index(flag)?;
+    pub fn add_missing_value_warn(&mut self, arg: &str) {
+        self.missing_values.push(arg.to_string());
+    }
 
-        let index_value = match self.get_value_index(index_flag) {
-            Some(idx) => idx,
-            None => {
-                self.add_missing_value_warn(flag);
-                self.remove_index(index_flag);
-                return None;
+
+
+    pub fn add_miss_req_flags_warn(&mut self, arg: &Argument) {
+        let line = format_arg(arg);
+        self.missing_flags.push(line);
+    }
+
+
+
+    pub fn add_duplicated_warn(&mut self, arg: &Argument) {
+        let line = format_arg(arg);
+        self.duplicated.push(line);
+    }
+
+
+
+    pub fn add_error<E: Display>(&mut self, arg: &Argument, err: E) {
+        let flags = format_arg(arg);
+        let line = format!("{}: {}", flags, err);
+        self.errors.push(line);
+    }
+
+
+
+    pub(super) fn remove_from_the_list(&mut self, arg: &Argument) {
+        for _ in 0..self.count(arg.long) {
+            if let Some(index) = self.get_flag_index(arg.long) {
+                self.remove(index);
             }
-        };
+        }
 
-        let value = self.args[index_value].clone();
-        self.remove_flag_and_value(index_flag, index_value);
-
-        Some(value)
+        for _ in 0..self.count(arg.short) {
+            if let Some(index) = self.get_flag_index(arg.short) {
+                self.remove(index);
+            }
+        }
     }
+
+
+
+    pub(super) fn remove(&mut self, index: usize) {
+        if let Some(i) = self.get_value_index(index) {
+            self.remove_flag_and_value(index, i);
+        } else {
+            self.remove_index(index);
+        }
+    }
+
+
+
+    pub(super) fn remove_index(&mut self, index_flag: usize) {
+        if index_flag < self.args.len() {
+            self.args.remove(index_flag);
+        }
+    }
+
+
+
+    pub(super) fn remove_flag_and_value(&mut self, index_flag: usize, index_value: usize) {
+        if index_flag < self.args.len() && index_value < self.args.len() {
+            self.args.drain(index_flag..=index_value);
+        }
+    }
+
+
+    
+    pub(super) fn count(&self, flag: &str) -> usize {
+        if flag.is_empty() {
+            return 0;
+        }
+        self.args.iter().filter(|&v| v == flag).count()
+    }
+
 }

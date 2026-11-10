@@ -15,10 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-use std::net::Ipv4Addr;
-use std::process;
+#[path = "processor.rs"] 
+mod processor;
 
+#[path = "slice_mgr.rs"] 
+mod slice_mgr;
+
+#[path = "err_display.rs"] 
+mod err_display;
+
+use std::net::Ipv4Addr;
 use crate::sysconf::{all_ifaces, NetworkInterface};
+use crate::common::abort;
+
+
 
 #[derive(Debug, Clone, Default)]
 pub struct Argument<'a> {
@@ -27,16 +37,19 @@ pub struct Argument<'a> {
     pub required: bool,
 }
 
+
 #[derive(Debug, Clone, Default)]
 pub struct ArgParser {
-    pub(crate) args: Vec<String>,
-    pub(crate) duplicated: Vec<String>,
-    pub(crate) missing_flags: Vec<String>,
-    pub(crate) missing_values: Vec<String>,
-    pub(crate) errors: Vec<String>,
+    args           : Vec<String>,
+    duplicated     : Vec<String>,
+    missing_flags  : Vec<String>,
+    missing_values : Vec<String>,
+    errors         : Vec<String>,
 }
 
+
 impl ArgParser {
+
     pub fn new(args: Vec<String>) -> Self {
         Self {
             args,
@@ -47,6 +60,8 @@ impl ArgParser {
         }
     }
 
+    
+    
     pub fn abort_if_has_error(&mut self) {
         let len_err = self.duplicated.len()
             + self.missing_flags.len()
@@ -64,16 +79,19 @@ impl ArgParser {
         self.display_errors();
         self.display_remaining_args();
 
-        eprintln!("Error while parsing arguments");
-        process::exit(1);
+        abort("Error while parsing arguments");
     }
 
+    
+    
     pub fn bool(&mut self, arg: &Argument) -> bool {
         let (_, ok) = self.verify_if_has_flags(arg);
         self.remove_from_the_list(arg);
         ok
     }
 
+    
+    
     pub fn float64(&mut self, arg: &Argument) -> Option<f64> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
@@ -91,6 +109,8 @@ impl ArgParser {
             }
         }
     }
+
+
 
     pub fn iface(&mut self, arg: &Argument) -> Option<NetworkInterface> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
@@ -117,6 +137,8 @@ impl ArgParser {
         }
     }
 
+
+
     pub fn int(&mut self, arg: &Argument) -> Option<i32> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
@@ -135,6 +157,8 @@ impl ArgParser {
         }
     }
 
+    
+    
     pub fn ip(&mut self, arg: &Argument) -> Option<Ipv4Addr> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
@@ -153,6 +177,8 @@ impl ArgParser {
         }
     }
 
+    
+    
     pub fn mac(&mut self, arg: &Argument) -> Option<[u8; 6]> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
@@ -171,6 +197,8 @@ impl ArgParser {
         }
     }
 
+    
+    
     pub fn string(&mut self, arg: &Argument) -> Option<String> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
@@ -181,6 +209,8 @@ impl ArgParser {
         self.get_value(arg, has_long)
     }
 }
+
+
 
 fn parse_mac(mac_str: &str) -> Result<[u8; 6], String> {
     let parts: Vec<&str> = mac_str.split(':').collect();

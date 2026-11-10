@@ -22,6 +22,8 @@ use super::rtnetlink::set_link_up;
 use super::sysfs::{ifindex_from_name, phy_index};
 
 
+pub run()
+
 
 pub fn switch_mode(iface: &str, iface_index: i32, iftype: u32, label: &str) {
     let wiphy = match phy_index(iface) {

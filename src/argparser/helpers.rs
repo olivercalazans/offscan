@@ -15,18 +15,39 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
+use std::collections::BTreeMap;
+use std::process;
 use super::Argument;
 
 
-pub(crate) fn format_arg(arg: &Argument) -> String {
+
+pub fn format_arg(arg: &Argument) -> String {
     let mut flags = Vec::new();
 
     if !arg.short.is_empty() {
         flags.push(arg.short);
     }
+
     if !arg.long.is_empty() {
         flags.push(arg.long);
     }
 
     flags.join(", ")
+}
+
+
+
+pub struct CommandHandler {
+    pub run: fn(Vec<String>),
+    pub helper: fn(),
+}
+
+
+
+pub fn display_all_help(registry: &BTreeMap<String, CommandHandler>) {
+    for (_cmd, reg) in registry {
+        (reg.helper)();
+    }
+
+    process::exit(0);
 }
