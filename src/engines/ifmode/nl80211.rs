@@ -15,15 +15,23 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
+use rustix::io;
+
+use super::attr::{genl_hdr, put_string_attr, put_u32_attr};
+use super::conn::{resolve_genl_family, NlConn};
+use super::consts::*;
+
+
 
 pub struct Nl80211 {
-    conn   : NlConn,
-    fam_id : u16,
-    ver    : u8,
+    conn: NlConn,
+    fam_id: u16,
+    ver: u8,
 }
 
 
-pub impl Nl80211 {
+
+impl Nl80211 {
 
     pub fn new() -> io::Result<Self> {
         let fam_id = resolve_genl_family(NL80211_FAMILY_NAME)?;
@@ -31,27 +39,28 @@ pub impl Nl80211 {
         Ok(Nl80211 { conn, fam_id, ver: 1 })
     }
 
-    fn exec(&mut self, cmd: u8, attrs: &[u8]) -> io::Result<()> {
+
+
+    pub fn exec(&mut self, cmd: u8, attrs: &[u8]) -> io::Result<()> {
         let mut payload = genl_hdr(cmd, self.ver);
         payload.extend_from_slice(attrs);
-
         let seq = self
             .conn
             .send(self.fam_id, NLM_F_REQUEST | NLM_F_ACK, &payload)?;
-
         self.conn.recv(seq, true)?;
-        
         Ok(())
     }
 
 
-    fn delete_interface(&mut self, ifindex: i32) -> io::Result<()> {
+
+    pub fn delete_interface(&mut self, ifindex: i32) -> io::Result<()> {
         let attrs = put_u32_attr(Vec::new(), NL80211_ATTR_IFINDEX, ifindex as u32);
         self.exec(NL80211_CMD_DEL_INTERFACE, &attrs)
     }
 
 
-    fn create_interface(&mut self, wiphy: i32, name: &str, iftype: u32) -> io::Result<()> {
+
+    pub fn create_interface(&mut self, wiphy: i32, name: &str, iftype: u32) -> io::Result<()> {
         let attrs = Vec::new();
         let attrs = put_u32_attr(attrs, NL80211_ATTR_WIPHY, wiphy as u32);
         let attrs = put_string_attr(attrs, NL80211_ATTR_IFNAME, name);
