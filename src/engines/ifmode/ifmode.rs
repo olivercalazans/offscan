@@ -15,17 +15,47 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
+#[path = "parser.rs"]
+mod parser;
+
 use std::process;
+use crate::argparser::ArgParser;
+use crate::models::Iface;
 
 use super::nl80211::Nl80211;
 use super::rtnetlink::set_link_up;
 use super::sysfs::{ifindex_from_name, phy_index};
 
 
-pub run()
+pub fn run(args:Vec<String>) {
+    let ifmode = IfaceMode::new(args);
+}
 
 
-pub fn switch_mode(iface: &str, iface_index: i32, iftype: u32, label: &str) {
+
+struct IfaceMode {
+    iface : Iface,
+    mon   : bool,
+    man   : bool,
+}
+
+
+
+impl IfaceMode {
+
+    fn new(args: Vec<String>) -> Self {
+        let mut parser = ArgParser::new(args);
+
+        Self {
+            iface : 
+            mon   : Self::parse_monitor_flag(&mut parser),
+            man   : Self::parse_managed_flag(&mut parser),
+        }
+    }
+}
+
+
+fn switch_mode(iface: &str, iface_index: i32, iftype: u32, label: &str) {
     let wiphy = match phy_index(iface) {
         Ok(w) => w,
         Err(e) => {

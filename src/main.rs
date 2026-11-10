@@ -16,12 +16,13 @@
  */
 
 mod argparser;
-mod engines;
 mod common;
+mod engines;
+mod models;
 
 use std::collections::BTreeMap;
 use std::env;
-use crate::argparser::{CommandHandler};
+use crate::argparser::{CommandHandler, display_all_help};
 use crate::engines::*;
 use crate::common::abort;
 
@@ -59,7 +60,8 @@ fn main() {
         }
         None => {
             display_all_help(&registry);
-            abort(format!("[-] Error: No command '{}'", cmd_name));
+            let err_msg = format!("[-] Error: No command '{}'", cmd_name);
+            abort(&err_msg);
         }
     }
 }

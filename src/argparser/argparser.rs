@@ -25,8 +25,8 @@ mod slice_mgr;
 mod err_display;
 
 use std::net::Ipv4Addr;
-use crate::sysconf::{all_ifaces, NetworkInterface};
 use crate::common::abort;
+use crate::models::{Iface, MAC};
 
 
 
@@ -36,6 +36,7 @@ pub struct Argument<'a> {
     pub long: &'a str,
     pub required: bool,
 }
+
 
 
 #[derive(Debug, Clone, Default)]
@@ -53,10 +54,10 @@ impl ArgParser {
     pub fn new(args: Vec<String>) -> Self {
         Self {
             args,
-            duplicated: Vec::new(),
-            missing_flags: Vec::new(),
-            missing_values: Vec::new(),
-            errors: Vec::new(),
+            duplicated     : Vec::new(),
+            missing_flags  : Vec::new(),
+            missing_values : Vec::new(),
+            errors         : Vec::new(),
         }
     }
 
@@ -112,7 +113,7 @@ impl ArgParser {
 
 
 
-    pub fn iface(&mut self, arg: &Argument) -> Option<NetworkInterface> {
+    pub fn iface(&mut self, arg: &Argument) -> Option<Iface> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
         if !ok {
@@ -121,25 +122,12 @@ impl ArgParser {
 
         let str_val = self.get_value(arg, has_long)?;
 
-        match all_ifaces() {
-            Ok(ifaces) => {
-                if let Some(iface) = ifaces.into_iter().find(|i| i.name == str_val) {
-                    Some(iface)
-                } else {
-                    self.add_error(arg, format!("interface {} not found", str_val));
-                    None
-                }
-            }
-            Err(err) => {
-                self.add_error(arg, err);
-                None
-            }
-        }
+        Iface::new(iface_name)
     }
 
 
 
-    pub fn int(&mut self, arg: &Argument) -> Option<i32> {
+    pub fn int(&mut self, arg: &Argument) -> Option<usize> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
         if !ok {
@@ -148,7 +136,7 @@ impl ArgParser {
 
         let str_val = self.get_value(arg, has_long)?;
 
-        match str_val.parse::<i32>() {
+        match str_val.parse::<usize>() {
             Ok(val) => Some(val),
             Err(err) => {
                 self.add_error(arg, err);
@@ -179,7 +167,7 @@ impl ArgParser {
 
     
     
-    pub fn mac(&mut self, arg: &Argument) -> Option<[u8; 6]> {
+    pub fn mac(&mut self, arg: &Argument) -> Option<MAC> {
         let (has_long, ok) = self.verify_if_has_flags(arg);
 
         if !ok {
@@ -212,15 +200,12 @@ impl ArgParser {
 
 
 
-fn parse_mac(mac_str: &str) -> Result<[u8; 6], String> {
+fn parse_mac(mac_str: &str) -> Result<MAC, String> {
     let parts: Vec<&str> = mac_str.split(':').collect();
+
     if parts.len() != 6 {
         return Err("invalid MAC address format".to_string());
     }
-    let mut bytes = [0u8; 6];
-    for (i, part) in parts.iter().enumerate() {
-        bytes[i] = u8::from_str_radix(part, 16)
-            .map_err(|e| format!("invalid hex byte in MAC: {}", e))?;
-    }
-    Ok(bytes)
+    
+    MAC::from_str(mac_str)
 }

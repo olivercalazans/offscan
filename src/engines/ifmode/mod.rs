@@ -18,12 +18,13 @@
 pub mod attr;
 pub mod conn;
 pub mod consts;
+pub mod display_help;
 pub mod nl80211;
 pub mod rtnetlink;
-pub mod switcher;
+pub mod ifmode;
 pub mod sysfs;
 
+pub use ifmode::run;
 pub use consts::*;
 pub use nl80211::Nl80211;
-pub use switcher::switch_mode;
 pub use sysfs::{ifindex_from_name, phy_index, sanity_check};

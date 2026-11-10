@@ -33,6 +33,7 @@ impl<T> Address<T> {
     }
 
 
+
     pub fn from_str(s: &str) -> Result<Self, String> {
         let parts: Vec<&str> = s.split(':').collect();
         if parts.len() != 6 {
@@ -49,11 +50,13 @@ impl<T> Address<T> {
     }
     
 
+
     pub fn from_slice(slice: &[u8]) -> Self {
         Self::new(slice.try_into().unwrap())
     }
 
 
+    
     pub fn bytes(&self) -> &[u8; 6] {
         &self.bytes
     }

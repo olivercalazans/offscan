@@ -15,17 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-use rustix::net::{socket, AddressFamily, SocketType};
 use std::fs;
 use std::io;
 use std::net::Ipv4Addr;
 use std::path::Path;
-use std::process;
 
-pub type MacAddr = [u8; 6];
+use rustix::ioctl::ioctl;
+use rustix::net::{socket, AddressFamily, SocketType};
 
-const SIOCGIFADDR: u64 = 0x8915;
-const SIOCGIFNETMASK: u64 = 0x891b;
+use crate::models::MAC;
+
+
+
+const SIOCGIFADDR    : u64 = 0x8915;
+const SIOCGIFNETMASK : u64 = 0x891b;
+
 
 
 #[repr(C)]
@@ -34,17 +38,22 @@ struct Ifreq {
     ifr_ifru: [u8; 24],
 }
 
+
 impl Ifreq {
+
     fn new(name: &str) -> Self {
         let mut ifr = Self {
             ifr_name: [0u8; 16],
             ifr_ifru: [0u8; 24],
         };
+
         let bytes = name.as_bytes();
         let len = bytes.len().min(15);
+        
         ifr.ifr_name[..len].copy_from_slice(&bytes[..len]);
         ifr
     }
+
 }
 
 
@@ -60,6 +69,17 @@ impl Iface {
         Self {
             iface: iface_name.to_string(),
         }
+    }
+
+
+
+    pub fn phy_index(&self) -> io::Result<i32> {
+        let path = format!("/sys/class/net/{}/phy80211/index", &self.iface);
+        let data = fs::read_to_string(&path)?;
+
+        data.trim()
+            .parse::<i32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
     
@@ -106,8 +126,9 @@ impl Iface {
 
         let mut bytes = [0u8; 4];
         for i in 0..4 {
-            let val = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidInput, e)
+            let val = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)
+                .map_err(|e| {
+                    io::Error::new(io::ErrorKind::InvalidInput, e)
             })?;
 
             bytes[3 - i] = val;
@@ -118,7 +139,7 @@ impl Iface {
 
 
 
-    pub fn gateway_mac(&self) -> Result<MacAddr, io::Error> {
+    pub fn gateway_mac(&self) -> Result<MAC, io::Error> {
         let data = fs::read_to_string("/proc/net/arp")?;
 
         for line in data.lines().skip(1) {
@@ -150,7 +171,7 @@ impl Iface {
 
 
 
-    fn parse_mac(mac_str: &str) -> Result<MacAddr, io::Error> {
+    fn parse_mac(mac_str: &str) -> Result<MAC, io::Error> {
         let parts: Vec<&str> = mac_str.split(':').collect();
 
         if parts.len() != 6 {
