@@ -17,6 +17,7 @@
 
 use super::Argument;
 
+
 pub(crate) fn format_arg(arg: &Argument) -> String {
     let mut flags = Vec::new();
 

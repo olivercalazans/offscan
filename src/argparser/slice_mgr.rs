@@ -17,7 +17,10 @@
 
 use super::{ArgParser, Argument};
 
+
+
 impl ArgParser {
+
     pub(crate) fn get_value(&mut self, arg: &Argument, has_long: bool) -> Option<String> {
         if has_long {
             self.get_flag_value(arg.long)
@@ -25,6 +28,8 @@ impl ArgParser {
             self.get_flag_value(arg.short)
         }
     }
+
+
 
     pub(crate) fn verify_if_has_flags(&mut self, arg: &Argument) -> (bool, bool) {
         let has_long = !arg.long.is_empty() && self.args.iter().any(|a| a == arg.long);
@@ -57,6 +62,8 @@ impl ArgParser {
 
         (has_long, has_long || has_short)
     }
+
+
 
     pub(crate) fn get_flag_value(&mut self, flag: &str) -> Option<String> {
         let index_flag = self.get_flag_index(flag)?;
