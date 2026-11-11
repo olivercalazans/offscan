@@ -23,7 +23,7 @@ use super::consts::*;
 
 
 
-pub fn set_link_up(ifindex: i32, up: bool) -> io::Result<()> {
+pub(super) fn set_link_up(ifindex: i32, up: bool) -> io::Result<()> {
     let mut c = NlConn::new(NETLINK_ROUTE)?;
 
     let mut ifinfo = vec![0u8; 16];

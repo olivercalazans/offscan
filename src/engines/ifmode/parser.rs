@@ -22,7 +22,7 @@ use crate::argparser::{ArgParser, Argument};
 
 impl IfaceMode {
 
-    pub(super) fn parse_iface_flag(parser: &mut ArgParser) -> bool {
+    pub(super) fn parse_iface_flag(parser: &mut ArgParser) -> Iface {
         let arg = Argument{
             short: "-i", long: "--iface", required: true,
         };

@@ -25,9 +25,6 @@ pub const NL80211_ATTR_IFINDEX: u16 = 3;
 pub const NL80211_ATTR_IFNAME: u16 = 4;
 pub const NL80211_ATTR_IFTYPE: u16 = 5;
 
-pub const NL80211_IFTYPE_MANAGED: u32 = 2;
-pub const NL80211_IFTYPE_MONITOR: u32 = 6;
-
 pub const RTM_NEWLINK: u16 = 16;
 pub const IFF_UP: u32 = 0x1;
 

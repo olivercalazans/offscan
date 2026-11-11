@@ -15,11 +15,9 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-use std::fs;
-use std::io;
+use std::{fs, io};
 use std::net::Ipv4Addr;
 use std::path::Path;
-
 use rustix::ioctl::ioctl;
 use rustix::net::{socket, AddressFamily, SocketType};
 
@@ -65,10 +63,27 @@ pub struct Iface {
 
 impl Iface {
 
-    pub fn new(iface_name: &str) -> Self {
+    pub fn new(iface: &str) -> Self {
         Self {
-            iface: iface_name.to_string(),
+            iface: iface.to_string(),
         }
+    }
+
+
+
+    pub fn name(&self) -> &str {
+        &self.iface
+    }
+
+
+
+    pub fn index(&self) -> io::Result<i32> {
+        let path = format!("/sys/class/net/{}/ifindex", &self.iface);
+        let data = fs::read_to_string(&path)?;
+
+        data.trim()
+            .parse::<i32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
 

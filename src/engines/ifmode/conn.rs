@@ -28,9 +28,9 @@ use super::consts::*;
 
 
 
-pub struct NlConn {
-    pub(crate) fd: OwnedFd,
-    pub(crate) seq: u32,
+pub(super) struct NlConn {
+    pub fd: OwnedFd,
+    pub seq: u32,
 }
 
 
@@ -87,13 +87,13 @@ impl NlConn {
             while offset + 16 <= n {
                 let msg_len =
                     u32::from_le_bytes(buf[offset..offset + 4].try_into().unwrap()) as usize;
+                
                 if msg_len < 16 || offset + msg_len > n {
                     break;
                 }
-                let msg_type =
-                    u16::from_le_bytes(buf[offset + 4..offset + 6].try_into().unwrap());
-                let msg_seq =
-                    u32::from_le_bytes(buf[offset + 8..offset + 12].try_into().unwrap());
+                
+                let msg_type = u16::from_le_bytes(buf[offset + 4..offset + 6].try_into().unwrap());
+                let msg_seq = u32::from_le_bytes(buf[offset + 8..offset + 12].try_into().unwrap());
                 let data = &buf[offset + 16..offset + msg_len];
 
                 let aligned = align4(msg_len);
@@ -111,20 +111,25 @@ impl NlConn {
                         if data.len() < 4 {
                             return Err(io::Errno::INVAL.into());
                         }
+
                         let code = i32::from_le_bytes(data[0..4].try_into().unwrap());
                         if code == 0 {
                             return Ok(None);
                         }
+                        
                         return Err(io::Errno::from_raw_os_error(-code).into());
                     }
+
                     NLMSG_DONE => return Ok(None),
                     _ => {
                         if skip_genl {
                             if data.len() < 4 {
                                 return Err(io::Errno::INVAL.into());
                             }
+                        
                             return Ok(Some(data[4..].to_vec()));
                         }
+                        
                         return Ok(Some(data.to_vec()));
                     }
                 }

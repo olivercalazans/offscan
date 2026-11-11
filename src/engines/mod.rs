@@ -16,4 +16,3 @@
  */
 
 pub mod ifmode;
-pub use ifmode::run;

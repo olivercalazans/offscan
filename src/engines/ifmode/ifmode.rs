@@ -18,17 +18,21 @@
 #[path = "parser.rs"]
 mod parser;
 
+#[path = "getters.rs"]
+mod getters;
+
 use std::process;
 use crate::argparser::ArgParser;
+use crate::common::abort;
 use crate::models::Iface;
-
 use super::nl80211::Nl80211;
 use super::rtnetlink::set_link_up;
-use super::sysfs::{ifindex_from_name, phy_index};
+
 
 
 pub fn run(args:Vec<String>) {
     let ifmode = IfaceMode::new(args);
+    ifmode.execute();
 }
 
 
@@ -52,54 +56,68 @@ impl IfaceMode {
             man   : Self::parse_managed_flag(&mut parser),
         }
     }
-}
 
 
-fn switch_mode(iface: &str, iface_index: i32, iftype: u32, label: &str) {
-    let wiphy = match phy_index(iface) {
-        Ok(w) => w,
-        Err(e) => {
-            eprintln!("Unable to resolve phy for {}: {}", iface, e);
-            process::exit(1);
-        }
-    };
 
-    let mut dev = match Nl80211::new() {
-        Ok(d) => d,
-        Err(e) => {
-            eprintln!("Unable to open nl80211 socket: {}", e);
-            process::exit(1);
-        }
-    };
+    fn execute(&self) {
+        let phy = self.get_phy();
+        let mut dev = self.open_nl80211_socket();
 
-    if let Err(e) = set_link_up(iface_index, false) {
-        eprintln!("Unable to set interface {} down: {}", iface, e);
-        process::exit(1);
+        self.set_iface_down();
+        self.delete_iface(&mut dev);
+        self.create_iface(&mut dev, phy);
+        self.set_iface_up();
     }
 
-    if let Err(e) = dev.delete_interface(iface_index) {
-        eprintln!("Unable to delete interface {}: {}", iface, e);
-        process::exit(1);
+
+
+    fn open_nl80211_socket(&self) -> Nl80211 {
+        let dev = Nl80211::new()
+            .unwrap_or_else(|e|
+                abort(&format!("Unable to open nl80211 socket: {}", e))
+            );
+
+        dev
     }
 
-    if let Err(e) = dev.create_interface(wiphy, iface, iftype) {
-        eprintln!(
-            "Unable to create interface {} on {} mode: {}",
-            iface, label, e
-        );
-        process::exit(1);
+
+
+    fn set_iface_down(&self) {
+        let index = self.get_index();
+
+        if let Err(e) = set_link_up(index, false) {
+            abort(&format!("Unable to set interface {} down: {}", self.iface.name(), e));
+        }
     }
 
-    match ifindex_from_name(iface) {
-        Ok(new_idx) => {
-            if let Err(e) = set_link_up(new_idx, true) {
-                eprintln!("Unable to set interface {} up: {}", iface, e);
-                process::exit(1);
-            }
-        }
-        Err(e) => {
-            eprintln!("Unable to resolve new ifindex for {}: {}", iface, e);
-            process::exit(1);
+
+
+    fn delete_iface(&self, dev: &mut Nl80211) {
+        let index = self.get_index();
+
+        if let Err(e) = dev.delete_interface(index) {
+            abort(&format!("Unable to delete interface {}: {}", self.iface.name(), e));
         }
     }
+
+
+
+    fn create_iface(&self, dev: &mut Nl80211, phy: i32) {
+        if let Err(e) = dev.create_interface(phy, self.iface.name(), self.get_mode()) {
+            abort(&format!(
+                "Unable to create interface {} on {} mode: {}", self.iface.name(), self.get_label(), e)
+            );
+        }
+    }
+
+
+
+    fn set_iface_up(&self) {
+        let index = self.get_index();
+
+        if let Err(e) = set_link_up(index, true) {
+            abort(&format!("Unable to set interface {} up: {}", self.iface.name(), e));
+        }
+    }
+
 }
