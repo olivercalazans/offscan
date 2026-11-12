@@ -19,14 +19,20 @@ use std::net::Ipv4Addr;
 use super::{MacAddr, PacketDissector};
 
 impl<'a> PacketDissector<'a> {
+
+    #[inline]
     pub fn is_arp_reply(&self) -> bool {
         self.is_arp_reply
     }
 
+
+    #[inline]
     pub fn is_arp_request(&self) -> bool {
         self.is_arp_request
     }
 
+
+    #[inline]
     pub fn is_arp(&mut self) -> bool {
         if self.pkt.len() < 42 {
             return false;
@@ -40,6 +46,8 @@ impl<'a> PacketDissector<'a> {
         true
     }
 
+
+    #[inline]
     fn check_arp_opcode(&mut self) {
         let op_code = ((self.pkt[20] as u16) << 8) | (self.pkt[21] as u16);
 
@@ -47,6 +55,8 @@ impl<'a> PacketDissector<'a> {
         self.is_arp_reply = op_code == 2;
     }
 
+
+    #[inline]
     pub fn get_arp_src_ip(&self) -> Option<Ipv4Addr> {
         if self.pkt.len() < 32 {
             return None;
@@ -57,6 +67,8 @@ impl<'a> PacketDissector<'a> {
         Some(Ipv4Addr::from(ip))
     }
 
+
+    #[inline]
     pub fn get_arp_src_mac(&self) -> Option<MacAddr> {
         if self.pkt.len() < 28 {
             return None;
@@ -66,4 +78,5 @@ impl<'a> PacketDissector<'a> {
         mac.copy_from_slice(&self.pkt[22..28]);
         Some(mac)
     }
+    
 }

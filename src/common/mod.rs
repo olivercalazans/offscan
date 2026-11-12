@@ -17,3 +17,6 @@
 
 pub mod abort;
 pub use abort::abort;
+
+pub mod err;
+pub use err::CustomErr;

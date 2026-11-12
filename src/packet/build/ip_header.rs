@@ -53,6 +53,7 @@ impl IpHeader {
     }
 
 
+    #[inline]
     pub fn set_len(&mut self, layer4_len: u16) {
         let total = (LEN_IP_HDR as u16) + layer4_len;
         self.header[2..4].copy_from_slice(&total.to_be_bytes());
@@ -80,6 +81,7 @@ impl IpHeader {
     }
 
 
+    #[inline]
     pub fn calculate_checksum(&mut self) {
         self.header[10..12].copy_from_slice(&[0, 0]);
         let ck = self.checksum();
@@ -87,6 +89,7 @@ impl IpHeader {
     }
 
 
+    #[inline]
     fn checksum(&self) -> u16 {
         let mut sum: u32 = 0;
         let mut i = 0;
@@ -108,16 +111,19 @@ impl IpHeader {
     }
 
 
+    #[inline]
     pub fn set_src_ip(&mut self, src_ip: Ipv4Addr) {
         self.header[12..16].copy_from_slice(&src_ip.octets());
     }
 
 
+    #[inline]
     pub fn set_dst_ip(&mut self, dst_ip: Ipv4Addr) {
         self.header[16..20].copy_from_slice(&dst_ip.octets());
     }
 
 
+    #[inline]
     pub fn as_bytes(&self) -> &[u8; LEN_IP_HDR] {
         &self.header
     }

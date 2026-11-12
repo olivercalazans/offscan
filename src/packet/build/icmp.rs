@@ -15,8 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-const LEN_ICMP_HDR  : usize = 8;
-const LEN_ICMP_TOTAL: usize = 20 + LEN_ICMP_HDR;
+const LEN_ICMP_HDR   : usize = 8;
+const LEN_ICMP_TOTAL : usize = 20 + LEN_ICMP_HDR;
 
 
 
@@ -102,6 +102,7 @@ impl IcmpPacket {
     }
 
 
+    #[inline]
     pub fn pkt(&mut self) -> &[u8] {
         self.ip_header.calculate_checksum();
         self.copy_ip_header();
@@ -110,11 +111,13 @@ impl IcmpPacket {
     }
 
 
+    #[inline]
     fn copy_ip_header(&mut self) {
         self.buffer[..20].copy_from_slice(self.ip_header.as_bytes());
     }
 
 
+    #[inline]
     fn copy_icmp_header(&mut self) {
         self.buffer[20..LEN_ICMP_TOTAL].copy_from_slice(&self.icmp_header);
     }

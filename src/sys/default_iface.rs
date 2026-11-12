@@ -40,6 +40,7 @@ impl Ifreq {
             ifr_name: [0u8; 16],
             ifr_ifru: [0u8; 24],
         };
+
         let bytes = name.as_bytes();
         let len = bytes.len().min(15);
         ifr.ifr_name[..len].copy_from_slice(&bytes[..len]);
@@ -47,13 +48,6 @@ impl Ifreq {
     }
 }
 
-
-pub fn must_default_interface() -> NetworkInterface {
-    default_interface().unwrap_or_else(|err| {
-        eprintln!("{}", err);
-        process::exit(1);
-    })
-}
 
 
 pub fn default_interface() -> Result<NetworkInterface, String> {
@@ -69,7 +63,6 @@ pub fn default_interface() -> Result<NetworkInterface, String> {
         _ => return Err("Failed to resolve local IPv4 address".to_string()),
     };
 
-    // 2. Busca entre as interfaces ativas qual possui o mesmo IP local
     let interfaces = all_ifaces().map_err(|e| format!("Unable to get interface list: {}", e))?;
 
     for iface in interfaces {
@@ -85,34 +78,4 @@ pub fn default_interface() -> Result<NetworkInterface, String> {
     }
 
     Err(format!("No interface found with IP {}", local_ip))
-}
-
-
-fn is_iface_up(ifname: &str) -> bool {
-    let Ok(fd) = socket(AddressFamily::INET, SocketType::DGRAM, None) else {
-        return false;
-    };
-    let mut ifr = Ifreq::new(ifname);
-
-    unsafe {
-        if rustix::io::ioctl(&fd, SIOCGIFFLAGS as _, &mut ifr as *mut _ as *mut _).is_ok() {
-            let flags = u16::from_ne_bytes([ifr.ifr_ifru[0], ifr.ifr_ifru[1]]);
-            return (flags & IFF_UP) != 0;
-        }
-    }
-    false
-}
-
-
-fn get_iface_ipv4(ifname: &str) -> Option<Ipv4Addr> {
-    let fd = socket(AddressFamily::INET, SocketType::DGRAM, None).ok()?;
-    let mut ifr = Ifreq::new(ifname);
-
-    unsafe {
-        if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr as *mut _ as *mut _).is_ok() {
-            let ip_bytes: [u8; 4] = ifr.ifr_ifru[4..8].try_into().ok()?;
-            return Some(Ipv4Addr::from(ip_bytes));
-        }
-    }
-    None
 }

@@ -34,11 +34,13 @@ impl EtherHeader {
     }
 
 
+    #[inline]
     pub fn set_dst_addr(&mut self, dst_mac: &Mac) {
         self.header[0..6].copy_from_slice(&dst_mac.0);
     }
 
 
+    #[inline]
     pub fn set_src_addr(&mut self, src_mac: &Mac) {
         self.header[6..12].copy_from_slice(&src_mac.0);
     }
@@ -50,6 +52,7 @@ impl EtherHeader {
     }
 
 
+    #[inline]
     pub fn as_bytes(&self) -> &[u8; LEN_ETHER_HDR] {
         &self.header
     }

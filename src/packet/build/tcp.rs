@@ -16,8 +16,8 @@
  */
 
 
-const LEN_TCP_HDR  : usize = 20;
-const LEN_TCP_TOTAL: usize = 20 + LEN_TCP_HDR;
+const LEN_TCP_HDR   : usize = 20;
+const LEN_TCP_TOTAL : usize = 20 + LEN_TCP_HDR;
 
 
 pub struct TcpPacket {
@@ -55,11 +55,13 @@ impl TcpPacket {
     }
 
 
+    #[inline]
     pub fn set_src_port(&mut self, src_port: u16) {
         self.tcp_header[0..2].copy_from_slice(&src_port.to_be_bytes());
     }
 
 
+    #[inline]
     pub fn set_dst_port(&mut self, dst_port: u16) {
         self.tcp_header[2..4].copy_from_slice(&dst_port.to_be_bytes());
     }
@@ -95,6 +97,7 @@ impl TcpPacket {
     }
 
 
+    #[inline]
     fn calculate_checksum(&mut self) {
         self.tcp_header[16..18].copy_from_slice(&[0u8, 2]);
         let ck = self.checksum();
@@ -102,6 +105,7 @@ impl TcpPacket {
     }
 
 
+    #[inline]
     fn checksum(&self) -> u16 {
         let mut sum: u32 = self.tcp_sum();
         let mut i = 0;
@@ -123,6 +127,7 @@ impl TcpPacket {
     }
 
 
+    #[inline]
     fn tcp_sum(&self) -> u32 {
         let mut sum: u32 = 0;
         let ip = self.ip_header.as_bytes();
@@ -142,6 +147,7 @@ impl TcpPacket {
     }
 
 
+    #[inline]
     pub fn pkt(&mut self) -> &[u8] {
         self.ip_header.calculate_checksum();
         self.calculate_checksum();
@@ -153,11 +159,13 @@ impl TcpPacket {
     }
 
 
+    #[inline]
     fn copy_ip_header(&mut self) {
         self.buffer[..20].copy_from_slice(self.ip_header.as_bytes());
     }
 
 
+    #[inline]
     fn copy_tcp_header(&mut self) {
         self.buffer[20..LEN_TCP_TOTAL].copy_from_slice(&self.tcp_header);
     }

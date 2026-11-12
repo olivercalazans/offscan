@@ -15,10 +15,16 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
+use std::path::Path;
+use crate::common::CustomErr;
 
-use std::process;
 
-pub fn abort(msg: &str) -> ! {
-    eprintln!("[ ERROR ] {}", msg);
-    process::exit(1);
+pub fn ensure_iface_exists(name: &str) -> Result<(), CustomErr> {
+    let path = Path::new("/sys/class/net").join(name);
+    
+    if !path.exists() {
+        return Err(CustomErr::NotFound(format!("Interface \"{}\" not found", name)));
+    }
+
+    Ok(())
 }

@@ -52,6 +52,7 @@ impl ArpPacket {
     }
 
 
+    #[inline]
     fn set_hardware_type(&mut self) {
         self.arp_header[0..2].copy_from_slice(&0x0001u16.to_be_bytes()); // HTYPE = Ethernet
     }
@@ -72,36 +73,43 @@ impl ArpPacket {
     }
 
 
+    #[inline]
     pub fn set_request_opcode(&mut self) {
         self.arp_header[6..8].copy_from_slice(&0x0001u16.to_be_bytes());
     }
 
-
+    
+    #[inline]
     pub fn set_reply_opcode(&mut self) {
         self.arp_header[6..8].copy_from_slice(&0x0002u16.to_be_bytes());
     }
 
 
+    #[inline]
     pub fn set_sender_mac(&mut self, mac: [u8; 6]) {
         self.arp_header[8..14].copy_from_slice(&mac);
     }
 
 
+    #[inline]
     pub fn set_sender_ip(&mut self, ip: Ipv4Addr) {
         self.arp_header[14..18].copy_from_slice(&ip.octets());
     }
 
 
+    #[inline]
     pub fn set_target_mac(&mut self, mac: [u8; 6]) {
         self.arp_header[18..24].copy_from_slice(&mac);
     }
 
 
+    #[inline]
     pub fn set_target_ip(&mut self, ip: Ipv4Addr) {
         self.arp_header[24..28].copy_from_slice(&ip.octets());
     }
 
 
+    #[inline]
     pub fn pkt(&mut self) -> &[u8] {
         self.copy_ether_header();
         self.copy_arp_header();
@@ -109,11 +117,13 @@ impl ArpPacket {
     }
 
 
+    #[inline]
     fn copy_ether_header(&mut self) {
         self.buffer[..14].copy_from_slice(self.ether_header.as_bytes());
     }
 
 
+    #[inline]
     fn copy_arp_header(&mut self) {
         self.buffer[14..LEN_ARP_TOTAL].copy_from_slice(&self.arp_header);
     }

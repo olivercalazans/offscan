@@ -16,7 +16,7 @@
  */
 
 
-use crate::internal::models::Mac;
+use crate::internal::models::MAC;
 
 
 const LEN_DEAUTH_FRAME: usize = 38;
@@ -61,27 +61,32 @@ impl Deauth {
     }
 
 
+    #[inline]
     pub fn set_dst_addr(&mut self, addr: Mac) {
         self.buffer[16..22].copy_from_slice(&addr);
     }
 
 
+    #[inline]
     pub fn set_src_addr(&mut self, addr: Mac) {
         self.buffer[22..28].copy_from_slice(&addr);
     }
 
 
+    #[inline]
     pub fn set_bssid(&mut self, bssid: Mac) {
         self.buffer[28..34].copy_from_slice(&bssid);
     }
 
 
+    #[inline]
     pub fn set_seq_ctrl(&mut self, seq: u16) {
         let seq_ctrl: u16 = (seq & 0x0FFF) << 4;
         self.buffer[34..36].copy_from_slice(&seq_ctrl.to_le_bytes());
     }
 
 
+    #[inline]
     pub fn frame(&self) -> &[u8] {
         &self.buffer
     }

@@ -18,7 +18,11 @@
 use crate::models::MAC;
 use super::Dot11Dissector;
 
+
+
 impl<'a> Dot11Dissector<'a> {
+
+    #[inline]
     pub(crate) fn check_if_is_data_frame(&mut self) -> bool {
         if self.frame.len() < 24 {
             return false;
@@ -35,6 +39,8 @@ impl<'a> Dot11Dissector<'a> {
         true
     }
 
+
+    #[inline]
     pub fn get_addrs(&self) -> (MAC, MAC, bool) {
         let (to_ds, from_ds) = self.get_ds_flags();
 
@@ -54,6 +60,8 @@ impl<'a> Dot11Dissector<'a> {
         }
     }
 
+
+    #[inline]
     pub fn get_ds_flags(&self) -> (bool, bool) {
         if self.frame.len() < 2 {
             return (false, false);
@@ -66,6 +74,8 @@ impl<'a> Dot11Dissector<'a> {
         (to_ds == 1, from_ds == 1)
     }
 
+
+    #[inline]
     pub fn get_addr1(&self) -> MAC {
         let mut addr = [0u8; 6];
         if self.frame.len() >= 10 {
@@ -74,6 +84,8 @@ impl<'a> Dot11Dissector<'a> {
         addr
     }
 
+
+    #[inline]
     pub fn get_addr2(&self) -> MAC {
         let mut addr = [0u8; 6];
         if self.frame.len() >= 16 {
@@ -83,6 +95,8 @@ impl<'a> Dot11Dissector<'a> {
     }
 }
 
+
+#[inline]
 pub fn is_valid(mac: &MAC) -> bool {
     // Multicast IPv4
     if mac[0] == 0x01 && mac[1] == 0x00 {

@@ -20,6 +20,8 @@ use super::{MacAddr, PacketDissector};
 
 
 impl<'a> PacketDissector<'a> {
+
+    #[inline]
     pub fn get_ether_src_mac(&self) -> Option<MacAddr> {
         if self.pkt.len() < 12 {
             return None;
@@ -30,6 +32,8 @@ impl<'a> PacketDissector<'a> {
         Some(mac)
     }
 
+
+    #[inline]
     pub(super) fn get_ether_type(&self) -> u16 {
         if self.pkt.len() < 14 {
             return 0;
@@ -37,4 +41,5 @@ impl<'a> PacketDissector<'a> {
 
         ((self.pkt[12] as u16) << 8) | (self.pkt[13] as u16)
     }
+    
 }

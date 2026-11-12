@@ -18,27 +18,31 @@
  
 #[derive(Debug, Default, Clone)]
 pub struct Dot11Dissector<'a> {
-    pub frame: &'a [u8],
-    pub ssid_data: &'a [u8], // IE 0x00
-    pub ds_param: &'a [u8],  // IE 0x03 (channel)
-    pub rsn: &'a [u8],       // IE 0x30 (WPA2)
-    pub ht_cap: &'a [u8],    // IE 0x2D (802.11n)
-    pub vht_cap: &'a [u8],   // IE 0xBF (802.11ac)
-    pub he_cap: &'a [u8],    // IE 0xFF (802.11ax)
-    pub ht_info: &'a [u8],   // IE 0x3D (802.11n)
-    pub vht_ops: &'a [u8],   // IE 0xC0 (802.11ac)
-    pub wpa1_data: &'a [u8], // IE 0xDD (Vendor Specific - WPA1)
-    pub wps_data: &'a [u8],  // IE 0xDD (Vendor Specific - WPS)
-    pub timestamp: u64,
-    pub is_beacon: bool,
-    pub is_data_frm: bool,
+    pub frame       : &'a [u8],
+    pub ssid_data   : &'a [u8], // IE 0x00
+    pub ds_param    : &'a [u8], // IE 0x03 (channel)
+    pub rsn         : &'a [u8], // IE 0x30 (WPA2)
+    pub ht_cap      : &'a [u8], // IE 0x2D (802.11n)
+    pub vht_cap     : &'a [u8], // IE 0xBF (802.11ac)
+    pub he_cap      : &'a [u8], // IE 0xFF (802.11ax)
+    pub ht_info     : &'a [u8], // IE 0x3D (802.11n)
+    pub vht_ops     : &'a [u8], // IE 0xC0 (802.11ac)
+    pub wpa1_data   : &'a [u8], // IE 0xDD (Vendor Specific - WPA1)
+    pub wps_data    : &'a [u8], // IE 0xDD (Vendor Specific - WPS)
+    pub timestamp   : u64,
+    pub is_beacon   : bool,
+    pub is_data_frm : bool,
 }
 
+
 impl<'a> Dot11Dissector<'a> {
+
     pub fn new() -> Self {
         Self::default()
     }
 
+
+    #[inline]
     pub fn update_pkt(&mut self, frame: &'a [u8]) {
         self.frame = frame;
         self.reset();
@@ -49,6 +53,8 @@ impl<'a> Dot11Dissector<'a> {
         }
     }
 
+
+    #[inline]
     pub fn reset(&mut self) {
         self.is_beacon = false;
         self.is_data_frm = false;
@@ -65,6 +71,8 @@ impl<'a> Dot11Dissector<'a> {
         self.vht_ops = &[];
     }
 
+
+    #[inline]
     pub fn remove_radiotap(&mut self) {
         if self.frame.len() < 4 || self.frame[0] != 0x00 {
             return;
@@ -76,6 +84,8 @@ impl<'a> Dot11Dissector<'a> {
         }
     }
 
+
+    #[inline]
     pub fn check_frame_type(&mut self) {
         if self.check_if_is_beacon() {
             return;
@@ -85,6 +95,8 @@ impl<'a> Dot11Dissector<'a> {
         }
     }
 
+
+    #[inline]
     pub fn cache_ies(&mut self) {
         let len_frm = self.frame.len();
 

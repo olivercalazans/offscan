@@ -15,18 +15,20 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-pub type MacAddr = [u8; 6];
+
+
 
 pub struct PacketDissector<'a> {
-    pub pkt: &'a [u8],
-    pub is_ipv4: bool,
-    pub is_arp_reply: bool,
-    pub is_arp_request: bool,
-    pub is_dhcp: bool,
+    pub pkt            : &'a [u8],
+    pub is_ipv4        : bool,
+    pub is_arp_reply   : bool,
+    pub is_arp_request : bool,
+    pub is_dhcp        : bool,
 }
 
 
 impl<'a> PacketDissector<'a> {
+
     pub fn new() -> Self {
         Self {
             pkt: &[],
@@ -37,11 +39,15 @@ impl<'a> PacketDissector<'a> {
         }
     }
 
+
+    #[inline]
     pub fn update_pkt(&mut self, raw_pkt: &'a [u8]) {
         self.pkt = raw_pkt;
         self.reset_flags();
     }
 
+
+    #[inline]
     fn reset_flags(&mut self) {
         self.is_ipv4 = false;
         self.is_arp_reply = false;

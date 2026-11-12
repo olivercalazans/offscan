@@ -70,22 +70,26 @@ impl Beacon {
     }
 
 
+    #[inline]
     pub fn set_src_addr(&mut self, mac: [u8; 6]) {
         self.buffer[22..28].copy_from_slice(&mac);
     }
 
 
+    #[inline]
     pub fn set_bssid(&mut self, bssid: [u8; 6]) {
         self.buffer[28..34].copy_from_slice(&bssid);
     }
 
 
+    #[inline]
     pub fn set_seq_ctrl(&mut self, seq: u16) {
         let seq_ctrl: u16 = (seq & 0x0FFF) << 4;
         self.buffer[34..36].copy_from_slice(&seq_ctrl.to_le_bytes());
     }
 
 
+    #[inline]
     fn set_timestamp(&mut self) {
         let ts = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -101,11 +105,22 @@ impl Beacon {
     }
 
 
+    pub fn set_body_info(&mut self, ssid: &[u8], chnl: u8) {
+        self.set_ssid(ssid);
+        self.set_rates();
+        self.set_chnl(chnl);
+        self.set_tim();
+        self.sec_offset = self.offset;
+    }
+
+
+    #[inline]
     fn set_cap_info(&mut self, sec_flags: [u8; 2]) {
         self.buffer[46..48].copy_from_slice(&sec_flags);
     }
 
 
+    #[inline]
     fn set_ssid(&mut self, ssid: &[u8]) {
         let ssid_len = ssid.len();
         self.offset = 48;
@@ -121,6 +136,7 @@ impl Beacon {
     }
 
 
+    #[inline]
     fn set_rates(&mut self) {
         self.buffer[self.offset] = 0x01;   // Supported Rates element ID
         self.offset += 1;
@@ -137,6 +153,7 @@ impl Beacon {
     }
 
 
+    #[inline]
     fn set_chnl(&mut self, chnl: u8) {
         self.buffer[self.offset] = 0x03;   // DS Parameter Set element ID
         self.offset += 1;
@@ -149,6 +166,7 @@ impl Beacon {
     }
 
 
+    #[inline]
     fn set_tim(&mut self) {
         self.buffer[self.offset] = 0x05;   // TIM element ID
         self.offset += 1;
@@ -162,6 +180,7 @@ impl Beacon {
     }
 
 
+    #[inline]
     pub fn set_sec(&mut self, sec: &str) {
         self.offset = self.sec_offset;
 
@@ -180,6 +199,7 @@ impl Beacon {
     }
 
 
+    #[inline]
     fn set_ext_supp_rates(&mut self) {
         self.buffer[self.offset] = 0x32;   // Extended Supported Rates element ID
         self.offset += 1;
@@ -193,15 +213,7 @@ impl Beacon {
     }
 
 
-    pub fn set_body_info(&mut self, ssid: &[u8], chnl: u8) {
-        self.set_ssid(ssid);
-        self.set_rates();
-        self.set_chnl(chnl);
-        self.set_tim();
-        self.sec_offset = self.offset;
-    }
-
-
+    #[inline]
     pub fn beacon(&mut self) -> &[u8] {
         self.set_timestamp();
         &self.buffer[..self.offset]
@@ -217,7 +229,7 @@ impl Default for Beacon {
 }
 
 
-// ──────────────────────────────────────────────────────────────────────
+#[inline]
 fn get_sec_data(sec: &str) -> ([u8; 2], [u8; 30], usize) {
     match sec {
         "open" => {

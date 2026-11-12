@@ -20,7 +20,10 @@ use crate::models::{
 };
 use super::Dot11Dissector;
 
+
 impl<'a> Dot11Dissector<'a> {
+
+    #[inline]
     pub(crate) fn check_if_is_beacon(&mut self) -> bool {
         if self.frame.len() < 24 {
             return false;
@@ -35,6 +38,8 @@ impl<'a> Dot11Dissector<'a> {
         false
     }
 
+
+    #[inline]
     pub fn get_timestamp(&self) -> Uptime {
         if !self.is_beacon {
             return Uptime::default();
@@ -52,6 +57,8 @@ impl<'a> Dot11Dissector<'a> {
         Uptime { days, hours }
     }
 
+
+    #[inline]
     pub fn get_bssid(&self) -> BSSID {
         let mut bssid = [0u8; 6];
         if !self.is_beacon || self.frame.len() < 24 {
@@ -61,6 +68,8 @@ impl<'a> Dot11Dissector<'a> {
         bssid
     }
 
+
+    #[inline]
     pub fn get_ssid(&self) -> SSID {
         let mut ssid = SSID::default();
 
@@ -78,6 +87,8 @@ impl<'a> Dot11Dissector<'a> {
         ssid
     }
 
+
+    #[inline]
     pub fn get_channel(&self) -> u8 {
         if !self.is_beacon {
             return 0;
@@ -94,6 +105,8 @@ impl<'a> Dot11Dissector<'a> {
         0
     }
 
+
+    #[inline]
     pub fn get_security(&self) -> WifiSec {
         let mut sec = WifiSec::default();
 
@@ -131,6 +144,8 @@ impl<'a> Dot11Dissector<'a> {
         sec
     }
 
+
+    #[inline]
     pub fn get_standard(&self) -> WifiStd {
         if !self.is_beacon {
             return WifiStd::StdUnknown;
@@ -156,6 +171,9 @@ impl<'a> Dot11Dissector<'a> {
     }
 }
 
+
+
+#[inline]
 fn parse_rsn(data: &[u8]) -> WifiSec {
     let mut sec = WifiSec {
         sec_type: SecType::WPA,
@@ -196,6 +214,8 @@ fn parse_rsn(data: &[u8]) -> WifiSec {
     sec
 }
 
+
+#[inline]
 fn parse_wpa1(data: &[u8]) -> WifiSec {
     let mut sec = WifiSec {
         sec_type: SecType::WPA,
@@ -241,6 +261,8 @@ fn parse_wpa1(data: &[u8]) -> WifiSec {
     sec
 }
 
+
+#[inline]
 fn decode_cipher(suite: &[u8]) -> SecurityCipher {
     if suite.len() < 4 || suite[0] != 0x00 || suite[1] != 0x0F || suite[2] != 0xAC {
         return SecurityCipher::CipherNone;
@@ -258,10 +280,13 @@ fn decode_cipher(suite: &[u8]) -> SecurityCipher {
     }
 }
 
+
+#[inline]
 fn decode_akm(suite: &[u8]) -> SecurityAuth {
     if suite.len() < 4 || suite[0] != 0x00 || suite[1] != 0x0F || suite[2] != 0xAC {
         return SecurityAuth::AuthNone;
     }
+
     match suite[3] {
         1 | 3 | 5 | 7 | 11 | 12 | 13 | 14 | 15 | 16 | 17 => SecurityAuth::AuthMGT,
         2 | 4 | 6 => SecurityAuth::AuthPSK,

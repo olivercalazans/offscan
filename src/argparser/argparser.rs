@@ -24,9 +24,10 @@ mod slice_mgr;
 #[path = "err_display.rs"] 
 mod err_display;
 
-use std::io;
+use std::{io, result};
+use std::iter::FilterMap;
 use std::net::Ipv4Addr;
-use crate::common::abort;
+use crate::common::{CustomErr, abort};
 use crate::models::{Iface, MAC};
 
 
@@ -114,16 +115,11 @@ impl ArgParser {
 
 
 
-    pub fn iface(&mut self, arg: &Argument) -> io::Result<Iface> {
-        let (has_long, ok) = self.verify_if_has_flags(arg);
+    pub fn iface(&mut self, arg: &Argument) -> Result<Iface, CustomErr> {
+        let result = self.verify_if_has_flags(arg)?;
+        let str_val = self.get_value(arg, result);
 
-        if !ok {
-            return Err(io::Error::from(io::ErrorKind::NotFound));
-        }
-
-        let str_val = self.get_value(arg, has_long);
-
-        Ok(Iface::new(&str_val))
+        Iface::new(&str_val)
     }
 
 

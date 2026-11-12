@@ -18,13 +18,18 @@
 use crate::models::WPSInfo;
 use super::Dot11Dissector;
 
-const ATTR_VERSION: u16 = 0x104A;
-const ATTR_WPS_STATE: u16 = 0x1044;
-const ATTR_AP_SETUP_LOCKED: u16 = 0x1057;
-const ATTR_SELECTED_REGISTRAR: u16 = 0x1053;
-const ATTR_VENDOR_EXTENSION: u16 = 0x1049;
+
+const ATTR_VERSION            : u16 = 0x104A;
+const ATTR_WPS_STATE          : u16 = 0x1044;
+const ATTR_AP_SETUP_LOCKED    : u16 = 0x1057;
+const ATTR_SELECTED_REGISTRAR : u16 = 0x1053;
+const ATTR_VENDOR_EXTENSION   : u16 = 0x1049;
+
+
 
 impl<'a> Dot11Dissector<'a> {
+
+    #[inline]
     pub fn get_wps(&self) -> WPSInfo {
         if self.wps_data.is_empty() {
             return WPSInfo::default();
@@ -33,6 +38,8 @@ impl<'a> Dot11Dissector<'a> {
         self.parse_wps()
     }
 
+    
+    #[inline]
     fn parse_wps(&self) -> WPSInfo {
         let mut info = WPSInfo::default();
 
@@ -87,6 +94,8 @@ impl<'a> Dot11Dissector<'a> {
     }
 }
 
+
+#[inline]
 fn check_vendor_ext(l: usize, val: &[u8]) -> u8 {
     if l < 3 || &val[..3] != [0x00, 0x37, 0x2A] {
         return 0;

@@ -20,8 +20,9 @@ use std::net::Ipv4Addr;
 use std::path::Path;
 use rustix::ioctl::ioctl;
 use rustix::net::{socket, AddressFamily, SocketType};
-
+use crate::common::CustomErr;
 use crate::models::MAC;
+use crate::sys::ensure_iface_exists;
 
 
 
@@ -63,16 +64,26 @@ pub struct Iface {
 
 impl Iface {
 
-    pub fn new(iface: &str) -> Self {
-        Self {
-            iface: iface.to_string(),
-        }
+    pub fn new(iface: &str) -> Result<Iface, CustomErr> {
+        ensure_iface_exists(iface)?;
+        Ok(Self { iface: iface.to_string() })
     }
 
 
 
     pub fn name(&self) -> &str {
         &self.iface
+    }
+
+
+
+    pub fn phy_index(&self) -> io::Result<i32> {
+        let path = format!("/sys/class/net/{}/phy80211/index", &self.iface);
+        let data = fs::read_to_string(&path)?;
+
+        data.trim()
+            .parse::<i32>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
 
@@ -88,13 +99,97 @@ impl Iface {
 
 
 
-    pub fn phy_index(&self) -> io::Result<i32> {
-        let path = format!("/sys/class/net/{}/phy80211/index", &self.iface);
-        let data = fs::read_to_string(&path)?;
+    pub fn if_type(&self) -> String {
+        if self.is_wireless() {
+            return "Wireless".to_string();
+        }
 
-        data.trim()
-            .parse::<i32>()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        let path = format!("/sys/class/net/{}/type", &self.iface);
+        let Ok(data) = fs::read_to_string(path) else {
+            return "Unknown".to_string();
+        };
+
+        match data.trim() {
+            "1" => "Ethernet".to_string(),
+            "772" => "Loopback".to_string(),
+            other => format!("Type-{}", other),
+        }
+    }
+
+
+
+    pub fn is_wireless(&self) -> bool {
+        let path = format!("/sys/class/net/{}/wireless", &self.iface);
+        Path::new(&path).exists()
+    }
+
+
+
+    pub fn state(&self) -> Result<String, io::Error> {
+        let path = format!("/sys/class/net/{}/operstate", &self.iface);
+        let data = fs::read_to_string(path)?;
+        Ok(data.trim().to_uppercase())
+    }
+
+
+
+    pub fn ipv4(&self) -> Result<Ipv4Addr, io::Error> {
+        let fd = socket(AddressFamily::INET, SocketType::DGRAM, None)?;
+        let mut ifr = Ifreq::new(&self.iface);
+
+        unsafe {
+            if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr as *mut _ as *mut _).is_err() {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("no IPv4 address found on interface {}", self.iface),
+                ));
+            }
+        }
+
+        let ip_bytes: [u8; 4] = ifr.ifr_ifru[4..8].try_into().map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "Invalid IP address structure")
+        })?;
+
+        Ok(Ipv4Addr::from(ip_bytes))
+    }
+
+
+
+    pub fn cidr(&self) -> Result<String, io::Error> {
+        let fd = socket(AddressFamily::INET, SocketType::DGRAM, None)?;
+
+        let mut ifr_addr = Ifreq::new(&self.iface);
+        let mut ifr_mask = Ifreq::new(&self.iface);
+
+        unsafe {
+            if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr_addr as *mut _ as *mut _).is_err() {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("No IPv4 address found for interface {}", self.iface),
+                ));
+            }
+
+            if rustix::io::ioctl(&fd, SIOCGIFNETMASK as _, &mut ifr_mask as *mut _ as *mut _).is_err() {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("No netmask found for interface {}", self.iface),
+                ));
+            }
+        }
+
+        let ip_bytes: [u8; 4] = ifr_addr.ifr_ifru[4..8].try_into().map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "Invalid IP address structure")
+        })?;
+
+        let mask_bytes: [u8; 4] = ifr_mask.ifr_ifru[4..8].try_into().map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "Invalid Netmask structure")
+        })?;
+
+        let ip = Ipv4Addr::from(ip_bytes);
+        let mask_u32 = u32::from_be_bytes(mask_bytes);
+        let prefix = mask_u32.count_ones();
+
+        Ok(format!("{}/{}", ip, prefix))
     }
 
     
@@ -204,101 +299,6 @@ impl Iface {
         }
 
         Ok(bytes)
-    }
-
-
-
-    pub fn ipv4(&self) -> Result<Ipv4Addr, io::Error> {
-        let fd = socket(AddressFamily::INET, SocketType::DGRAM, None)?;
-        let mut ifr = Ifreq::new(&self.iface);
-
-        unsafe {
-            if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr as *mut _ as *mut _).is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("no IPv4 address found on interface {}", self.iface),
-                ));
-            }
-        }
-
-        let ip_bytes: [u8; 4] = ifr.ifr_ifru[4..8].try_into().map_err(|_| {
-            io::Error::new(io::ErrorKind::InvalidData, "Invalid IP address structure")
-        })?;
-
-        Ok(Ipv4Addr::from(ip_bytes))
-    }
-
-
-
-    pub fn cidr(&self) -> Result<String, io::Error> {
-        let fd = socket(AddressFamily::INET, SocketType::DGRAM, None)?;
-
-        let mut ifr_addr = Ifreq::new(&self.iface);
-        let mut ifr_mask = Ifreq::new(&self.iface);
-
-        unsafe {
-            if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr_addr as *mut _ as *mut _).is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("No IPv4 address found for interface {}", self.iface),
-                ));
-            }
-
-            if rustix::io::ioctl(&fd, SIOCGIFNETMASK as _, &mut ifr_mask as *mut _ as *mut _).is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("No netmask found for interface {}", self.iface),
-                ));
-            }
-        }
-
-        let ip_bytes: [u8; 4] = ifr_addr.ifr_ifru[4..8].try_into().map_err(|_| {
-            io::Error::new(io::ErrorKind::InvalidData, "Invalid IP address structure")
-        })?;
-
-        let mask_bytes: [u8; 4] = ifr_mask.ifr_ifru[4..8].try_into().map_err(|_| {
-            io::Error::new(io::ErrorKind::InvalidData, "Invalid Netmask structure")
-        })?;
-
-        let ip = Ipv4Addr::from(ip_bytes);
-        let mask_u32 = u32::from_be_bytes(mask_bytes);
-        let prefix = mask_u32.count_ones();
-
-        Ok(format!("{}/{}", ip, prefix))
-    }
-
-
-
-    pub fn if_type(&self) -> String {
-        if self.is_wireless() {
-            return "Wireless".to_string();
-        }
-
-        let path = format!("/sys/class/net/{}/type", &self.iface);
-        let Ok(data) = fs::read_to_string(path) else {
-            return "Unknown".to_string();
-        };
-
-        match data.trim() {
-            "1" => "Ethernet".to_string(),
-            "772" => "Loopback".to_string(),
-            other => format!("Type-{}", other),
-        }
-    }
-
-
-
-    pub fn is_wireless(&self) -> bool {
-        let path = format!("/sys/class/net/{}/wireless", &self.iface);
-        Path::new(&path).exists()
-    }
-
-
-
-    pub fn state(&self) -> Result<String, io::Error> {
-        let path = format!("/sys/class/net/{}/operstate", &self.iface);
-        let data = fs::read_to_string(path)?;
-        Ok(data.trim().to_uppercase())
     }
 
 }

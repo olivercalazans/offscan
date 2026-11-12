@@ -15,13 +15,15 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
+use crate::common::CustomErr;
+
 use super::{ArgParser, Argument};
 
 
 
 impl ArgParser {
 
-    pub(super) fn get_value(&mut self, arg: &Argument, has_long: bool) -> Option<String> {
+    pub(super) fn get_value(&mut self, arg: &Argument, has_long: bool) -> Result<String, CustomErr> {
         if has_long {
             return self.get_flag_value(arg.long);
         }
@@ -31,19 +33,17 @@ impl ArgParser {
 
     
     
-    pub(super) fn verify_if_has_flags(&mut self, arg: &Argument) -> (bool, bool) {
-        let has_long  = !arg.long.is_empty()  && self.args.iter().any(|a| a == arg.long);
+    pub(super) fn verify_if_has_flags(&mut self, arg: &Argument) -> Result<bool, CustomErr> {
+        let has_long = !arg.long.is_empty() && self.args.iter().any(|a| a == arg.long);
         let has_short = !arg.short.is_empty() && self.args.iter().any(|a| a == arg.short);
 
         if arg.required && !has_long && !has_short {
             self.add_miss_req_flags_warn(arg);
-            return (false, false);
+            return Err(CustomErr::NotFound("Flag not found".to_string()));
         }
 
         if has_long && has_short {
-            self.add_duplicated_warn(arg);
-            self.remove_from_the_list(arg);
-            return (false, false);
+            self.process_duplicated_flag(arg)?;
         }
 
         let mut count = 0;
@@ -55,30 +55,40 @@ impl ArgParser {
         }
 
         if count > 1 {
-            self.add_duplicated_warn(arg);
-            self.remove_from_the_list(arg);
-            return (false, false);
+            self.process_duplicated_flag(arg)?;
         }
 
-        (has_long, has_long || has_short)
+        if !(has_long || has_short) {
+            return Err(CustomErr::NonReq);
+        }
+
+        Ok(has_long)
     }
 
 
 
-    pub(super) fn get_flag_value(&mut self, flag: &str) -> Option<String> {
-        let index_flag = self.get_flag_index(flag)?;
+    fn process_duplicated_flag(&mut self, arg: &Argument) -> Result<bool, CustomErr> {
+        self.add_duplicated_warn(arg);
+        self.remove_from_the_list(arg);
+        return Err(CustomErr::InvalidInput("Duplicated flag".to_string()));
+    }
 
-        let index_value = match self.get_value_index(index_flag) {
+
+
+    pub(super) fn get_flag_value(&mut self, flag: &str) -> Result<String, CustomErr> {
+        let idx_flag = self.get_flag_index(flag).ok_or(CustomErr::MissFlagOrValue)?;
+
+        let idx_value = match self.get_value_index(idx_flag) {
             Some(idx) => idx,
             None => {
                 self.add_missing_value_warn(flag);
-                self.remove_index(index_flag);
+                self.remove_index(idx_flag);
                 return None;
             }
         };
 
-        let value = self.args[index_value].clone();
-        self.remove_flag_and_value(index_flag, index_value);
+        let value = self.args[idx_value].clone();
+        self.remove_flag_and_value(idx_flag, idx_value);
 
         Some(value)
     }

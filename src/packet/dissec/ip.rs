@@ -19,11 +19,15 @@ use std::net::Ipv4Addr;
 use super::PacketDissector;
 
 impl<'a> PacketDissector<'a> {
+
+    #[inline]
     pub fn is_ipv4(&mut self) -> bool {
         self.is_ipv4 = self.pkt.len() >= 34 && self.get_ether_type() == 0x0800;
         self.is_ipv4
     }
 
+
+    #[inline]
     pub fn get_src_ip(&self) -> Option<Ipv4Addr> {
         if self.pkt.len() < 30 || !self.is_ipv4 {
             return None;
@@ -33,4 +37,5 @@ impl<'a> PacketDissector<'a> {
         ip.copy_from_slice(&self.pkt[26..30]);
         Some(Ipv4Addr::from(ip))
     }
+    
 }
