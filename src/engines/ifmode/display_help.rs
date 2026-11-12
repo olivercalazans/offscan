@@ -17,11 +17,13 @@
 
 
 pub fn display_help() {
-    let help = "\n### INTERFACE MODE\n\n".to_string() + 
-	           "    E.g., $ sudo ./offscan ifmode <FLAGS>\n\n" +
-	           "    -i, --iface : (Required) Interface\n" +
-	           "        --man   : (Option)   Set interface on maneged mode\n" +
-	           "        --mon   : (Option)   Set interface on monitor mode\n";
+    const HELP: &str = concat!(
+		"\n### INTERFACE MODE\n\n",
+	    "    E.g., $ sudo ./offscan ifmode <FLAGS>\n\n",
+	    "    -i, --iface : (Required) Interface\n",
+	    "        --man   : (Option)   Set interface on maneged mode\n",
+	    "        --mon   : (Option)   Set interface on monitor mode\n",
+	);
     
-    println!("{}", help)
+    println!("{HELP}")
 }

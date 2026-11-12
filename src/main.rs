@@ -33,17 +33,17 @@ fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
 
     if args.is_empty() {
-        abort("[-] Error: No input found");
+        abort("No input found");
     }
 
     let mut registry: BTreeMap<String, CommandHandler> = BTreeMap::new();
 
     registry.insert(
-        "ifmode".to_string(),
-        CommandHandler {
-            run: ifmode::run,
-            helper: ifmode::display_help,
-        },
+        "fwd".to_string(),CommandHandler { run: fwd::run, helper: fwd::display_help },
+    );
+
+    registry.insert(
+        "ifmode".to_string(), CommandHandler { run: ifmode::run, helper: ifmode::display_help },
     );
 
     display_header();
@@ -59,9 +59,10 @@ fn main() {
         Some(engine) => {
             (engine.run)(args[1..].to_vec());
         }
+
         None => {
             display_all_help(&registry);
-            let err_msg = format!("[-] Error: No command '{}'", cmd_name);
+            let err_msg = format!("No command \"{}\"", cmd_name);
             abort(&err_msg);
         }
     }

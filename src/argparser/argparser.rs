@@ -112,7 +112,13 @@ impl ArgParser {
         let result = self.verify_if_has_flags(arg).ok()?;
         let str_val = self.get_value(arg, result).ok()?;
 
-        Iface::new(&str_val).ok()
+        match Iface::new(&str_val) {
+            Ok(i) => Some(i),
+            Err(err) => {
+                self.add_error(arg, err);
+                None
+            }            
+        }
     }
 
 
