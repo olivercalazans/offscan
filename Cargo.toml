@@ -3,7 +3,15 @@ name = "offscan"
 version = "0.1.0"
 edition = "2024"
 
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = false
+strip = "symbols"
+panic = "abort"
+
 [dependencies]
-rustix = { version = "0.38", features = ["net", "event", "fs"] }
+rustix = { version = "1.1", features = ["net", "event", "fs"] }
 rand = "0.8"
 hickory-resolver = "0.24"
