@@ -20,3 +20,6 @@ pub use argparser::{Argument, ArgParser};
 
 pub mod helpers;
 pub use helpers::{CommandHandler, display_all_help, format_arg};
+
+pub mod parse_err;
+use parse_err::ParseErr;

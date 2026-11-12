@@ -16,10 +16,7 @@
  */
 
 use std::fmt::Display;
-
-use crate::argparser::helpers::format_arg;
-use crate::argparser::argparser::{ArgParser, Argument};
-
+use crate::argparser::{ArgParser, Argument, helpers::format_arg};
 
 
 impl ArgParser {

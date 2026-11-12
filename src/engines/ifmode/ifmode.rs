@@ -21,7 +21,6 @@ mod parser;
 #[path = "getters.rs"]
 mod getters;
 
-use std::process;
 use crate::argparser::ArgParser;
 use crate::common::abort;
 use crate::models::Iface;
@@ -50,10 +49,16 @@ impl IfaceMode {
     fn new(args: Vec<String>) -> Self {
         let mut parser = ArgParser::new(args);
 
+        let iface = Self::parse_iface_flag(&mut parser);
+        let mon = Self::parse_monitor_flag(&mut parser);
+        let man = Self::parse_managed_flag(&mut parser);
+
+        parser.abort_if_has_error();
+
         Self {
-            iface : 
-            mon   : Self::parse_monitor_flag(&mut parser),
-            man   : Self::parse_managed_flag(&mut parser),
+            iface : iface.unwrap(),
+            mon,
+            man,
         }
     }
 

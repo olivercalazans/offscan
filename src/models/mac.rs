@@ -16,6 +16,7 @@
  */
 
 use std::{fmt, marker::PhantomData};
+use crate::common::CustomErr;
 
 
 
@@ -34,16 +35,17 @@ impl<T> Address<T> {
 
 
 
-    pub fn from_str(s: &str) -> Result<Self, String> {
+    pub fn from_str(s: &str) -> Result<Self, CustomErr> {
         let parts: Vec<&str> = s.split(':').collect();
+
         if parts.len() != 6 {
-            return Err(format!("Invalid address: {}", s));
+            return Err(CustomErr::InvalidLen(format!("Invalid address: {}", s)));
         }
 
         let mut bytes = [0u8; 6];
         for (i, part) in parts.iter().enumerate() {
             bytes[i] = u8::from_str_radix(part, 16)
-                .map_err(|_| format!("Invalid part '{}'", part))?;
+                .map_err(|_| CustomErr::InvalidInput(format!("Invalid part '{}'", part)))?;
         }
 
         Ok(Self::new(bytes))

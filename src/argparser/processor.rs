@@ -15,15 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org>.
  */
 
-use crate::common::CustomErr;
-
-use super::{ArgParser, Argument};
+use crate::argparser::{ArgParser, Argument, ParseErr};
 
 
 
 impl ArgParser {
 
-    pub(super) fn get_value(&mut self, arg: &Argument, has_long: bool) -> Result<String, CustomErr> {
+    pub(super) fn get_value(&mut self, arg: &Argument, has_long: bool) -> Result<String, ParseErr> {
         if has_long {
             return self.get_flag_value(arg.long);
         }
@@ -33,13 +31,13 @@ impl ArgParser {
 
     
     
-    pub(super) fn verify_if_has_flags(&mut self, arg: &Argument) -> Result<bool, CustomErr> {
+    pub(super) fn verify_if_has_flags(&mut self, arg: &Argument) -> Result<bool, ParseErr> {
         let has_long = !arg.long.is_empty() && self.args.iter().any(|a| a == arg.long);
         let has_short = !arg.short.is_empty() && self.args.iter().any(|a| a == arg.short);
 
         if arg.required && !has_long && !has_short {
             self.add_miss_req_flags_warn(arg);
-            return Err(CustomErr::NotFound("Flag not found".to_string()));
+            return Err(ParseErr::MissingRequired);
         }
 
         if has_long && has_short {
@@ -59,7 +57,7 @@ impl ArgParser {
         }
 
         if !(has_long || has_short) {
-            return Err(CustomErr::NonReq);
+            return Err(ParseErr::NonRequired);
         }
 
         Ok(has_long)
@@ -67,30 +65,30 @@ impl ArgParser {
 
 
 
-    fn process_duplicated_flag(&mut self, arg: &Argument) -> Result<bool, CustomErr> {
+    fn process_duplicated_flag(&mut self, arg: &Argument) -> Result<bool, ParseErr> {
         self.add_duplicated_warn(arg);
         self.remove_from_the_list(arg);
-        return Err(CustomErr::InvalidInput("Duplicated flag".to_string()));
+        return Err(ParseErr::DuplicatedFlag);
     }
 
 
 
-    pub(super) fn get_flag_value(&mut self, flag: &str) -> Result<String, CustomErr> {
-        let idx_flag = self.get_flag_index(flag).ok_or(CustomErr::MissFlagOrValue)?;
+    pub(super) fn get_flag_value(&mut self, flag: &str) -> Result<String, ParseErr> {
+        let idx_flag = self.get_flag_index(flag).ok_or(ParseErr::MissingFlag)?;
 
         let idx_value = match self.get_value_index(idx_flag) {
             Some(idx) => idx,
             None => {
                 self.add_missing_value_warn(flag);
                 self.remove_index(idx_flag);
-                return None;
+                return Err(ParseErr::MissingValue);
             }
         };
 
         let value = self.args[idx_value].clone();
         self.remove_flag_and_value(idx_flag, idx_value);
 
-        Some(value)
+        Ok(value)
     }
 
 }

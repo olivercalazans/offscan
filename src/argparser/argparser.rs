@@ -24,10 +24,8 @@ mod slice_mgr;
 #[path = "err_display.rs"] 
 mod err_display;
 
-use std::{io, result};
-use std::iter::FilterMap;
 use std::net::Ipv4Addr;
-use crate::common::{CustomErr, abort};
+use crate::common::abort;
 use crate::models::{Iface, MAC};
 
 
@@ -88,7 +86,7 @@ impl ArgParser {
     
     
     pub fn bool(&mut self, arg: &Argument) -> bool {
-        let (_, ok) = self.verify_if_has_flags(arg);
+        let ok = self.verify_if_has_flags(arg).unwrap_or_default();
         self.remove_from_the_list(arg);
         ok
     }
@@ -96,13 +94,8 @@ impl ArgParser {
     
     
     pub fn float64(&mut self, arg: &Argument) -> Option<f64> {
-        let (has_long, ok) = self.verify_if_has_flags(arg);
-
-        if !ok {
-            return None;
-        }
-
-        let str_val = self.get_value(arg, has_long)?;
+        let has_long = self.verify_if_has_flags(arg).ok()?;
+        let str_val = self.get_value(arg, has_long).ok()?;
 
         match str_val.parse::<f64>() {
             Ok(val) => Some(val),
@@ -115,23 +108,18 @@ impl ArgParser {
 
 
 
-    pub fn iface(&mut self, arg: &Argument) -> Result<Iface, CustomErr> {
-        let result = self.verify_if_has_flags(arg)?;
-        let str_val = self.get_value(arg, result);
+    pub fn iface(&mut self, arg: &Argument) -> Option<Iface> {
+        let result = self.verify_if_has_flags(arg).ok()?;
+        let str_val = self.get_value(arg, result).ok()?;
 
-        Iface::new(&str_val)
+        Iface::new(&str_val).ok()
     }
 
 
 
     pub fn int(&mut self, arg: &Argument) -> Option<usize> {
-        let (has_long, ok) = self.verify_if_has_flags(arg);
-
-        if !ok {
-            return None;
-        }
-
-        let str_val = self.get_value(arg, has_long)?;
+        let has_long = self.verify_if_has_flags(arg).ok()?;
+        let str_val = self.get_value(arg, has_long).ok()?;
 
         match str_val.parse::<usize>() {
             Ok(val) => Some(val),
@@ -145,13 +133,8 @@ impl ArgParser {
     
     
     pub fn ip(&mut self, arg: &Argument) -> Option<Ipv4Addr> {
-        let (has_long, ok) = self.verify_if_has_flags(arg);
-
-        if !ok {
-            return None;
-        }
-
-        let str_val = self.get_value(arg, has_long)?;
+        let has_long = self.verify_if_has_flags(arg).ok()?;
+        let str_val = self.get_value(arg, has_long).ok()?;
 
         match str_val.parse::<Ipv4Addr>() {
             Ok(ip) => Some(ip),
@@ -165,15 +148,10 @@ impl ArgParser {
     
     
     pub fn mac(&mut self, arg: &Argument) -> Option<MAC> {
-        let (has_long, ok) = self.verify_if_has_flags(arg);
+        let has_long = self.verify_if_has_flags(arg).ok()?;
+        let str_val = self.get_value(arg, has_long).ok()?;
 
-        if !ok {
-            return None;
-        }
-
-        let str_val = self.get_value(arg, has_long)?;
-
-        match parse_mac(&str_val) {
+        match MAC::from_str(&str_val) {
             Ok(mac) => Some(mac),
             Err(err) => {
                 self.add_error(arg, err);
@@ -185,24 +163,7 @@ impl ArgParser {
     
     
     pub fn string(&mut self, arg: &Argument) -> Option<String> {
-        let (has_long, ok) = self.verify_if_has_flags(arg);
-
-        if !ok {
-            return None;
-        }
-
-        self.get_value(arg, has_long)
+        let has_long = self.verify_if_has_flags(arg).ok()?;
+        self.get_value(arg, has_long).ok()
     }
-}
-
-
-
-fn parse_mac(mac_str: &str) -> Result<MAC, String> {
-    let parts: Vec<&str> = mac_str.split(':').collect();
-
-    if parts.len() != 6 {
-        return Err("invalid MAC address format".to_string());
-    }
-    
-    MAC::from_str(mac_str)
 }

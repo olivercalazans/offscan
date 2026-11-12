@@ -18,16 +18,17 @@
 
 use super::IfaceMode;
 use crate::argparser::{ArgParser, Argument};
+use crate::models::Iface;
 
 
 impl IfaceMode {
 
-    pub(super) fn parse_iface_flag(parser: &mut ArgParser) -> Iface {
+    pub(super) fn parse_iface_flag(parser: &mut ArgParser) -> Option<Iface> {
         let arg = Argument{
             short: "-i", long: "--iface", required: true,
         };
 
-        let ok = parser.iface(&arg);
+        parser.iface(&arg)
     }
 
 
