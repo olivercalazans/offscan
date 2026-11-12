@@ -29,8 +29,8 @@ use super::consts::*;
 
 
 pub(super) struct NlConn {
-    pub fd: OwnedFd,
-    pub seq: u32,
+    pub fd  : OwnedFd,
+    pub seq : u32,
 }
 
 
@@ -78,7 +78,7 @@ impl NlConn {
         let mut buf = vec![0u8; 8192];
 
         loop {
-            let (_, n, _) = net::recvfrom(&self.fd, &mut buf[..], RecvFlags::empty())?;
+            let (n, _) = net::recv(&self.fd, &mut buf[..], RecvFlags::empty())?;
             if n == 0 {
                 continue;
             }

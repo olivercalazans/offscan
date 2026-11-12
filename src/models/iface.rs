@@ -18,7 +18,7 @@
 use std::{fs, io};
 use std::net::Ipv4Addr;
 use std::path::Path;
-use rustix::ioctl::ioctl;
+use rustix::ioctl::{ioctl, Updater};
 use rustix::net::{socket, AddressFamily, SocketType};
 use crate::common::CustomErr;
 use crate::models::MAC;
@@ -138,19 +138,16 @@ impl Iface {
         let mut ifr = Ifreq::new(&self.iface);
 
         unsafe {
-            if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr as *mut _ as *mut _).is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("no IPv4 address found on interface {}", self.iface),
-                ));
-            }
+            let req = Updater::<{ SIOCGIFADDR as u32 }, _>::new(&mut ifr);
+            ioctl(&fd, req).map_err(|_| io::Error::from(io::ErrorKind::NotFound))?;
         }
 
-        let ip_bytes: [u8; 4] = ifr.ifr_ifru[4..8].try_into().map_err(|_| {
-            io::Error::new(io::ErrorKind::InvalidData, "Invalid IP address structure")
-        })?;
-
-        Ok(Ipv4Addr::from(ip_bytes))
+        Ok(Ipv4Addr::new(
+            ifr.ifr_ifru[4],
+            ifr.ifr_ifru[5],
+            ifr.ifr_ifru[6],
+            ifr.ifr_ifru[7],
+        ))
     }
 
 
@@ -162,34 +159,29 @@ impl Iface {
         let mut ifr_mask = Ifreq::new(&self.iface);
 
         unsafe {
-            if rustix::io::ioctl(&fd, SIOCGIFADDR as _, &mut ifr_addr as *mut _ as *mut _).is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("No IPv4 address found for interface {}", self.iface),
-                ));
-            }
+            let req_addr = Updater::<{ SIOCGIFADDR as u32 }, _>::new(&mut ifr_addr);
+            ioctl(&fd, req_addr).map_err(|_| io::Error::from(io::ErrorKind::NotFound))?;
 
-            if rustix::io::ioctl(&fd, SIOCGIFNETMASK as _, &mut ifr_mask as *mut _ as *mut _).is_err() {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    format!("No netmask found for interface {}", self.iface),
-                ));
-            }
+            let req_mask = Updater::<{ SIOCGIFNETMASK as u32 }, _>::new(&mut ifr_mask);
+            ioctl(&fd, req_mask).map_err(|_| io::Error::from(io::ErrorKind::NotFound))?;
         }
 
-        let ip_bytes: [u8; 4] = ifr_addr.ifr_ifru[4..8].try_into().map_err(|_| {
-            io::Error::new(io::ErrorKind::InvalidData, "Invalid IP address structure")
-        })?;
+        let ip = Ipv4Addr::new(
+            ifr_addr.ifr_ifru[4],
+            ifr_addr.ifr_ifru[5],
+            ifr_addr.ifr_ifru[6],
+            ifr_addr.ifr_ifru[7],
+        );
 
-        let mask_bytes: [u8; 4] = ifr_mask.ifr_ifru[4..8].try_into().map_err(|_| {
-            io::Error::new(io::ErrorKind::InvalidData, "Invalid Netmask structure")
-        })?;
-
-        let ip = Ipv4Addr::from(ip_bytes);
-        let mask_u32 = u32::from_be_bytes(mask_bytes);
+        let mask_u32 = u32::from_be_bytes([
+            ifr_mask.ifr_ifru[4],
+            ifr_mask.ifr_ifru[5],
+            ifr_mask.ifr_ifru[6],
+            ifr_mask.ifr_ifru[7],
+        ]);
         let prefix = mask_u32.count_ones();
 
-        Ok(format!("{}/{}", ip, prefix))
+        Ok(format!("{ip}/{prefix}"))
     }
 
     
@@ -268,7 +260,7 @@ impl Iface {
                 continue;
             }
 
-            if let Ok(mac) = Self::parse_mac(mac_str) {
+            if let Ok(mac) = MAC::from_str(mac_str) {
                 return Ok(mac);
             }
         }
@@ -277,28 +269,6 @@ impl Iface {
             io::ErrorKind::NotFound,
             "Gateway MAC not found",
         ))
-    }
-
-
-
-    fn parse_mac(mac_str: &str) -> Result<MAC, io::Error> {
-        let parts: Vec<&str> = mac_str.split(':').collect();
-
-        if parts.len() != 6 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Invalid MAC address format",
-            ));
-        }
-
-        let mut bytes = [0u8; 6];
-        for (i, part) in parts.iter().enumerate() {
-            bytes[i] = u8::from_str_radix(part, 16).map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidInput, e)
-            })?;
-        }
-
-        Ok(bytes)
     }
 
 }
